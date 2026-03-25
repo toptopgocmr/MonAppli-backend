@@ -1,0 +1,61 @@
+# Laravel
+/vendor/
+/node_modules/
+/public/storage
+/public/hot
+/public/build
+/storage/*.key
+/storage/pail
+/storage/logs/*.log
+
+# Storage framework — ignore contenu MAIS garde les dossiers via .gitkeep
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitkeep
+/storage/framework/views/*
+!/storage/framework/views/.gitkeep
+
+# Bootstrap cache — NE JAMAIS PUSHER
+/bootstrap/cache/*.php
+
+# Environment
+.env
+.env.backup
+.env.production
+.env.local
+.env.staging
+
+# Composer
+composer.phar
+auth.json
+
+# NPM / Yarn
+npm-debug.log
+yarn-error.log
+
+# Tests
+.phpunit.result.cache
+.phpunit.cache/
+
+# IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+.phpactor.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Homestead / Vagrant
+Homestead.yaml
+Homestead.json
+/.vagrant
+
+# Laravel legacy
+bootstrap/compiled.php
+app/storage/
+public_html/storage
+public_html/hot
