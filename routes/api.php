@@ -82,6 +82,12 @@ Route::prefix('webhooks')->name('webhooks.')->group(function () {
     Route::post('stripe',       [WebhookController::class, 'handleStripe'])->name('stripe');
 });
 
+// GET sur un webhook → réponse JSON 405 propre (au lieu de la page d'erreur Symfony)
+Route::get('webhooks/{any}', fn() => response()->json([
+    'success' => false,
+    'message' => 'Webhook endpoint — POST uniquement.',
+], 405))->where('any', '.*');
+
 Route::prefix('driver/auth')->group(function () {
     Route::post('register',        [DriverAuthController::class, 'register']);
     Route::post('login',           [DriverAuthController::class, 'login']);
