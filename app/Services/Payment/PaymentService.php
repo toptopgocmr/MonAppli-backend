@@ -19,16 +19,18 @@ class PaymentService
     protected array $providers = [];
 
     public function __construct(
-        protected PeexService $peex,
-        protected MtnMomoService $mtnMomo,
-        protected AirtelMoneyService $airtelMoney,
-        protected StripeService $stripe
+        protected PeexService          $peex,
+        protected MtnMomoService       $mtnMomo,
+        protected AirtelMoneyService   $airtelMoney,
+        protected StripeService        $stripe,
+        protected FlutterwaveService   $flutterwave,
     ) {
         $this->providers = [
-            'peex' => $peex,
-            'mtn_momo' => $mtnMomo,
+            'flutterwave'  => $flutterwave,
+            'peex'         => $peex,
+            'mtn_momo'     => $mtnMomo,
             'airtel_money' => $airtelMoney,
-            'stripe' => $stripe,
+            'stripe'       => $stripe,
         ];
     }
 

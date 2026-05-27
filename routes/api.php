@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AdminAuthController;
 use App\Http\Controllers\Auth\DriverAuthController;
 use App\Http\Controllers\Auth\UserAuthController;
+use App\Http\Controllers\Api\WebhookController;
 
 // ── Admin Controllers
 use App\Http\Controllers\Admin\DashboardController;
@@ -60,10 +61,25 @@ Route::get('/', function () {
 */
 Route::prefix('admin/auth')->group(function () {
     Route::post('login', [AdminAuthController::class, 'login']);
-    Route::middleware('auth:sanctum')->group(function () {
+    
+Route::middleware('auth:sanctum')->group(function () {
         Route::post('logout', [AdminAuthController::class, 'logout']);
         Route::get('me',     [AdminAuthController::class, 'me']);
     });
+});
+
+
+// =============================================================================
+// Webhooks – routes publiques (sans auth, hors CSRF)
+// Déclarer dans app/Http/Middleware/VerifyCsrfToken.php → $except
+// =============================================================================
+Route::prefix('webhooks')->name('webhooks.')->group(function () {
+    Route::post('flutterwave',  [WebhookController::class, 'handleFlutterwave'])->name('flutterwave');
+    Route::post('peex/collect', [WebhookController::class, 'handlePeexCollect'])->name('peex.collect');
+    Route::post('peex/payout',  [WebhookController::class, 'handlePeexPayout'])->name('peex.payout');
+    Route::post('mtn-momo',     [WebhookController::class, 'handleMtnMomo'])->name('mtn-momo');
+    Route::post('airtel-money', [WebhookController::class, 'handleAirtelMoney'])->name('airtel-money');
+    Route::post('stripe',       [WebhookController::class, 'handleStripe'])->name('stripe');
 });
 
 Route::prefix('driver/auth')->group(function () {

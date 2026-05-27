@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'default' => env('PAYMENT_DEFAULT_PROVIDER', 'peex'),
+    'default' => env('PAYMENT_DEFAULT_PROVIDER', 'flutterwave'),
 
     /*
     |--------------------------------------------------------------------------
@@ -72,6 +72,24 @@ return [
         'callback_url' => env('AIRTEL_MONEY_CALLBACK_URL'),
     ],
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | Flutterwave Configuration
+    |--------------------------------------------------------------------------
+    | Passerelle principale pour Mobile Money (MTN & Airtel, Congo Brazzaville).
+    | Docs : https://developer.flutterwave.com/docs/getting-started
+    */
+
+    'flutterwave' => [
+        'env'         => env('FLW_ENV', 'sandbox'),
+        'secret_key'  => env('FLW_SECRET_KEY'),
+        'public_key'  => env('FLW_PUBLIC_KEY'),
+        'secret_hash' => env('FLW_SECRET_HASH'),
+        'currency'    => 'XAF',
+        'country'     => 'CG',
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Stripe Configuration
@@ -113,7 +131,7 @@ return [
     */
 
     'providers_by_country' => [
-        'CG' => ['peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
+        'CG' => ['flutterwave', 'peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
         'CD' => ['peex', 'airtel_money'], // Congo Kinshasa
         'GA' => ['peex', 'airtel_money'], // Gabon
         'CM' => ['peex', 'mtn_momo'], // Cameroon
