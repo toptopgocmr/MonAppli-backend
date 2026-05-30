@@ -11,7 +11,8 @@ class Payment extends Model
     protected $fillable = [
         'user_id', 'trip_id', 'driver_id', 'booking_id',
         'amount', 'commission', 'driver_net',
-        'method', 'status', 'transaction_ref',
+        'method', 'provider', 'status', 'transaction_ref',
+        'flw_charge_id',
         'country', 'city', 'paid_at',
     ];
 
