@@ -20,6 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
         // Sanctum stateful API
         $middleware->statefulApi();
 
+        // Exclure les routes non-browser du CSRF
+        $middleware->validateCsrfTokens(except: [
+            'admin/login',
+            'api/*',
+            'webhooks/*',
+        ]);
+
         // Alias middleware custom
         $middleware->alias([
             'role.permission' => \App\Http\Middleware\RolePermissionMiddleware::class,
