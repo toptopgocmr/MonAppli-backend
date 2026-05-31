@@ -3,26 +3,30 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Admin\AdminUser;
-use App\Models\Role;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class AdminUserSeeder extends Seeder
 {
     public function run(): void
     {
-        $role = Role::where('name', 'Admin')->first();
+        DB::table('roles')->insertOrIgnore([
+            'id'          => 1,
+            'name'        => 'Admin',
+            'description' => 'Super administrateur',
+            'created_at'  => now(),
+            'updated_at'  => now(),
+        ]);
 
-        AdminUser::firstOrCreate(
-            ['email' => 'admin@toptopgo.com'],
-            [
-                'first_name' => 'Super',
-                'last_name'  => 'Admin',
-                'phone'      => '+242000000000',
-                'role_id'    => $role->id,
-                'password'   => Hash::make('Admin@1234'),
-                'status'     => 'active',
-            ]
-        );
+        DB::table('admin_users')->insertOrIgnore([
+            'first_name' => 'Admin',
+            'last_name'  => 'TOPTOPGO',
+            'email'      => 'admin@toptopgo.com',
+            'password'   => Hash::make('Admin@2026'),
+            'role_id'    => 1,
+            'status'     => 'active',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 }

@@ -11,7 +11,7 @@ use Exception;
 /**
  * Flutterwave v4 – ToptopGo
  *
- * Flux collect (Mobile Money, Congo CG) :
+ * Flux collect (Mobile Money) :
  *   1. Create / retrieve Flutterwave customer  →  cus_xxx
  *   2. Create payment method (mobile_money)    →  pmd_xxx
  *   3. Create charge                           →  chg_xxx  (status: pending)
@@ -19,24 +19,22 @@ use Exception;
  *   5. Webhook « charge.completed »            →  handleWebhook()
  *
  * Flux payout (retrait chauffeur) :
- *   POST /transfers → mobile money transfer
+ *   POST /direct-transfers → mobile money transfer
  */
 class FlutterwaveService implements PaymentProviderInterface
 {
     protected string $baseUrl;
     protected string $secretKey;
-    protected string $secretHash;   // pour vérifier la signature webhook
+    protected string $secretHash;
     protected string $currency;
-    protected string $countryCode;  // ex: "242"
 
     public function __construct()
     {
         $env           = config('flutterwave.env', 'sandbox');
         $this->baseUrl = rtrim(config("flutterwave.base_url.{$env}"), '/');
-        $this->secretKey   = config('flutterwave.secret_key');
-        $this->secretHash  = config('flutterwave.secret_hash');
-        $this->currency    = config('flutterwave.currency', 'XAF');
-        $this->countryCode = config('flutterwave.country_code', '242');
+        $this->secretKey  = config('flutterwave.secret_key');
+        $this->secretHash = config('flutterwave.secret_hash');
+        $this->currency   = config('flutterwave.currency', 'XAF');
     }
 
     // =========================================================================
@@ -57,45 +55,46 @@ class FlutterwaveService implements PaymentProviderInterface
     // =========================================================================
 
     /**
-     * Collecte un paiement Mobile Money depuis le client.
-     *
      * Paramètres attendus dans $data :
-     *   - phone       : numéro local (ex: 06XXXXXXXX) ou international (242…)
-     *   - amount      : montant en XAF
+     *   - phone       : numéro du client (avec ou sans indicatif)
+     *   - country_code: indicatif pays (ex: "237" Cameroun, "233" Ghana…)
+     *   - amount      : montant
      *   - operator    : 'MTN' ou 'AIRTEL'
-     *   - reference   : référence interne unique (ex: RIDE-42-XXXXX)
+     *   - reference   : référence interne unique
      *   - description : libellé
-     *   - user_id     : ID utilisateur (pour mise en cache du customer FLW)
-     *   - email       : email du client (requis pour créer le customer FLW)
+     *   - user_id     : ID utilisateur
+     *   - email       : email du client
      *
      * @return array{success: bool, transaction_id?: string, status?: string, data?: array, error?: string}
      */
     public function collect(array $data): array
     {
         try {
-            // --- 1. Customer FLW (mise en cache par user_id) -----------------
+            $countryCode = $data['country_code'] ?? config('flutterwave.country_code');
+
+            // --- 1. Customer FLW (mis en cache par user_id) ------------------
             $customerId = $this->getOrCreateCustomer(
-                userId:    $data['user_id'],
-                email:     $data['email']     ?? "user_{$data['user_id']}@toptopgo.cg",
-                phone:     $data['phone'],
-                firstName: $data['first_name'] ?? null,
-                lastName:  $data['last_name']  ?? null,
+                userId:      $data['user_id'],
+                email:       $data['email'] ?? "user_{$data['user_id']}@toptopgo.app",
+                phone:       $data['phone'],
+                countryCode: $countryCode,
+                firstName:   $data['first_name'] ?? null,
+                lastName:    $data['last_name']  ?? null,
             );
 
             if (!$customerId) {
                 return ['success' => false, 'error' => 'Impossible de créer le profil client Flutterwave'];
             }
 
-            // --- 2. Payment method -------------------------------------------
-            $phoneNormalized = $this->normalizePhone($data['phone']);
-            $network         = strtoupper($data['operator'] ?? 'MTN');
+            // --- 2. Payment method ------------------------------------------
+            $network = strtoupper($data['operator'] ?? 'MTN');
 
             $pmResponse = $this->client()->post("{$this->baseUrl}/payment-methods", [
                 'type'         => 'mobile_money',
                 'mobile_money' => [
-                    'country_code' => $this->countryCode,
+                    'country_code' => $countryCode,
                     'network'      => $network,
-                    'phone_number' => $phoneNormalized,
+                    'phone_number' => $this->normalizePhone($data['phone'], $countryCode),
                 ],
             ]);
 
@@ -106,7 +105,7 @@ class FlutterwaveService implements PaymentProviderInterface
 
             $paymentMethodId = $pmResponse->json('data.id');
 
-            // --- 3. Charge ---------------------------------------------------
+            // --- 3. Charge --------------------------------------------------
             $chargeResponse = $this->client()
                 ->withHeaders(['X-Idempotency-Key' => $data['reference']])
                 ->post("{$this->baseUrl}/charges", [
@@ -123,11 +122,10 @@ class FlutterwaveService implements PaymentProviderInterface
                 return ['success' => false, 'error' => 'Erreur initiation charge: ' . $chargeResponse->body()];
             }
 
-            $charge     = $chargeResponse->json('data');
-            $chargeId   = $charge['id'];       // chg_xxx
-            $chargeStatus = $charge['status']; // pending
+            $charge       = $chargeResponse->json('data');
+            $chargeId     = $charge['id'];
+            $chargeStatus = $charge['status'];
 
-            // L'instruction affichée au client (ex: "Autorisez le paiement sur votre téléphone")
             $instruction = $charge['next_action']['payment_instruction']['note']
                         ?? $charge['next_action']['redirect_url']['url']
                         ?? 'Veuillez autoriser le paiement sur votre téléphone Mobile Money.';
@@ -138,67 +136,70 @@ class FlutterwaveService implements PaymentProviderInterface
                 'status'         => $this->mapStatus($chargeStatus),
                 'instruction'    => $instruction,
                 'data'           => [
-                    'charge_id'          => $chargeId,
-                    'customer_id'        => $customerId,
-                    'payment_method_id'  => $paymentMethodId,
-                    'amount'             => $charge['amount'],
-                    'currency'           => $charge['currency'],
-                    'status'             => $chargeStatus,
-                    'next_action'        => $charge['next_action'] ?? null,
-                    'reference'          => $charge['reference'],
+                    'charge_id'         => $chargeId,
+                    'customer_id'       => $customerId,
+                    'payment_method_id' => $paymentMethodId,
+                    'amount'            => $charge['amount'],
+                    'currency'          => $charge['currency'],
+                    'status'            => $chargeStatus,
+                    'next_action'       => $charge['next_action'] ?? null,
+                    'reference'         => $charge['reference'],
                 ],
             ];
 
         } catch (Exception $e) {
-            Log::error('FlutterwaveService::collect exception: ' . $e->getMessage(), [
-                'data' => $data,
-            ]);
+            Log::error('FlutterwaveService::collect exception: ' . $e->getMessage(), ['data' => $data]);
             return ['success' => false, 'error' => $e->getMessage()];
         }
     }
 
     // =========================================================================
-    // 2. PAYOUT – virer des fonds vers un chauffeur (Mobile Money transfer)
+    // 2. PAYOUT – virer des fonds vers un chauffeur (v4 direct-transfers)
     // =========================================================================
 
     /**
-     * Initie un virement Mobile Money vers le chauffeur.
-     *
      * Paramètres attendus dans $data :
-     *   - phone       : numéro local du chauffeur
-     *   - amount      : montant en XAF
+     *   - phone       : numéro du chauffeur (msisdn complet avec indicatif)
+     *   - country_code: indicatif pays
+     *   - amount      : montant
      *   - operator    : 'MTN' ou 'AIRTEL'
-     *   - reference   : référence unique (ex: WD-5-XXXXX)
+     *   - reference   : référence unique
      *   - description : libellé
+     *   - first_name  : prénom du chauffeur
+     *   - last_name   : nom du chauffeur
      *
      * @return array{success: bool, transaction_id?: string, status?: string, data?: array, error?: string}
      */
     public function payout(array $data): array
     {
         try {
-            $phoneNormalized = $this->normalizePhone($data['phone']);
-            $network         = strtoupper($data['operator'] ?? 'MTN');
-
-            // Code banque mobile money Flutterwave par réseau
-            // À vérifier dans votre dashboard FLW → Settings → Transfer Banks
-            $bankCode = match ($network) {
-                'MTN'    => 'FMM',    // Mobile Money MTN Congo
-                'AIRTEL' => 'FAM',    // Airtel Money Congo
-                default  => 'FMM',
-            };
+            $network  = strtolower($data['operator'] ?? 'mtn');
+            $msisdn   = $this->toMsisdn($data['phone'], $data['country_code'] ?? '');
 
             $response = $this->client()
                 ->withHeaders(['X-Idempotency-Key' => $data['reference']])
-                ->post("{$this->baseUrl}/transfers", [
-                    'account_bank'   => $bankCode,
-                    'account_number' => $phoneNormalized,
-                    'amount'         => (int) $data['amount'],
-                    'narration'      => $data['description'] ?? 'ToptopGo – Paiement chauffeur',
-                    'currency'       => $this->currency,
-                    'reference'      => $data['reference'],
-                    'debit_currency' => $this->currency,
-                    'meta'           => [
-                        ['sender_details' => 'ToptopGo Platform'],
+                ->post("{$this->baseUrl}/direct-transfers", [
+                    'action'   => 'instant',
+                    'type'     => 'mobile_money',
+                    'narration' => $data['description'] ?? 'ToptopGo – Paiement chauffeur',
+                    'reference' => $data['reference'],
+                    'payment_instruction' => [
+                        'source_currency'      => $this->currency,
+                        'destination_currency' => $this->currency,
+                        'amount' => [
+                            'applies_to' => 'destination_currency',
+                            'value'      => (int) $data['amount'],
+                        ],
+                        'recipient' => [
+                            'name' => [
+                                'first' => $data['first_name'] ?? 'Driver',
+                                'last'  => $data['last_name']  ?? '',
+                            ],
+                            'mobile_money' => [
+                                'network' => $network,
+                                'msisdn'  => $msisdn,
+                            ],
+                        ],
                     ],
                 ]);
 
@@ -223,12 +224,9 @@ class FlutterwaveService implements PaymentProviderInterface
     }
 
     // =========================================================================
-    // 3. GET TRANSACTION STATUS – vérification manuelle d'une charge
+    // 3. GET TRANSACTION STATUS
     // =========================================================================
 
-    /**
-     * @param string $transactionId  ID FLW de la charge : chg_xxx
-     */
     public function getTransactionStatus(string $transactionId): array
     {
         try {
@@ -253,17 +251,9 @@ class FlutterwaveService implements PaymentProviderInterface
     }
 
     // =========================================================================
-    // 4. HANDLE WEBHOOK – traiter un événement envoyé par Flutterwave
+    // 4. HANDLE WEBHOOK
     // =========================================================================
 
-    /**
-     * Traite le payload d'un webhook Flutterwave.
-     * La vérification de signature DOIT être faite AVANT d'appeler cette méthode
-     * (voir WebhookController::handleFlutterwave).
-     *
-     * @param array $payload  Corps JSON du webhook
-     * @return array{success: bool, status?: string, transaction?: Transaction, error?: string}
-     */
     public function handleWebhook(array $payload): array
     {
         $eventType = $payload['type'] ?? '';
@@ -274,23 +264,21 @@ class FlutterwaveService implements PaymentProviderInterface
             'reference'  => $payload['data']['reference'] ?? null,
         ]);
 
-        // On ne traite que les paiements complétés
         if ($eventType !== 'charge.completed') {
             return ['success' => true, 'status' => 'ignored', 'message' => "Événement {$eventType} ignoré"];
         }
 
-        $chargeData = $payload['data'] ?? [];
-        $reference  = $chargeData['reference']  ?? null;
-        $chargeId   = $chargeData['id']         ?? null;
-        $chargeStatus = $chargeData['status']   ?? '';
-        $webhookId  = $payload['id']            ?? null;
+        $chargeData   = $payload['data'] ?? [];
+        $reference    = $chargeData['reference'] ?? null;
+        $chargeId     = $chargeData['id']        ?? null;
+        $chargeStatus = $chargeData['status']    ?? '';
+        $webhookId    = $payload['id']           ?? null;
 
         if (!$reference) {
             Log::warning('FLW webhook : référence manquante', $payload);
             return ['success' => false, 'error' => 'Référence manquante'];
         }
 
-        // Trouver la transaction par référence
         $transaction = Transaction::where('reference', $reference)->first();
 
         if (!$transaction) {
@@ -298,14 +286,13 @@ class FlutterwaveService implements PaymentProviderInterface
             return ['success' => false, 'error' => 'Transaction introuvable'];
         }
 
-        // --- Idempotence : si déjà traitée, on répond 200 sans rien faire ----
+        // Idempotence
         if ($transaction->provider_response && isset($transaction->provider_response['webhook_id'])
             && $transaction->provider_response['webhook_id'] === $webhookId) {
-            Log::info("FLW webhook : événement {$webhookId} déjà traité (idempotence)");
             return ['success' => true, 'status' => $transaction->status, 'transaction' => $transaction];
         }
 
-        // --- Vérification complémentaire via API FLW (best practice) ---------
+        // Vérification complémentaire
         if ($chargeId) {
             $verified = $this->getTransactionStatus($chargeId);
             if ($verified['success']) {
@@ -313,9 +300,7 @@ class FlutterwaveService implements PaymentProviderInterface
             }
         }
 
-        $newStatus = $this->mapStatus($chargeStatus);
-
-        // Mettre à jour la transaction
+        $newStatus  = $this->mapStatus($chargeStatus);
         $updateData = [
             'provider_transaction_id' => $chargeId,
             'provider_response'       => array_merge(
@@ -342,28 +327,16 @@ class FlutterwaveService implements PaymentProviderInterface
     }
 
     // =========================================================================
-    // Interface – getProviderName / isAvailable
+    // Interface
     // =========================================================================
 
-    public function getProviderName(): string
-    {
-        return 'Flutterwave';
-    }
+    public function getProviderName(): string { return 'Flutterwave'; }
 
     public function isAvailable(): bool
     {
         return !empty($this->secretKey) && !empty($this->secretHash);
     }
 
-    // =========================================================================
-    // Vérification de signature webhook (appelée par le controller)
-    // =========================================================================
-
-    /**
-     * Vérifie que le webhook provient bien de Flutterwave.
-     * Flutterwave envoie le corps hashé en HMAC-SHA256 dans le header
-     * « flutterwave-signature ».
-     */
     public function verifyWebhookSignature(string $rawBody, string $signature): bool
     {
         $expected = hash_hmac('sha256', $rawBody, $this->secretHash);
@@ -374,21 +347,18 @@ class FlutterwaveService implements PaymentProviderInterface
     // Helpers privés
     // =========================================================================
 
-    /**
-     * Récupère ou crée un customer FLW pour un utilisateur ToptopGo.
-     * L'ID est mis en cache pour éviter de recréer à chaque paiement.
-     */
     protected function getOrCreateCustomer(
         int $userId,
         string $email,
         string $phone,
+        string $countryCode,
         ?string $firstName = null,
         ?string $lastName  = null,
     ): ?string {
         $cacheKey = "flw_customer_{$userId}";
 
         return Cache::remember($cacheKey, now()->addDays(30), function () use (
-            $email, $phone, $firstName, $lastName
+            $email, $phone, $countryCode, $firstName, $lastName
         ) {
             try {
                 $body = ['email' => $email];
@@ -402,8 +372,8 @@ class FlutterwaveService implements PaymentProviderInterface
 
                 if ($phone) {
                     $body['phone'] = [
-                        'country_code' => $this->countryCode,
-                        'number'       => $this->normalizePhone($phone),
+                        'country_code' => $countryCode,
+                        'number'       => $this->normalizePhone($phone, $countryCode),
                     ];
                 }
 
@@ -413,12 +383,10 @@ class FlutterwaveService implements PaymentProviderInterface
                     return $response->json('data.id');
                 }
 
-                // Si le customer existe déjà (409), tenter de le récupérer par email
                 if ($response->status() === 409) {
                     $search = $this->client()->get("{$this->baseUrl}/customers", ['email' => $email]);
                     if ($search->successful()) {
-                        $customers = $search->json('data');
-                        return $customers[0]['id'] ?? null;
+                        return $search->json('data.0.id');
                     }
                 }
 
@@ -433,28 +401,33 @@ class FlutterwaveService implements PaymentProviderInterface
     }
 
     /**
-     * Normalise un numéro de téléphone.
-     * Entrée : "0612345678" ou "+242 06 123 45 678" → "0612345678" (local)
-     * Flutterwave attend le numéro LOCAL (sans indicatif) dans mobile_money.
+     * Retourne le numéro LOCAL (sans indicatif) pour le payment_method.
      */
-    protected function normalizePhone(string $phone): string
+    protected function normalizePhone(string $phone, string $countryCode): string
     {
-        // Ne garder que les chiffres
         $digits = preg_replace('/\D/', '', $phone);
 
-        // Retirer l'indicatif pays 242 si présent
-        if (str_starts_with($digits, '242') && strlen($digits) > 9) {
-            $digits = substr($digits, 3);
+        if ($countryCode && str_starts_with($digits, $countryCode) && strlen($digits) > strlen($countryCode) + 5) {
+            $digits = substr($digits, strlen($countryCode));
         }
 
         return $digits;
     }
 
     /**
-     * Mappe les statuts Flutterwave v4 vers les statuts internes ToptopGo.
-     *
-     * FLW statuts charge : pending | succeeded | failed | cancelled
+     * Retourne le numéro INTERNATIONAL (msisdn) pour les transfers.
      */
+    protected function toMsisdn(string $phone, string $countryCode): string
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+
+        if ($countryCode && !str_starts_with($digits, $countryCode)) {
+            $digits = $countryCode . ltrim($digits, '0');
+        }
+
+        return $digits;
+    }
+
     protected function mapStatus(string $flwStatus): string
     {
         return match (strtolower($flwStatus)) {
@@ -465,10 +438,6 @@ class FlutterwaveService implements PaymentProviderInterface
         };
     }
 
-    /**
-     * Mappe les statuts de transfer Flutterwave (payout).
-     * FLW statuts transfer : NEW | PENDING | FAILED | SUCCESSFUL
-     */
     protected function mapTransferStatus(string $flwStatus): string
     {
         return match (strtoupper($flwStatus)) {

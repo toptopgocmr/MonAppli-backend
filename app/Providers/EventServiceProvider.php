@@ -9,7 +9,9 @@ use App\Events\RideCreated;
 use App\Events\RideAccepted;
 use App\Events\RideStarted;
 use App\Events\RideCompleted;
+use App\Events\PaymentValidated;
 use App\Events\RideCancelled;
+use App\Listeners\CreditDriverWallet;
 use App\Listeners\SendPaymentNotification;
 use App\Listeners\ProcessCompletedPayment;
 use App\Listeners\NotifyDriversAboutNewRide;
@@ -37,6 +39,9 @@ class EventServiceProvider extends ServiceProvider
         ],
         PayoutCompleted::class => [
             SendPaymentNotification::class,
+        ],
+        PaymentValidated::class => [
+            CreditDriverWallet::class,
         ],
         RideCreated::class => [
             NotifyDriversAboutNewRide::class,

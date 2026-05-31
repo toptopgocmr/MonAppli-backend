@@ -22,9 +22,10 @@ class UserPaymentController extends Controller
     public function mobileMoney(Request $request)
     {
         $request->validate([
-            'booking_id' => 'required|exists:bookings,id',
-            'phone'      => 'required|string',
-            'provider'   => 'required|in:mtn,airtel',
+            'booking_id'   => 'required|exists:bookings,id',
+            'phone'        => 'required|string',
+            'provider'     => 'required|in:mtn,airtel',
+            'country_code' => 'sometimes|string',
         ]);
 
         $booking = Booking::with('trip')
@@ -51,7 +52,8 @@ class UserPaymentController extends Controller
 
         $transactionRef = 'TXN-' . strtoupper(Str::random(10));
         $user           = Auth::user();
-        $operator       = strtoupper($request->provider); // mtn → MTN, airtel → AIRTEL
+        $operator       = strtoupper($request->provider);
+        $countryCode    = $request->input('country_code', config('flutterwave.country_code'));
 
         // ── Créer le paiement en base (statut pending) ───────────────
         $payment = Payment::create([
@@ -66,22 +68,22 @@ class UserPaymentController extends Controller
             'provider'        => 'flutterwave',
             'status'          => 'pending',
             'transaction_ref' => $transactionRef,
-            'country'         => 'CG',
             'city'            => $booking->trip->departure_city ?? 'N/A',
             'paid_at'         => null,
         ]);
 
         // ── Appel Flutterwave ────────────────────────────────────────
         $result = $this->flutterwave->collect([
-            'phone'       => $request->phone,
-            'amount'      => (int) $booking->amount,
-            'operator'    => $operator,
-            'reference'   => $transactionRef,
-            'description' => 'ToptopGo – Réservation #' . $booking->id,
-            'user_id'     => $user->id,
-            'email'       => $user->email ?? "user_{$user->id}@toptopgo.cg",
-            'first_name'  => $user->first_name ?? null,
-            'last_name'   => $user->last_name  ?? null,
+            'phone'        => $request->phone,
+            'country_code' => $countryCode,
+            'amount'       => (int) $booking->amount,
+            'operator'     => $operator,
+            'reference'    => $transactionRef,
+            'description'  => 'ToptopGo – Réservation #' . $booking->id,
+            'user_id'      => $user->id,
+            'email'        => $user->email ?? "user_{$user->id}@toptopgo.app",
+            'first_name'   => $user->first_name ?? null,
+            'last_name'    => $user->last_name  ?? null,
         ]);
 
         if (!$result['success']) {
@@ -118,61 +120,6 @@ class UserPaymentController extends Controller
         ]);
     }
 
-    // ── Paiement Stripe ──────────────────────────────────────────────
-    public function stripe(Request $request)
-    {
-        $request->validate([
-            'booking_id'        => 'required|exists:bookings,id',
-            'payment_method_id' => 'required|string',
-        ]);
-
-        $booking = Booking::with('trip')
-            ->where('user_id', Auth::id())
-            ->findOrFail($request->booking_id);
-
-        if ($booking->status !== 'accepted') {
-            return response()->json([
-                'success' => false,
-                'message' => 'La réservation doit être acceptée avant le paiement.',
-            ], 422);
-        }
-
-        $payment = Payment::create([
-            'user_id'         => Auth::id(),
-            'trip_id'         => $booking->trip_id,
-            'driver_id'       => $booking->trip->driver_id,
-            'booking_id'      => $booking->id,
-            'amount'          => $booking->amount,
-            'commission'      => $booking->amount * 0.10,
-            'driver_net'      => $booking->amount * 0.90,
-            'method'          => 'stripe',
-            'status'          => 'pending',
-            'transaction_ref' => 'STR-' . strtoupper(Str::random(10)),
-            'country'         => 'CG',
-            'city'            => $booking->trip->departure_city ?? 'N/A',
-            'paid_at'         => null,
-        ]);
-
-        // TODO: intégrer Stripe réel ici
-        $payment->update(['status' => 'success', 'paid_at' => now()]);
-        $booking->update(['status' => 'paid']);
-
-        PaymentValidated::dispatch($booking->load('trip'));
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Paiement Stripe effectué. Le chat avec le chauffeur est maintenant disponible.',
-            'data'    => [
-                'payment'         => $payment,
-                'transaction_ref' => $payment->transaction_ref,
-                'amount'          => $payment->amount,
-                'status'          => $payment->status,
-                'chat_enabled'    => true,
-                'chat_channel'    => 'chat.trip.' . $booking->trip_id,
-            ],
-        ]);
-    }
-
     // ── Statut d'un paiement (polling) ───────────────────────────────
     public function status(Request $request)
     {
@@ -190,13 +137,12 @@ class UserPaymentController extends Controller
             $check = $this->flutterwave->getTransactionStatus($payment->flw_charge_id);
 
             if ($check['success'] && isset($check['status'])) {
-                $newStatus = $check['status']; // 'completed' | 'failed' | 'processing'
+                $newStatus = $check['status'];
 
                 if ($newStatus === 'completed') {
                     $payment->update(['status' => 'success', 'paid_at' => now()]);
                     $payment->refresh();
 
-                    // Déverrouiller le chat
                     $booking = Booking::find($payment->booking_id);
                     if ($booking && $booking->status !== 'paid') {
                         $booking->update(['status' => 'paid']);

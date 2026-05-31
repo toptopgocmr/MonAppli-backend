@@ -27,15 +27,8 @@ return [
         'production' => 'https://api.flutterwave.com',
     ],
 
-    /*
-    | Paramètres Congo Brazzaville
-    */
-    'country_code' => '242',
-    'currency'     => 'XAF',
+    'currency' => env('FLW_CURRENCY', 'XAF'),
 
-    /*
-    | Réseaux pris en charge (valeurs envoyées à l'API FLW)
-    */
     'networks' => [
         'mtn'    => 'MTN',
         'airtel' => 'AIRTEL',
