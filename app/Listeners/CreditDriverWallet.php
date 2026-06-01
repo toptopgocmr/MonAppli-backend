@@ -3,7 +3,9 @@
 namespace App\Listeners;
 
 use App\Events\PaymentValidated;
+use App\Models\Driver\Driver;
 use App\Models\Wallet;
+use App\Notifications\BookingPaidNotification;
 use App\Services\WalletService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
@@ -49,5 +51,18 @@ class CreditDriverWallet implements ShouldQueue
             'commission' => $commission,
             'driver_net' => $driverNet,
         ]);
+
+        // ✅ Notifier le chauffeur (FCM + database)
+        $driver = Driver::find($trip->driver_id);
+        if ($driver) {
+            try {
+                $driver->notify(new BookingPaidNotification($booking));
+            } catch (\Exception $e) {
+                Log::error('CreditDriverWallet: notification échouée', [
+                    'driver_id' => $driver->id,
+                    'error'     => $e->getMessage(),
+                ]);
+            }
+        }
     }
 }

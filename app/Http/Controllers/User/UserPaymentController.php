@@ -32,10 +32,11 @@ class UserPaymentController extends Controller
             ->where('user_id', Auth::id())
             ->findOrFail($request->booking_id);
 
-        if ($booking->status !== 'accepted') {
+        // ✅ Le client peut payer dès que la réservation est en pending ou confirmed
+        if (!in_array($booking->status, ['pending', 'confirmed', 'accepted'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'La réservation doit être acceptée avant le paiement (statut: ' . $booking->status . ').',
+                'message' => 'Cette réservation ne peut pas être payée (statut: ' . $booking->status . ').',
             ], 422);
         }
 
@@ -140,7 +141,12 @@ class UserPaymentController extends Controller
                 $newStatus = $check['status'];
 
                 if ($newStatus === 'completed') {
-                    $payment->update(['status' => 'success', 'paid_at' => now()]);
+                    $receiptNumber = 'RCP-' . strtoupper(Str::random(8)) . '-' . now()->format('YmdHis');
+                    $payment->update([
+                        'status'         => 'success',
+                        'paid_at'        => now(),
+                        'receipt_number' => $receiptNumber,
+                    ]);
                     $payment->refresh();
 
                     $booking = Booking::find($payment->booking_id);
@@ -155,6 +161,33 @@ class UserPaymentController extends Controller
             }
         }
 
+        $isPaid   = $payment->status === 'success';
+        $receipt  = null;
+
+        if ($isPaid) {
+            $booking = Booking::with(['trip.driver'])->find($payment->booking_id);
+            $receipt = [
+                'receipt_number'  => $payment->receipt_number,
+                'transaction_ref' => $payment->transaction_ref,
+                'amount'          => $payment->amount,
+                'method'          => $payment->method,
+                'paid_at'         => $payment->paid_at,
+                'booking_id'      => $payment->booking_id,
+                'trip'            => $booking?->trip ? [
+                    'departure'      => $booking->trip->departure      ?? $booking->trip->pickup_address,
+                    'destination'    => $booking->trip->destination    ?? $booking->trip->dropoff_address,
+                    'departure_date' => $booking->trip->departure_date
+                        ? \Carbon\Carbon::parse($booking->trip->departure_date)->format('Y-m-d') : null,
+                    'departure_time' => $booking->trip->departure_time
+                        ? substr($booking->trip->departure_time, 0, 5) : null,
+                    'driver_name'    => $booking->trip->driver
+                        ? trim(($booking->trip->driver->first_name ?? '') . ' ' . ($booking->trip->driver->last_name ?? ''))
+                        : null,
+                ] : null,
+                'seats'           => $booking?->seats ?? $booking?->passengers ?? 1,
+            ];
+        }
+
         return response()->json([
             'success' => true,
             'data'    => [
@@ -163,8 +196,9 @@ class UserPaymentController extends Controller
                 'method'          => $payment->method,
                 'status'          => $payment->status,
                 'paid_at'         => $payment->paid_at,
-                'chat_enabled'    => $payment->status === 'success',
+                'chat_enabled'    => $isPaid,
                 'chat_channel'    => 'chat.trip.' . $payment->trip_id,
+                'receipt'         => $receipt,
             ],
         ]);
     }

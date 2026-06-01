@@ -12,7 +12,7 @@ class Payment extends Model
         'user_id', 'trip_id', 'driver_id', 'booking_id',
         'amount', 'commission', 'driver_net',
         'method', 'provider', 'status', 'transaction_ref',
-        'flw_charge_id',
+        'flw_charge_id', 'receipt_number',
         'country', 'city', 'paid_at',
     ];
 

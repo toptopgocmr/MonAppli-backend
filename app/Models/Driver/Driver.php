@@ -3,6 +3,7 @@
 namespace App\Models\Driver;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Role;
@@ -15,7 +16,7 @@ use App\Models\SupportMessage;
 
 class Driver extends Authenticatable
 {
-    use HasApiTokens, HasFactory;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'first_name', 'last_name', 'birth_date', 'birth_place', 'country_birth',
