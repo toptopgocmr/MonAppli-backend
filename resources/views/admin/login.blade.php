@@ -69,9 +69,6 @@
             <h1 class="font-black tracking-tight" style="font-size:2.8rem; line-height:1;">
                 <span style="color:#1DA1F2;">TopTop</span><span style="color:#FFC107;">Go</span>
             </h1>
-            <p class="text-sm font-semibold mt-1" style="color:#1DA1F2; letter-spacing:.18em;">
-                TOPTOPGO
-            </p>
         </div>
 
         <!-- Carte principale -->
