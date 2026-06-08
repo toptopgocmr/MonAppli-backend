@@ -66,13 +66,10 @@
 
         <!-- Logo TopTopGo -->
         <div class="flex flex-col items-center mb-6">
-            <img src="{{ asset('images/logo4.png') }}"
-                 class="h-16 w-auto object-contain mb-3"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-            <h1 class="text-4xl font-black tracking-tight" style="display:none; line-height:1;">
+            <h1 class="font-black tracking-tight" style="font-size:2.8rem; line-height:1;">
                 <span style="color:#1DA1F2;">TopTop</span><span style="color:#FFC107;">Go</span>
             </h1>
-            <p class="text-sm font-semibold tracking-widest mt-1" style="color:#1DA1F2; letter-spacing:.18em;">
+            <p class="text-sm font-semibold mt-1" style="color:#1DA1F2; letter-spacing:.18em;">
                 TOPTOPGO
             </p>
         </div>
