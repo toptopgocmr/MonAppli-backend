@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>TopTopGo Admin</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{{ asset('images/logo3.ico') }}" />
@@ -13,14 +13,30 @@
 
     <!-- Leaflet -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
+    <style>
+        /* Smooth sidebar transition */
+        #sidebar { transition: transform 0.3s ease; }
+        /* Scrollable tables on mobile */
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    </style>
 </head>
 
 <body class="bg-gray-100">
 
+<!-- ===== OVERLAY MOBILE ===== -->
+<div id="sidebar-overlay"
+     class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"
+     onclick="toggleSidebar()">
+</div>
+
 <div class="flex min-h-screen">
 
     <!-- ================= SIDEBAR ================= -->
-    <aside class="w-72 bg-black text-white flex flex-col shadow-2xl">
+    <aside id="sidebar"
+           class="fixed md:static top-0 left-0 h-full z-50
+                  w-72 bg-black text-white flex flex-col shadow-2xl
+                  -translate-x-full md:translate-x-0">
 
         <!-- LOGO -->
         <div class="flex justify-center items-center py-6 border-b border-gray-800">
@@ -188,9 +204,16 @@
     </aside>
 
     <!-- ================= CONTENT ================= -->
-    <div class="flex-1 flex flex-col">
+    <div class="flex-1 flex flex-col min-w-0 md:ml-0">
 
-        <main class="flex-1 p-8">
+        <!-- TOP BAR MOBILE -->
+        <div class="md:hidden flex items-center justify-between bg-black text-white px-4 py-3 sticky top-0 z-30">
+            <button onclick="toggleSidebar()" class="text-2xl focus:outline-none">☰</button>
+            <img src="{{ asset('images/logo4.png') }}" class="h-8 object-contain">
+            <div class="w-8"></div>{{-- spacer --}}
+        </div>
+
+        <main class="flex-1 p-4 md:p-8">
 
             <!-- Toast container -->
             <div id="toast-container" class="fixed top-5 right-5 z-50 space-y-3"></div>
@@ -230,6 +253,28 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
+// ===== SIDEBAR TOGGLE MOBILE =====
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const isOpen = !sidebar.classList.contains('-translate-x-full');
+    if (isOpen) {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    } else {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+    }
+}
+
+// Close sidebar on resize to desktop
+window.addEventListener('resize', function() {
+    if (window.innerWidth >= 768) {
+        document.getElementById('sidebar').classList.remove('-translate-x-full');
+        document.getElementById('sidebar-overlay').classList.add('hidden');
+    }
+});
+
 function showToast(message, type = "success") {
     const toast = document.createElement("div");
     toast.className = `

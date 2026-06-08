@@ -3,7 +3,7 @@
 @section('content')
 
 <!-- HEADER -->
-<div class="flex justify-between items-center mb-8">
+<div class="flex flex-wrap justify-between items-center gap-4 mb-8">
     <div>
         <h1 class="text-3xl font-bold text-gray-800">
             👤 Gestion des <span class="text-[#1DA1F2]">Clients</span>

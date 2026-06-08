@@ -17,7 +17,7 @@
     </div>
 
     {{-- ===== STATS ===== --}}
-    <div class="grid grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <div class="text-sm text-gray-500 mb-1">Conversations actives</div>
             <div class="text-3xl font-bold text-blue-600">{{ $totalConversations }}</div>
