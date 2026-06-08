@@ -2,136 +2,168 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Admin Login - TopTopGo</title>
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style>
-        .fade-in {
-            animation: fadeIn 0.8s ease-in-out;
+        body {
+            background-color: #f0f2f5;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .typing {
+        /* Formes géométriques décoratives (carrés tournés) */
+        .geo-bg {
+            position: fixed;
+            inset: 0;
             overflow: hidden;
-            border-right: .15em solid #FFC107;
-            white-space: nowrap;
-            animation: typing 3s steps(40, end), blink-caret .75s step-end infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .geo-bg span {
+            position: absolute;
+            display: block;
+            border-radius: 6px;
+        }
+        .geo-bg .s1 { width: 200px; height: 200px; top: -60px;    left: -60px;   transform: rotate(25deg); background: rgba(29,161,242,0.18); }
+        .geo-bg .s2 { width: 140px; height: 140px; top: 30px;     left: 100px;   transform: rotate(15deg); background: rgba(255,193,7,0.20); }
+        .geo-bg .s3 { width: 180px; height: 180px; bottom: -50px; right: -50px;  transform: rotate(30deg); background: rgba(13,27,42,0.12); }
+        .geo-bg .s4 { width: 100px; height: 100px; bottom: 60px;  right: 130px;  transform: rotate(20deg); background: rgba(29,161,242,0.14); }
+        .geo-bg .s5 { width: 90px;  height: 90px;  top: 40%;      left: 5%;      transform: rotate(12deg); background: rgba(255,193,7,0.16); }
+        .geo-bg .s6 { width: 120px; height: 120px; top: 20%;      right: 6%;     transform: rotate(35deg); background: rgba(13,27,42,0.09); }
+
+        /* Card */
+        .card {
+            animation: slideUp 0.5s cubic-bezier(.22,.68,0,1.2) both;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        @keyframes typing {
-            from { width: 0 }
-            to { width: 100% }
-        }
+        /* Input focus */
+        input:focus { outline: none; border-color: #0D1B2A !important; box-shadow: 0 0 0 3px rgba(13,27,42,.08); }
 
-        @keyframes blink-caret {
-            0%, 100% { border-color: transparent; }
-            50% { border-color: #FFC107; }
-        }
+        /* Checkbox */
+        input[type="checkbox"] { accent-color: #0D1B2A; }
     </style>
 </head>
 
-<body class="bg-black min-h-screen flex items-center justify-center p-4">
+<body class="min-h-screen flex items-center justify-center p-4 relative">
 
-<div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 fade-in">
-
-    <!-- Logo -->
-    <div class="text-center mb-6">
-        <h1 class="text-3xl font-bold">
-            <span class="text-[#1DA1F2]">TopTop</span>
-            <span class="text-[#FFC107]">Go</span>
-        </h1>
-        <p class="text-gray-500 text-sm mt-2">Espace Administration</p>
+    <!-- Formes géométriques décoratives -->
+    <div class="geo-bg">
+        <span class="s1"></span>
+        <span class="s2"></span>
+        <span class="s3"></span>
+        <span class="s4"></span>
+        <span class="s5"></span>
+        <span class="s6"></span>
     </div>
 
-    <!-- Message dynamique -->
-    <p class="text-center text-gray-600 text-lg mb-6">
-        <span class="typing">
-            Bienvenue sur la plateforme TopTopGo 👋
-        </span>
-    </p>
+    <div class="relative z-10 w-full max-w-md">
 
-    <!-- Errors -->
-    @if ($errors->any())
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6 text-sm">
-            @foreach ($errors->all() as $error)
-                <p>{{ $error }}</p>
-            @endforeach
-        </div>
-    @endif
-
-    <!-- Form -->
-    <form action="{{ route('admin.login.submit') }}" method="POST" id="loginForm">
-        @csrf
-
-        <div class="mb-4">
-            <label class="block text-gray-700 text-sm font-medium mb-2">Email</label>
-            <input type="email"
-                   name="email"
-                   value="{{ old('email') }}"
-                   required
-                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent transition"
-                   placeholder="admin@toptopgo.com">
+        <!-- Logo TopTopGo -->
+        <div class="flex flex-col items-center mb-6">
+            <img src="{{ asset('images/logo4.png') }}"
+                 class="h-16 w-auto object-contain mb-3"
+                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+            <h1 class="text-4xl font-black tracking-tight" style="display:none; line-height:1;">
+                <span style="color:#1DA1F2;">TopTop</span><span style="color:#FFC107;">Go</span>
+            </h1>
+            <p class="text-sm font-semibold tracking-widest mt-1" style="color:#1DA1F2; letter-spacing:.18em;">
+                TOPTOPGO
+            </p>
         </div>
 
-        <div class="mb-6">
-            <label class="block text-gray-700 text-sm font-medium mb-2">Mot de passe</label>
-            <input type="password"
-                   name="password"
-                   required
-                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#1DA1F2] focus:border-transparent transition"
-                   placeholder="••••••••">
+        <!-- Carte principale -->
+        <div class="card bg-white rounded-2xl shadow-lg px-8 py-9">
+
+            <!-- Titre -->
+            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">
+                Connectez-vous à votre compte
+            </h1>
+            <p class="text-sm text-gray-400 text-center mb-7">
+                Espace réservé aux administrateurs TopTopGo
+            </p>
+
+            <!-- Erreurs -->
+            @if ($errors->any())
+                <div class="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-5 text-sm">
+                    @foreach ($errors->all() as $error)
+                        <p>{{ $error }}</p>
+                    @endforeach
+                </div>
+            @endif
+
+            <!-- Formulaire -->
+            <form action="{{ route('admin.login.submit') }}" method="POST" id="loginForm">
+                @csrf
+
+                <!-- Email -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">E-mail</label>
+                    <input type="email"
+                           name="email"
+                           value="{{ old('email') }}"
+                           required
+                           autocomplete="email"
+                           placeholder="admin@toptopgo.com"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm bg-gray-50 transition-all duration-200 placeholder-gray-400">
+                </div>
+
+                <!-- Mot de passe -->
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">Mot de passe</label>
+                    <input type="password"
+                           name="password"
+                           required
+                           autocomplete="current-password"
+                           placeholder="••••••••"
+                           class="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 text-sm bg-gray-50 transition-all duration-200 placeholder-gray-400">
+                </div>
+
+                <!-- Se souvenir -->
+                <div class="flex items-center gap-2 mb-6">
+                    <input type="checkbox" name="remember" id="remember"
+                           class="w-4 h-4 rounded border-gray-300 cursor-pointer">
+                    <label for="remember" class="text-sm text-gray-600 cursor-pointer select-none">
+                        Rester connecté pendant une semaine
+                    </label>
+                </div>
+
+                <!-- Bouton -->
+                <button type="submit"
+                        id="loginBtn"
+                        class="w-full bg-gray-900 text-white py-3 rounded-xl font-semibold text-sm
+                               hover:bg-gray-800 active:scale-[.98]
+                               transition-all duration-200
+                               flex justify-center items-center gap-2">
+                    <span id="btnText">Se connecter</span>
+                    <svg id="loader" class="hidden animate-spin h-4 w-4 text-white"
+                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10"
+                                stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor"
+                              d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                </button>
+
+                <!-- Mention accès -->
+                <p class="text-center text-xs text-gray-400 mt-4">
+                    Accès réservé au personnel TopTopGo autorisé
+                </p>
+
+            </form>
         </div>
 
-        <!-- BOUTON PREMIUM -->
-        <button type="submit"
-                id="loginBtn"
-                class="w-full bg-[#1DA1F2] text-white py-3 rounded-lg font-semibold
-                       transition-all duration-300 ease-in-out
-                       hover:bg-[#FFC107] hover:text-black
-                       hover:-translate-y-1
-                       hover:shadow-[0_0_20px_#FFC107]
-                       active:scale-95
-                       flex justify-center items-center gap-2">
+        <!-- Footer -->
+        <p class="text-center text-xs text-gray-400 mt-5">
+            © {{ date('Y') }} TopTopGo · Plateforme de covoiturage et locations
+        </p>
 
-            <span id="btnText" class="transition-all duration-300">
-                Se connecter
-            </span>
-
-            <svg id="loader"
-                 class="hidden animate-spin h-5 w-5 text-current"
-                 xmlns="http://www.w3.org/2000/svg"
-                 fill="none"
-                 viewBox="0 0 24 24">
-                <circle class="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        stroke-width="4">
-                </circle>
-                <path class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8H4z">
-                </path>
-            </svg>
-
-        </button>
-    </form>
-
-    <!-- Footer -->
-    <p class="text-center text-gray-500 text-sm mt-6">
-        © {{ date('Y') }} TopTopGo.
-        Développé avec ❤️ par
-        <span class="font-bold text-black">Basile NGASSAKI</span>
-    </p>
-
-</div>
+    </div>
 
 <script>
     document.getElementById('loginForm').addEventListener('submit', function() {
