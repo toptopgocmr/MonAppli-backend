@@ -20,7 +20,7 @@
                 ];
             @endphp
             @foreach($tabs as $key => $tab)
-                <a href="{{ route('admin.kyc', ['status' => $key]) }}"
+                <a href="{{ route('admin.kyc.index', ['status' => $key]) }}"
                    style="padding:14px 20px;font-size:13px;font-weight:600;text-decoration:none;
                           border-bottom:3px solid {{ $status === $key ? $tab['color'] : 'transparent' }};
                           color:{{ $status === $key ? $tab['color'] : '#64748b' }};

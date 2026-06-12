@@ -13,7 +13,8 @@ use App\Http\Controllers\Admin\CommissionRateController;
 use App\Http\Controllers\Admin\PaymentPartnerController;
 use App\Http\Controllers\Admin\SosAlertController;
 use App\Http\Controllers\Admin\MapController;
-use App\Http\Controllers\Admin\TripController; // ✅ Ajouté
+use App\Http\Controllers\Admin\TripController;
+use App\Http\Controllers\Admin\KycController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -61,8 +62,20 @@ Route::prefix('admin')->name('admin.')->group(function () {
         | GÉOLOCALISATION LIVE (carte)
         |--------------------------------------------------------------------------
         */
-        Route::get('geolocation', [MapController::class, 'index'])->name('geolocation');
+        Route::get('geolocation', [MapController::class, 'index'])->name('geolocation.index');
         Route::get('geolocation/trips', [MapController::class, 'trips'])->name('geolocation.trips');
+
+        /*
+        |--------------------------------------------------------------------------
+        | VÉRIFICATION KYC
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('kyc')->name('kyc.')->group(function () {
+            Route::get('/',          [KycController::class, 'index'])->name('index');
+            Route::get('/{driver}',  [KycController::class, 'review'])->name('review');
+            Route::post('/{driver}/approve', [KycController::class, 'approve'])->name('approve');
+            Route::post('/{driver}/reject',  [KycController::class, 'reject'])->name('reject');
+        });
 
         /*
         |--------------------------------------------------------------------------
