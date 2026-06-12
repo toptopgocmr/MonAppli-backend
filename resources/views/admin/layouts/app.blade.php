@@ -80,11 +80,13 @@
     .card-body{padding:20px}
 
     /* STAT CARDS */
-    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;box-shadow:var(--shadow)}
-    .stat-icon{width:36px;height:36px;border-radius:var(--radius);display:flex;align-items:center;justify-content:center;margin-bottom:12px}
-    .stat-val,.val{font-size:28px;font-weight:700;color:var(--text-1);line-height:1;letter-spacing:-.03em}
-    .stat-lbl,.lbl{font-size:11px;font-weight:600;color:var(--text-3);margin-top:6px;text-transform:uppercase;letter-spacing:.06em}
-    .stat-sub,.sub{font-size:12px;color:var(--text-3);margin-top:4px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px 14px;box-shadow:0 2px 8px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04);transition:box-shadow .18s,transform .18s}
+    .stat-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.11),0 0 0 1px rgba(0,0,0,.05);transform:translateY(-2px)}
+    .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+    .stat-val,.val{font-size:30px;font-weight:800;color:var(--text-1);line-height:1;letter-spacing:-.04em}
+    .stat-lbl,.lbl{font-size:11px;font-weight:700;color:var(--text-3);margin-top:6px;text-transform:uppercase;letter-spacing:.07em}
+    .stat-sub,.sub{font-size:12px;color:var(--text-3);margin-top:5px}
+    .stat-trend{margin-top:10px;padding-top:10px;border-top:1px solid #f1f5f9;font-size:11px}
 
     /* TABLE */
     .ttg-table{width:100%;border-collapse:collapse;font-size:13px}
