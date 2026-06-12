@@ -11,20 +11,20 @@ use Exception;
 
 class MtnMomoService implements PaymentProviderInterface
 {
-    protected string $baseUrl;
-    protected string $subscriptionKey;
-    protected string $apiUser;
-    protected string $apiKey;
+    protected ?string $baseUrl = null;
+    protected ?string $subscriptionKey = null;
+    protected ?string $apiUser = null;
+    protected ?string $apiKey = null;
     protected string $environment;
     protected string $currency;
     protected ?string $callbackUrl;
 
     public function __construct()
     {
-        $this->baseUrl = config('payments.mtn_momo.base_url');
-        $this->subscriptionKey = config('payments.mtn_momo.subscription_key');
-        $this->apiUser = config('payments.mtn_momo.api_user');
-        $this->apiKey = config('payments.mtn_momo.api_key');
+        $this->baseUrl = config('payments.mtn_momo.base_url', '') ?: '';
+        $this->subscriptionKey = config('payments.mtn_momo.subscription_key') ?: null;
+        $this->apiUser = config('payments.mtn_momo.api_user') ?: null;
+        $this->apiKey = config('payments.mtn_momo.api_key') ?: null;
         $this->environment = config('payments.mtn_momo.environment', 'sandbox');
         $this->currency = config('payments.mtn_momo.currency', 'XAF');
         $this->callbackUrl = config('payments.mtn_momo.callback_url');

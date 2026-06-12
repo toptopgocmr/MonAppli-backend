@@ -14,15 +14,15 @@ use Exception;
 
 class StripeService implements PaymentProviderInterface
 {
-    protected string $secretKey;
+    protected ?string $secretKey = null;
     protected string $currency;
 
     public function __construct()
     {
-        $this->secretKey = config('payments.stripe.secret_key');
+        $this->secretKey = config('payments.stripe.secret_key') ?: null;
         $this->currency = strtolower(config('payments.stripe.currency', 'xaf'));
 
-        Stripe::setApiKey($this->secretKey);
+        if ($this->secretKey) Stripe::setApiKey($this->secretKey);
     }
 
     /**

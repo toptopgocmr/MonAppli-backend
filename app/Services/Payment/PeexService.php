@@ -11,16 +11,16 @@ use Exception;
 class PeexService implements PaymentProviderInterface
 {
     protected string $baseUrl;
-    protected string $secretKey;
+    protected ?string $secretKey = null;
     protected bool $sandbox;
 
     public function __construct()
     {
         $this->sandbox = config('payments.peex.sandbox', true);
-        $this->baseUrl = $this->sandbox
-            ? config('payments.peex.base_url')
-            : config('payments.peex.production_url');
-        $this->secretKey = config('payments.peex.secret_key');
+        $this->baseUrl = (string) ($this->sandbox
+            ? config('payments.peex.base_url', '')
+            : config('payments.peex.production_url', ''));
+        $this->secretKey = config('payments.peex.secret_key') ?: null;
     }
 
     /**

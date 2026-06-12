@@ -24,15 +24,15 @@ use Exception;
 class FlutterwaveService implements PaymentProviderInterface
 {
     protected string $baseUrl;
-    protected string $secretKey;
-    protected string $secretHash;
+    protected ?string $secretKey = null;
+    protected ?string $secretHash = null;
     protected string $currency;
 
     public function __construct()
     {
         $env           = config('flutterwave.env', 'sandbox');
         $this->baseUrl = rtrim(config("flutterwave.base_url.{$env}"), '/');
-        $this->secretKey  = config('flutterwave.secret_key');
+        $this->secretKey  = config('flutterwave.secret_key') ?: null;
         $this->secretHash = config('flutterwave.secret_hash');
         $this->currency   = config('flutterwave.currency', 'XAF');
     }

@@ -11,9 +11,9 @@ use Exception;
 
 class AirtelMoneyService implements PaymentProviderInterface
 {
-    protected string $baseUrl;
-    protected string $clientId;
-    protected string $clientSecret;
+    protected ?string $baseUrl = null;
+    protected ?string $clientId = null;
+    protected ?string $clientSecret = null;
     protected string $environment;
     protected string $currency;
     protected string $country;
@@ -21,9 +21,9 @@ class AirtelMoneyService implements PaymentProviderInterface
 
     public function __construct()
     {
-        $this->baseUrl = config('payments.airtel_money.base_url');
-        $this->clientId = config('payments.airtel_money.client_id');
-        $this->clientSecret = config('payments.airtel_money.client_secret');
+        $this->baseUrl = config('payments.airtel_money.base_url', '') ?: '';
+        $this->clientId = config('payments.airtel_money.client_id') ?: null;
+        $this->clientSecret = config('payments.airtel_money.client_secret') ?: null;
         $this->environment = config('payments.airtel_money.environment', 'sandbox');
         $this->currency = config('payments.airtel_money.currency', 'XAF');
         $this->country = config('payments.airtel_money.country', 'CG');
