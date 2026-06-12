@@ -5,18 +5,32 @@
 <div style="display:flex;flex-direction:column;gap:20px">
 
     {{-- KPI Cards --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
 
-        <div class="stat-card">
+        <a href="{{ route('admin.users.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#EFF8FF">
                 <svg width="18" height="18" fill="none" stroke="#1DA1F2" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             </div>
             <div class="stat-val">{{ $stats['total_users'] }}</div>
-            <div class="stat-lbl">Clients inscrits</div>
+            <div class="stat-lbl">Utilisateurs inscrits</div>
             <div class="stat-sub" style="color:#10B981">+{{ $stats['new_users_today'] }} aujourd'hui</div>
         </div>
+        </a>
 
-        <div class="stat-card">
+        <a href="{{ route('admin.companies.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+            <div class="stat-icon" style="background:#F0FDF4">
+                <svg width="18" height="18" fill="none" stroke="#16A34A" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['total_companies'] }}</div>
+            <div class="stat-lbl">Sociétés inscrites</div>
+            <div class="stat-sub">Partenaires actifs</div>
+        </div>
+        </a>
+
+        <a href="{{ route('admin.drivers.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#FFFBEB">
                 <svg width="18" height="18" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
             </div>
@@ -24,8 +38,10 @@
             <div class="stat-lbl">Chauffeurs actifs</div>
             <div class="stat-sub">{{ $stats['online_drivers'] }} en ligne maintenant</div>
         </div>
+        </a>
 
-        <div class="stat-card">
+        <a href="{{ route('admin.trips.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#EEF2FF">
                 <svg width="18" height="18" fill="none" stroke="#6366F1" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
             </div>
@@ -33,8 +49,10 @@
             <div class="stat-lbl">Courses aujourd'hui</div>
             <div class="stat-sub">{{ $stats['active_rides'] }} en cours</div>
         </div>
+        </a>
 
-        <div class="stat-card">
+        <a href="{{ route('admin.revenus.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#ECFDF5">
                 <svg width="18" height="18" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
             </div>
@@ -42,6 +60,7 @@
             <div class="stat-lbl">Revenus du jour (XAF)</div>
             <div class="stat-sub">Commission : {{ number_format($stats['today_commission'],0,',',' ') }} XAF</div>
         </div>
+        </a>
 
     </div>
 

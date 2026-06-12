@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User\User;
 use App\Models\Driver\Driver;
+use App\Models\Company;
 use App\Models\Trip;
 use App\Models\Payment;
 use App\Models\SosAlert;
@@ -17,6 +18,7 @@ class DashboardController extends Controller
         $stats = [
             'total_users'      => User::count(),
             'new_users_today'  => User::whereDate('created_at', today())->count(),
+            'total_companies'  => Company::count(),
             'active_drivers'   => Driver::where('status', 'approved')->count(),
             'online_drivers'   => Driver::where('driver_status', 'online')->count(),
             'today_rides'      => Trip::whereDate('created_at', today())->count(),
