@@ -41,13 +41,13 @@
                 <div style="display:flex;align-items:center;gap:12px">
                     <div class="avatar" style="background:{{ $status === 'pending' ? '#fef3c7' : ($status === 'approved' ? '#dcfce7' : '#fee2e2') }};
                                                color:{{ $status === 'pending' ? '#d97706' : ($status === 'approved' ? '#16a34a' : '#dc2626') }}">
-                        {{ strtoupper(substr($driver->user->first_name ?? 'D', 0, 1)) }}
+                        {{ strtoupper(substr($driver->first_name ?? 'D', 0, 1)) }}
                     </div>
                     <div>
                         <div style="font-weight:700;color:#1e293b;font-size:14px">
-                            {{ $driver->user->first_name ?? 'N/A' }} {{ $driver->user->last_name ?? '' }}
+                            {{ $driver->first_name ?? 'N/A' }} {{ $driver->last_name ?? '' }}
                         </div>
-                        <div style="font-size:12px;color:#64748b">{{ $driver->user->phone ?? 'N/A' }}</div>
+                        <div style="font-size:12px;color:#64748b">{{ $driver->phone ?? 'N/A' }}</div>
                     </div>
                 </div>
             </div>
@@ -57,7 +57,7 @@
                 @foreach([
                     ['Véhicule', ($driver->vehicle_brand ?? 'N/A').' '.($driver->vehicle_model ?? '')],
                     ['Plaque',   $driver->vehicle_plate ?? 'N/A'],
-                    ['Permis',   $driver->license_number ?? 'N/A'],
+                    ['Permis',   ($driver->license_front ? 'Fourni' : 'N/A')],
                     ['Inscrit',  $driver->created_at->format('d/m/Y')],
                 ] as [$lbl,$val])
                 <div style="display:flex;justify-content:space-between;font-size:13px">
@@ -75,14 +75,14 @@
                     </a>
                 @elseif($status === 'rejected')
                     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#dc2626">
-                        <strong>Raison:</strong> {{ $driver->kyc_rejection_reason ?? 'Non spécifiée' }}
+                        <strong>Raison:</strong> {{ $driver->rejection_reason ?? 'Non spécifiée' }}
                     </div>
                     <a href="{{ route('admin.kyc.review', $driver) }}" class="btn btn-secondary" style="display:block;text-align:center;text-decoration:none">
                         Revoir
                     </a>
                 @else
                     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:12px;color:#16a34a;text-align:center">
-                        Approuvé le {{ $driver->kyc_reviewed_at ? $driver->kyc_reviewed_at->format('d/m/Y') : 'N/A' }}
+                        Approuvé le {{ $driver->updated_at ? $driver->updated_at->format('d/m/Y') : 'N/A' }}
                     </div>
                 @endif
             </div>
