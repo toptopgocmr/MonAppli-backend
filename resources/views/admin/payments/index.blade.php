@@ -68,86 +68,108 @@
         }
     @endphp
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    {{-- Styles partenaires --}}
+    <style>
+    .pgroup { background:#fff; border:1px solid var(--border); border-radius:14px; overflow:hidden; box-shadow:0 2px 8px rgba(0,0,0,.06); }
+    .pgroup-header { display:flex; align-items:center; justify-content:space-between; padding:16px 20px 12px; border-bottom:1px solid #f1f5f9; }
+    .pgroup-title { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:800; }
+    .pgroup-total { font-size:18px; font-weight:800; }
+    .pgroup-total small { font-size:11px; font-weight:500; color:var(--text-3); margin-left:3px; }
+    .prow { display:grid; align-items:center; padding:12px 20px; border-bottom:1px solid #f8fafc; transition:background .1s; }
+    .prow:hover { background:#fafbff; }
+    .prow:last-child { border-bottom:none; }
+    .prow-mm { grid-template-columns:2fr 1.2fr 0.8fr 0.8fr 0.8fr; }
+    .prow-cb { grid-template-columns:2fr 1.2fr 0.8fr 0.8fr 0.8fr; }
+    .prow-head { background:#f8fafc; padding:8px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); border-bottom:1px solid var(--border); }
+    .pcell-r { text-align:right; }
+    .prow-foot { background:#f1f5f9; padding:12px 20px; font-weight:800; font-size:13px; border-top:2px solid var(--border); display:grid; align-items:center; }
+    .picon { width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+    </style>
+
+    <div style="display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start">
 
         {{-- Mobile Money --}}
-        <div class="panel" style="border-top:4px solid #f97316">
-            <div class="panel-header">
-                <span style="font-size:14px;font-weight:700;color:#f97316">📱 Mobile Money</span>
-                <span style="font-size:13px;font-weight:700;color:var(--text-1)">{{ number_format($mmTotal,0,',',' ') }} <span style="font-size:11px;font-weight:400;color:var(--text-3)">FCFA</span></span>
+        <div class="pgroup">
+            <div class="pgroup-header" style="border-left:5px solid #f97316;padding-left:15px">
+                <div class="pgroup-title" style="color:#f97316">
+                    <span style="background:#fff7ed;border-radius:8px;padding:6px 8px;font-size:18px">📱</span>
+                    Mobile Money
+                </div>
+                <div class="pgroup-total" style="color:#f97316">
+                    {{ number_format($mmTotal,0,',',' ') }}<small>FCFA</small>
+                </div>
             </div>
-            <table class="ttg-table">
-                <thead><tr>
-                    <th>Opérateur</th>
-                    <th style="text-align:right">Total</th>
-                    <th style="text-align:right">Nb</th>
-                    <th style="text-align:right">⏳</th>
-                    <th style="text-align:right">✕</th>
-                </tr></thead>
-                <tbody>
-                    @foreach($mobileMoney as $key)
-                    @if(isset($partnerStats[$key]))
-                    @php $p = $partnerStats[$key]; $c = $mmColors[$key]; @endphp
-                    <tr>
-                        <td><span style="font-size:16px">{{ $p['icon'] }}</span> <span style="font-weight:600;color:{{ $c }}">{{ $p['name'] }}</span></td>
-                        <td style="text-align:right;font-weight:700;color:{{ $c }}">{{ number_format($p['total'],0,',',' ') }}</td>
-                        <td style="text-align:right">{{ $p['count'] }}</td>
-                        <td style="text-align:right;color:#f97316">{{ $p['pending'] }}</td>
-                        <td style="text-align:right;color:#ef4444">{{ $p['failed'] }}</td>
-                    </tr>
-                    @endif
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr style="background:#fafafa;font-weight:700;border-top:2px solid var(--border)">
-                        <td>Total</td>
-                        <td style="text-align:right;color:#f97316">{{ number_format($mmTotal,0,',',' ') }}</td>
-                        <td style="text-align:right">{{ $mmCount }}</td>
-                        <td style="text-align:right;color:#f97316">{{ $mmPending }}</td>
-                        <td style="text-align:right;color:#ef4444">{{ $mmFailed }}</td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="prow prow-mm prow-head">
+                <div>Opérateur</div>
+                <div class="pcell-r">Montant (FCFA)</div>
+                <div class="pcell-r">Paiements</div>
+                <div class="pcell-r" style="color:#f97316">En attente</div>
+                <div class="pcell-r" style="color:#ef4444">Échoués</div>
+            </div>
+            @foreach($mobileMoney as $key)
+            @if(isset($partnerStats[$key]))
+            @php $p = $partnerStats[$key]; $c = $mmColors[$key]; @endphp
+            <div class="prow prow-mm">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <span class="picon" style="background:{{ $c }}18">{{ $p['icon'] }}</span>
+                    <span style="font-weight:700;font-size:14px;color:{{ $c }}">{{ $p['name'] }}</span>
+                </div>
+                <div class="pcell-r" style="font-weight:800;font-size:15px;color:{{ $c }}">{{ number_format($p['total'],0,',',' ') }}</div>
+                <div class="pcell-r" style="color:var(--text-2);font-weight:600">{{ $p['count'] }}</div>
+                <div class="pcell-r" style="color:#f97316;font-weight:600">{{ $p['pending'] }}</div>
+                <div class="pcell-r" style="color:#ef4444;font-weight:600">{{ $p['failed'] }}</div>
+            </div>
+            @endif
+            @endforeach
+            <div class="prow-foot prow-mm">
+                <div style="color:var(--text-1)">Total Mobile Money</div>
+                <div class="pcell-r" style="color:#f97316;font-size:15px">{{ number_format($mmTotal,0,',',' ') }}</div>
+                <div class="pcell-r">{{ $mmCount }}</div>
+                <div class="pcell-r" style="color:#f97316">{{ $mmPending }}</div>
+                <div class="pcell-r" style="color:#ef4444">{{ $mmFailed }}</div>
+            </div>
         </div>
 
         {{-- Cartes bancaires --}}
-        <div class="panel" style="border-top:4px solid #6366f1">
-            <div class="panel-header">
-                <span style="font-size:14px;font-weight:700;color:#6366f1">💳 Cartes bancaires</span>
-                <span style="font-size:13px;font-weight:700;color:var(--text-1)">{{ number_format($cmTotal,0,',',' ') }} <span style="font-size:11px;font-weight:400;color:var(--text-3)">FCFA</span></span>
+        <div class="pgroup">
+            <div class="pgroup-header" style="border-left:5px solid #6366f1;padding-left:15px">
+                <div class="pgroup-title" style="color:#6366f1">
+                    <span style="background:#eef2ff;border-radius:8px;padding:6px 8px;font-size:18px">💳</span>
+                    Cartes bancaires
+                </div>
+                <div class="pgroup-total" style="color:#6366f1">
+                    {{ number_format($cmTotal,0,',',' ') }}<small>FCFA</small>
+                </div>
             </div>
-            <table class="ttg-table">
-                <thead><tr>
-                    <th>Réseau</th>
-                    <th style="text-align:right">Total</th>
-                    <th style="text-align:right">Nb</th>
-                    <th style="text-align:right">⏳</th>
-                    <th style="text-align:right">✕</th>
-                </tr></thead>
-                <tbody>
-                    @foreach($cardMoney as $key)
-                    @if(isset($partnerStats[$key]))
-                    @php $p = $partnerStats[$key]; $c = $cmColors[$key]; @endphp
-                    <tr>
-                        <td><span style="font-size:16px">{{ $p['icon'] }}</span> <span style="font-weight:600;color:{{ $c }}">{{ $p['name'] }}</span></td>
-                        <td style="text-align:right;font-weight:700;color:{{ $c }}">{{ number_format($p['total'],0,',',' ') }}</td>
-                        <td style="text-align:right">{{ $p['count'] }}</td>
-                        <td style="text-align:right;color:#f97316">{{ $p['pending'] }}</td>
-                        <td style="text-align:right;color:#ef4444">{{ $p['failed'] }}</td>
-                    </tr>
-                    @endif
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr style="background:#fafafa;font-weight:700;border-top:2px solid var(--border)">
-                        <td>Total</td>
-                        <td style="text-align:right;color:#6366f1">{{ number_format($cmTotal,0,',',' ') }}</td>
-                        <td style="text-align:right">{{ $cmCount }}</td>
-                        <td style="text-align:right;color:#f97316">{{ $cmPending }}</td>
-                        <td style="text-align:right;color:#ef4444">{{ $cmFailed }}</td>
-                    </tr>
-                </tfoot>
-            </table>
+            <div class="prow prow-cb prow-head">
+                <div>Réseau</div>
+                <div class="pcell-r">Montant (FCFA)</div>
+                <div class="pcell-r">Paiements</div>
+                <div class="pcell-r" style="color:#f97316">En attente</div>
+                <div class="pcell-r" style="color:#ef4444">Échoués</div>
+            </div>
+            @foreach($cardMoney as $key)
+            @if(isset($partnerStats[$key]))
+            @php $p = $partnerStats[$key]; $c = $cmColors[$key]; @endphp
+            <div class="prow prow-cb">
+                <div style="display:flex;align-items:center;gap:12px">
+                    <span class="picon" style="background:{{ $c }}18">{{ $p['icon'] }}</span>
+                    <span style="font-weight:700;font-size:14px;color:{{ $c }}">{{ $p['name'] }}</span>
+                </div>
+                <div class="pcell-r" style="font-weight:800;font-size:15px;color:{{ $c }}">{{ number_format($p['total'],0,',',' ') }}</div>
+                <div class="pcell-r" style="color:var(--text-2);font-weight:600">{{ $p['count'] }}</div>
+                <div class="pcell-r" style="color:#f97316;font-weight:600">{{ $p['pending'] }}</div>
+                <div class="pcell-r" style="color:#ef4444;font-weight:600">{{ $p['failed'] }}</div>
+            </div>
+            @endif
+            @endforeach
+            <div class="prow-foot prow-cb">
+                <div style="color:var(--text-1)">Total Cartes</div>
+                <div class="pcell-r" style="color:#6366f1;font-size:15px">{{ number_format($cmTotal,0,',',' ') }}</div>
+                <div class="pcell-r">{{ $cmCount }}</div>
+                <div class="pcell-r" style="color:#f97316">{{ $cmPending }}</div>
+                <div class="pcell-r" style="color:#ef4444">{{ $cmFailed }}</div>
+            </div>
         </div>
 
     </div>
