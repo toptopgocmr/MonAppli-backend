@@ -167,7 +167,7 @@
 <!-- TOP NAV -->
 <nav id="topnav">
     <div class="tn-logo">
-        <span style="font-size:22px;font-weight:900;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,.3)"><span style="color:#1DA1F2;text-shadow:0 0 18px rgba(29,161,242,.5)">TopTop</span><span style="color:#FF6B00;text-shadow:0 0 18px rgba(255,107,0,.5)">Go</span></span>
+        <span style="font-size:28px;font-weight:900;letter-spacing:-1.5px;line-height:1"><span style="color:#1DA1F2;text-shadow:0 1px 6px rgba(29,161,242,.4)">TopTop</span><span style="color:#f4a35a;text-shadow:0 1px 6px rgba(244,163,90,.35)">Go</span></span>
     </div>
 
     <button id="sidebar-toggle" onclick="toggleSidebarDesktop()" title="Réduire/Ouvrir le menu">
