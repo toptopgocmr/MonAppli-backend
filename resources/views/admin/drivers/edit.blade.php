@@ -3,14 +3,23 @@
 @section('content')
 
 <!-- MODAL ZOOM -->
-<div id="zoom-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-center justify-center p-4">
-    <div class="relative max-w-4xl w-full">
-        <button onclick="closeZoom()" class="absolute -top-10 right-0 text-white text-3xl font-bold hover:text-[#FFC107]">× </button>
-        <img id="zoom-img" src="" class="w-full max-h-[85vh] object-contain rounded-xl shadow-2xl">
-        <a id="zoom-download" href="" download
-           class="mt-4 flex items-center justify-center gap-2 bg-[#1DA1F2] text-white py-2 px-6 rounded-xl font-semibold hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-            ⬇Télécharger
-        </a>
+<div id="zoom-modal"
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:9999;align-items:center;justify-content:center;padding:16px"
+     onclick="if(event.target===this)closeZoom()">
+    <div style="position:relative;max-width:900px;width:100%">
+        <button onclick="closeZoom()"
+                style="position:absolute;top:-40px;right:0;background:none;border:none;color:#fff;font-size:36px;cursor:pointer;line-height:1;opacity:.8"
+                onmouseover="this.style.color='#FFC107'" onmouseout="this.style.color='#fff'">&times;</button>
+        <img id="zoom-img" src=""
+             style="width:100%;max-height:85vh;object-fit:contain;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+        <div style="text-align:center;margin-top:16px">
+            <a id="zoom-download" href="" download
+               style="display:inline-flex;align-items:center;gap:8px;background:#1DA1F2;color:#fff;padding:10px 28px;border-radius:10px;font-weight:600;text-decoration:none;font-size:14px"
+               onmouseover="this.style.background='#FFC107';this.style.color='#000'"
+               onmouseout="this.style.background='#1DA1F2';this.style.color='#fff'">
+                ⬇ Télécharger
+            </a>
+        </div>
     </div>
 </div>
 
@@ -238,6 +247,7 @@ $countriesVilles = [
                                     <img src="{{ $docUrl }}"
                                          id="preview_{{ $doc['name'] }}"
                                          class="w-full h-28 object-cover rounded-lg mb-2 cursor-zoom-in group-hover:opacity-90 transition"
+                                         style="cursor:pointer;width:100%;height:112px;object-fit:cover;border-radius:8px;margin-bottom:8px"
                                          onclick="openZoom('{{ $docUrl }}')">
                                     <div class="absolute top-1 right-1">
                                         <button type="button" onclick="removePreview('{{ $doc['name'] }}')"
@@ -282,12 +292,16 @@ function previewImage(event, id){
 function openZoom(src){
     document.getElementById('zoom-img').src = src;
     document.getElementById('zoom-download').href = src;
-    document.getElementById('zoom-modal').classList.remove('hidden');
+    document.getElementById('zoom-modal').style.display = 'flex';
 }
 
 function closeZoom(){
-    document.getElementById('zoom-modal').classList.add('hidden');
+    document.getElementById('zoom-modal').style.display = 'none';
 }
+
+document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeZoom();
+});
 
 function removePreview(id){
     const input = document.querySelector(`input[name=${id}]`);
