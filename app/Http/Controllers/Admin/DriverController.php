@@ -227,9 +227,9 @@ class DriverController extends Controller
             }
         }
 
-        // Fallback : disk public local
+        // Fallback : disk public local — stocker le chemin relatif
         Storage::disk('public')->put($path, file_get_contents($file));
-        return Storage::disk('public')->url($path);
+        return $path;
     }
 
     /**
