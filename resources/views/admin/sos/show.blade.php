@@ -5,9 +5,9 @@
 
     {{-- Header --}}
     <div class="flex items-center gap-4 mb-6">
-        <a href="{{ route('admin.sos.index') }}"
-            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-            ← Retour
+        <a href="{{ route('admin.sos.index') }}" class="btn-back">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
         </a>
         <div>
             <h1 class="text-2xl font-bold text-gray-800">🆘 Détail Alerte SOS #{{ $alert->id }}</h1>

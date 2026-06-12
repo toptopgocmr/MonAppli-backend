@@ -40,7 +40,10 @@ $countriesVilles = [
     <!-- HEADER -->
     <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.drivers.show', $driver->id) }}" class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
+            <a href="{{ route('admin.drivers.show', $driver->id) }}" class="btn-back">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                Retour
+            </a>
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Modifier le Chauffeur</h1>
                 <p class="text-gray-500 text-sm mt-1">{{ $driver->first_name }} {{ $driver->last_name }}</p>

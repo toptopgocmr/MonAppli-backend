@@ -74,6 +74,11 @@
     .page-title{font-size:22px;font-weight:700;color:var(--text-1);letter-spacing:-.02em;margin:0 0 4px}
     .page-sub{font-size:13px;color:var(--text-3);margin:0}
 
+    /* BOUTON RETOUR */
+    .btn-back{display:inline-flex;align-items:center;gap:6px;padding:6px 14px 6px 10px;border-radius:20px;background:#EBF5FB;color:var(--brand);font-size:13px;font-weight:600;text-decoration:none;border:1.5px solid rgba(29,161,242,.25);transition:background .15s,box-shadow .15s;line-height:1}
+    .btn-back:hover{background:#D6EAF8;box-shadow:0 2px 8px rgba(29,161,242,.18);color:var(--brand-d)}
+    .btn-back svg,.btn-back .back-arrow{flex-shrink:0}
+
     /* PANELS */
     .card,.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
     .card-header,.panel-header{padding:12px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:600;color:var(--text-1);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}

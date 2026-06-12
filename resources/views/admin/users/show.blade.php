@@ -7,7 +7,10 @@
     <!-- HEADER -->
     <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-            <a href="{{ route('admin.users.index') }}" class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
+            <a href="{{ route('admin.users.index') }}" class="btn-back">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                Retour
+            </a>
             <div>
                 <h1 class="text-3xl font-bold text-gray-800">Profil Client</h1>
                 <p class="text-gray-500 text-sm mt-1">{{ $user->first_name }} {{ $user->last_name }}</p>
@@ -104,8 +107,9 @@
             </button>
         </form>
 
-        <a href="{{ route('admin.users.index') }}" class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-center hover:bg-gray-200 transition">
-            ← Retour
+        <a href="{{ route('admin.users.index') }}" class="btn-back" style="flex:1;justify-content:center">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Retour
         </a>
     </div>
 
