@@ -33,10 +33,10 @@ class Driver extends Authenticatable
 
     // ================================================================
     // ACCESSORS — Retourne toujours une URL complète pour les fichiers
-    // Gère 3 cas :
-    //   1. URL complète Backblaze  → retournée telle quelle
-    //   2. Chemin relatif          → préfixé avec l'endpoint Backblaze
-    //   3. Null / vide             → retourne null
+    // Gère 2 cas :
+    //   1. URL complète (http/https) → retournée telle quelle
+    //   2. Chemin relatif            → URL locale via Railway Volume
+    //   3. Null / vide               → retourne null
     // ================================================================
 
     private function resolveFileUrl(?string $value): ?string
@@ -46,11 +46,8 @@ class Driver extends Authenticatable
         // Déjà une URL complète
         if (str_starts_with($value, 'http')) return $value;
 
-        // ✅ Utilise env() directement — plus fiable que config() en production
-        $baseUrl = rtrim(env('BACKBLAZE_ENDPOINT', 'https://s3.us-west-004.backblazeb2.com'), '/')
-                 . '/' . env('BACKBLAZE_BUCKET', 'toptopgo2026');
-
-        return $baseUrl . '/' . ltrim($value, '/');
+        // Chemin relatif → URL locale (Railway Volume via storage:link)
+        return url('storage/' . ltrim($value, '/'));
     }
 
     public function getProfilePhotoAttribute($value): ?string
