@@ -10,12 +10,12 @@
 
         .geo-bg { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
         .geo-bg span { position:absolute; display:block; border-radius:6px; }
-        .geo-bg .s1 { width:180px; height:180px; top:-60px;    left:-60px;   transform:rotate(25deg); background:rgba(255,193,7,0.08); }
-        .geo-bg .s2 { width:120px; height:120px; top:20px;     left:90px;    transform:rotate(15deg); background:rgba(255,255,255,0.04); }
-        .geo-bg .s3 { width:160px; height:160px; bottom:-50px; right:-50px;  transform:rotate(30deg); background:rgba(255,193,7,0.07); }
-        .geo-bg .s4 { width:90px;  height:90px;  bottom:60px;  right:110px;  transform:rotate(20deg); background:rgba(255,255,255,0.04); }
-        .geo-bg .s5 { width:80px;  height:80px;  top:42%;      left:4%;      transform:rotate(12deg); background:rgba(255,193,7,0.06); }
-        .geo-bg .s6 { width:100px; height:100px; top:18%;      right:5%;     transform:rotate(35deg); background:rgba(255,255,255,0.03); }
+        .geo-bg .s1 { width:180px; height:180px; top:-60px;    left:-60px;   transform:rotate(25deg); background:rgba(255,193,7,0.55);  border:2px solid rgba(255,193,7,0.3); }
+        .geo-bg .s2 { width:120px; height:120px; top:20px;     left:90px;    transform:rotate(15deg); background:rgba(29,161,242,0.40); border:2px solid rgba(29,161,242,0.25); }
+        .geo-bg .s3 { width:160px; height:160px; bottom:-50px; right:-50px;  transform:rotate(30deg); background:rgba(255,193,7,0.45);  border:2px solid rgba(255,193,7,0.3); }
+        .geo-bg .s4 { width:90px;  height:90px;  bottom:60px;  right:110px;  transform:rotate(20deg); background:rgba(29,161,242,0.35); border:2px solid rgba(29,161,242,0.2); }
+        .geo-bg .s5 { width:80px;  height:80px;  top:42%;      left:4%;      transform:rotate(12deg); background:rgba(255,193,7,0.38);  border:2px solid rgba(255,193,7,0.25); }
+        .geo-bg .s6 { width:100px; height:100px; top:18%;      right:5%;     transform:rotate(35deg); background:rgba(29,161,242,0.30); border:2px solid rgba(29,161,242,0.2); }
         @media (max-width:400px) {
             .geo-bg .s2, .geo-bg .s5 { display:none; }
             .geo-bg .s1 { width:110px; height:110px; }
