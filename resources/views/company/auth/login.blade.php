@@ -6,16 +6,16 @@
     <title>Espace Société - TopTopGo</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { background-color: #f0f2f5; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background-color: #f1f1f0; font-family: 'Inter', 'Segoe UI', sans-serif; }
 
         .geo-bg { position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0; }
         .geo-bg span { position:absolute; display:block; border-radius:6px; }
-        .geo-bg .s1 { width:160px; height:160px; top:-50px;    left:-50px;   transform:rotate(25deg); background:rgba(29,161,242,0.18); }
-        .geo-bg .s2 { width:110px; height:110px; top:20px;     left:80px;    transform:rotate(15deg); background:rgba(255,193,7,0.20); }
-        .geo-bg .s3 { width:150px; height:150px; bottom:-40px; right:-40px;  transform:rotate(30deg); background:rgba(13,27,42,0.12); }
-        .geo-bg .s4 { width:80px;  height:80px;  bottom:50px;  right:100px;  transform:rotate(20deg); background:rgba(29,161,242,0.14); }
-        .geo-bg .s5 { width:70px;  height:70px;  top:42%;      left:4%;      transform:rotate(12deg); background:rgba(255,193,7,0.16); }
-        .geo-bg .s6 { width:90px;  height:90px;  top:18%;      right:5%;     transform:rotate(35deg); background:rgba(13,27,42,0.09); }
+        .geo-bg .s1 { width:160px; height:160px; top:-50px;    left:-50px;   transform:rotate(25deg); background:rgba(249,115,22,0.20); }
+        .geo-bg .s2 { width:110px; height:110px; top:20px;     left:80px;    transform:rotate(15deg); background:rgba(107,114,128,0.18); }
+        .geo-bg .s3 { width:150px; height:150px; bottom:-40px; right:-40px;  transform:rotate(30deg); background:rgba(249,115,22,0.15); }
+        .geo-bg .s4 { width:80px;  height:80px;  bottom:50px;  right:100px;  transform:rotate(20deg); background:rgba(107,114,128,0.14); }
+        .geo-bg .s5 { width:70px;  height:70px;  top:42%;      left:4%;      transform:rotate(12deg); background:rgba(249,115,22,0.12); }
+        .geo-bg .s6 { width:90px;  height:90px;  top:18%;      right:5%;     transform:rotate(35deg); background:rgba(75,85,99,0.10); }
         @media (max-width:400px) {
             .geo-bg .s2, .geo-bg .s5 { display:none; }
             .geo-bg .s1 { width:110px; height:110px; }
@@ -28,8 +28,8 @@
             to   { opacity:1; transform:translateY(0); }
         }
 
-        input:focus { outline:none; border-color:#1DA1F2 !important; box-shadow:0 0 0 3px rgba(29,161,242,.12); }
-        input[type="checkbox"] { accent-color:#1DA1F2; }
+        input:focus { outline:none; border-color:#f97316 !important; box-shadow:0 0 0 3px rgba(249,115,22,.12); }
+        input[type="checkbox"] { accent-color:#f97316; }
     </style>
 </head>
 
@@ -98,7 +98,7 @@
 
                 <button type="submit" id="loginBtn"
                         class="w-full py-3 rounded-xl font-semibold text-sm text-white flex justify-center items-center gap-2 transition-all duration-200 active:scale-[.98] hover:opacity-90"
-                        style="background:linear-gradient(135deg,#1DA1F2,#0d8fd8)">
+                        style="background:linear-gradient(135deg,#f97316,#ea580c)">
                     <span id="btnText">Se connecter</span>
                     <svg id="loader" class="hidden animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
