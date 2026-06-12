@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'Panel Société') — TopTopGo</title>
+    <link rel="icon" type="image/x-icon" href="{{ asset('images/logo3.ico') }}">
+    <link rel="shortcut icon" type="image/x-icon" href="{{ asset('images/logo3.ico') }}">
     <style>
     /* ── AWS Console Variables ── */
     :root {
