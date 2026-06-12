@@ -48,10 +48,11 @@ $countriesVilles = [
             <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">Informations Personnelles</h2>
             <div class="flex items-center gap-6 mb-6">
                 @if($driver->profile_photo)
-                    <img src="{{ asset('storage/' . $driver->profile_photo) }}"
+                    @php $ppUrl = str_starts_with($driver->profile_photo, 'http') ? $driver->profile_photo : asset('storage/' . $driver->profile_photo); @endphp
+                    <img src="{{ $ppUrl }}"
                          id="preview_profile_photo"
                          class="w-20 h-20 rounded-full object-cover border-4 border-[#1DA1F2] cursor-pointer"
-                         onclick="openZoom('{{ asset('storage/' . $driver->profile_photo) }}')">
+                         onclick="openZoom('{{ $ppUrl }}')">
                 @else
                     <div class="w-20 h-20 rounded-full bg-[#1DA1F2] flex items-center justify-center text-3xl font-bold text-white">
                         {{ strtoupper(substr($driver->first_name, 0, 1)) }}
@@ -227,20 +228,24 @@ $countriesVilles = [
                     </div>
                     <div class="p-3">
                         @if($driver->{$doc['name']})
-                            @php $ext = pathinfo($driver->{$doc['name']}, PATHINFO_EXTENSION); @endphp
-                            @if(in_array(strtolower($ext), ['jpg','jpeg','png','webp']))
+                            @php
+                                $docVal = $driver->{$doc['name']};
+                                $docUrl = str_starts_with($docVal, 'http') ? $docVal : asset('storage/' . $docVal);
+                                $ext    = strtolower(pathinfo($docVal, PATHINFO_EXTENSION));
+                            @endphp
+                            @if(in_array($ext, ['jpg','jpeg','png','webp']))
                                 <div class="relative group">
-                                    <img src="{{ asset('storage/' . $driver->{$doc['name']}) }}"
+                                    <img src="{{ $docUrl }}"
                                          id="preview_{{ $doc['name'] }}"
                                          class="w-full h-28 object-cover rounded-lg mb-2 cursor-zoom-in group-hover:opacity-90 transition"
-                                         onclick="openZoom('{{ asset('storage/' . $driver->{$doc['name']}) }}')">
+                                         onclick="openZoom('{{ $docUrl }}')">
                                     <div class="absolute top-1 right-1">
                                         <button type="button" onclick="removePreview('{{ $doc['name'] }}')"
                                                 class="bg-red-500 text-white rounded-full w-6 h-6 text-xs flex items-center justify-center">×</button>
                                     </div>
                                 </div>
                             @else
-                                <a href="{{ asset('storage/' . $driver->{$doc['name']}) }}" target="_blank"
+                                <a href="{{ $docUrl }}" target="_blank"
                                    class="text-sm text-[#1DA1F2] font-semibold hover:underline">{{ $doc['label'] }}</a>
                             @endif
                         @endif
