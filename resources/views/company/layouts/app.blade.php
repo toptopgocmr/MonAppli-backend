@@ -283,7 +283,7 @@
 
                 @yield('content')
             </div>
-            <footer class="aws-footer">© {{ date('Y') }} TopTopGo — Administration &nbsp;·&nbsp; Développé avec ❤ par <strong>Basile Marius NGASSAKI ZONI</strong></footer>
+            <footer class="aws-footer">© {{ date('Y') }} TopTopGo — Administration &nbsp;·&nbsp; Développé avec <span style="color:#e53e3e">❤</span> par <strong>Basile Marius NGASSAKI ZONI</strong></footer>
         </div>
 
     </div>

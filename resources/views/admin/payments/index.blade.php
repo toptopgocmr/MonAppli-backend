@@ -48,28 +48,43 @@
         </div>
     </div>
 
-    {{-- ===== CARTES PARTENAIRES ===== --}}
-    <div>
-        <h3 class="page-sub" style="margin-bottom:10px">Par partenaire</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px">
-            @foreach($partnerStats as $key => $partner)
-            @php
-                $pColor = match($key) {
-                    'mtn'  => '#f59e0b', 'orange' => '#f97316', 'airtel' => '#ef4444',
-                    'moov' => '#1DA1F2', 'visa'   => '#6366f1', default  => '#8b5cf6'
-                };
-            @endphp
-            <div class="stat-card" style="border-top:4px solid {{ $pColor }}">
-                <div style="font-size:22px;margin-bottom:4px">{{ $partner['icon'] }}</div>
-                <div class="lbl" style="font-weight:700">{{ $partner['name'] }}</div>
-                <div class="val" style="color:{{ $pColor }};font-size:18px">{{ number_format($partner['total'],0,',',' ') }}</div>
-                <div class="sub">{{ $partner['count'] }} paiements</div>
-                <div style="display:flex;gap:8px;margin-top:6px;font-size:11px">
-                    <span style="color:#f97316">⏳ {{ $partner['pending'] }}</span>
-                    <span style="color:#ef4444">{{ $partner['failed'] }}</span>
-                </div>
-            </div>
-            @endforeach
+    {{-- ===== PARTENAIRES (tableau compact) ===== --}}
+    <div class="panel">
+        <div class="panel-header" style="font-size:13px">Répartition par partenaire de paiement</div>
+        <div style="overflow-x:auto">
+            <table class="ttg-table">
+                <thead>
+                    <tr>
+                        <th>Partenaire</th>
+                        <th style="text-align:right">Total (FCFA)</th>
+                        <th style="text-align:right">Paiements</th>
+                        <th style="text-align:right">En attente</th>
+                        <th style="text-align:right">Échoués</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($partnerStats as $key => $partner)
+                    @php
+                        $pColor = match($key) {
+                            'mtn'  => '#f59e0b', 'orange' => '#f97316', 'airtel' => '#ef4444',
+                            'moov' => '#1DA1F2', 'visa'   => '#6366f1', default  => '#8b5cf6'
+                        };
+                    @endphp
+                    <tr>
+                        <td>
+                            <div style="display:flex;align-items:center;gap:10px">
+                                <span style="font-size:18px">{{ $partner['icon'] }}</span>
+                                <span style="font-weight:600;color:{{ $pColor }}">{{ $partner['name'] }}</span>
+                            </div>
+                        </td>
+                        <td style="text-align:right;font-weight:700;color:{{ $pColor }}">{{ number_format($partner['total'],0,',',' ') }}</td>
+                        <td style="text-align:right">{{ $partner['count'] }}</td>
+                        <td style="text-align:right;color:#f97316">{{ $partner['pending'] }}</td>
+                        <td style="text-align:right;color:#ef4444">{{ $partner['failed'] }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
     </div>
 
