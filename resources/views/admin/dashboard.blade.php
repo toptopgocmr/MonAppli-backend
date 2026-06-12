@@ -2,11 +2,32 @@
 @section('title','Dashboard')
 
 @section('content')
+@php
+/* Helper : retourne un badge HTML de tendance */
+function kpiTrend($now, $prev, $label, $lowerIsBetter = false): string {
+    $now  = (float) $now;
+    $prev = (float) $prev;
+    if ($prev == 0 && $now == 0) return '<span style="color:#879596;font-size:11px">— ' . $label . '</span>';
+    if ($prev == 0) return '<span style="color:#067D49;font-size:11px;font-weight:600">↑ Nouveau ' . $label . '</span>';
+    $pct  = round(abs($now - $prev) / $prev * 100, 1);
+    if ($now > $prev) {
+        $color = $lowerIsBetter ? '#D13212' : '#067D49';
+        return '<span style="color:' . $color . ';font-size:11px;font-weight:600">↑ +' . $pct . '% ' . $label . '</span>';
+    }
+    if ($now < $prev) {
+        $color = $lowerIsBetter ? '#067D49' : '#D13212';
+        return '<span style="color:' . $color . ';font-size:11px;font-weight:600">↓ -' . $pct . '% ' . $label . '</span>';
+    }
+    return '<span style="color:#879596;font-size:11px">→ stable ' . $label . '</span>';
+}
+@endphp
+
 <div style="display:flex;flex-direction:column;gap:20px">
 
     {{-- KPI Cards --}}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
 
+        {{-- Utilisateurs --}}
         <a href="{{ route('admin.users.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#EFF8FF">
@@ -15,9 +36,13 @@
             <div class="stat-val">{{ $stats['total_users'] }}</div>
             <div class="stat-lbl">Utilisateurs inscrits</div>
             <div class="stat-sub" style="color:#10B981">+{{ $stats['new_users_today'] }} aujourd'hui</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                {!! kpiTrend($stats['users_this_month'], $stats['users_last_month'], 'vs mois dernier') !!}
+            </div>
         </div>
         </a>
 
+        {{-- Sociétés --}}
         <a href="{{ route('admin.companies.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#F0FDF4">
@@ -26,9 +51,13 @@
             <div class="stat-val">{{ $stats['total_companies'] }}</div>
             <div class="stat-lbl">Sociétés inscrites</div>
             <div class="stat-sub">Partenaires actifs</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                {!! kpiTrend($stats['companies_this_month'], $stats['companies_last_month'], 'vs mois dernier') !!}
+            </div>
         </div>
         </a>
 
+        {{-- Chauffeurs --}}
         <a href="{{ route('admin.drivers.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#FFFBEB">
@@ -36,10 +65,14 @@
             </div>
             <div class="stat-val">{{ $stats['active_drivers'] }}</div>
             <div class="stat-lbl">Chauffeurs actifs</div>
-            <div class="stat-sub">{{ $stats['online_drivers'] }} en ligne maintenant</div>
+            <div class="stat-sub">{{ $stats['online_drivers'] }} en ligne · {{ $stats['drivers_pending'] }} en attente</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                {!! kpiTrend($stats['active_drivers'], $stats['drivers_last_week'], 'vs sem. dernière') !!}
+            </div>
         </div>
         </a>
 
+        {{-- Courses --}}
         <a href="{{ route('admin.trips.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#EEF2FF">
@@ -47,10 +80,14 @@
             </div>
             <div class="stat-val">{{ $stats['today_rides'] }}</div>
             <div class="stat-lbl">Courses aujourd'hui</div>
-            <div class="stat-sub">{{ $stats['active_rides'] }} en cours</div>
+            <div class="stat-sub">{{ $stats['active_rides'] }} en cours · 7j : {{ $stats['rides_this_week'] }}</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                {!! kpiTrend($stats['today_rides'], $stats['rides_yesterday'], 'vs hier') !!}
+            </div>
         </div>
         </a>
 
+        {{-- Revenus --}}
         <a href="{{ route('admin.revenus.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#ECFDF5">
@@ -59,9 +96,13 @@
             <div class="stat-val" style="font-size:22px">{{ number_format($stats['today_revenue'],0,',',' ') }}</div>
             <div class="stat-lbl">Revenus du jour (XAF)</div>
             <div class="stat-sub">Commission : {{ number_format($stats['today_commission'],0,',',' ') }} XAF</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                {!! kpiTrend($stats['today_revenue'], $stats['revenue_yesterday'], 'vs hier') !!}
+            </div>
         </div>
         </a>
 
+        {{-- Commissions --}}
         <a href="{{ route('admin.commission-rates.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#FFF7ED">
@@ -69,10 +110,14 @@
             </div>
             <div class="stat-val" style="font-size:22px">{{ number_format($stats['total_commission'],0,',',' ') }}</div>
             <div class="stat-lbl">Commissions totales (XAF)</div>
-            <div class="stat-sub">Depuis le début</div>
+            <div class="stat-sub">Ce mois : {{ number_format($stats['commission_this_month'],0,',',' ') }} XAF</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                {!! kpiTrend($stats['commission_this_month'], $stats['commission_last_month'], 'vs mois dernier') !!}
+            </div>
         </div>
         </a>
 
+        {{-- SOS --}}
         <a href="{{ route('admin.sos.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s;{{ $stats['sos_active'] > 0 ? 'border-color:#D13212;' : '' }}" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#FEF2F2">
@@ -83,9 +128,24 @@
             <div class="stat-sub" style="{{ $stats['sos_active'] > 0 ? 'color:#DC2626;font-weight:600' : '' }}">
                 {{ $stats['sos_active'] > 0 ? '⚠ Intervention requise' : 'Aucune alerte' }}
             </div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                @if($stats['sos_week'] > 0)
+                    <span style="font-size:11px;color:#879596">
+                        7j : {{ $stats['sos_week'] }} alerte(s) · {{ $stats['sos_treated_week'] }} traitée(s)
+                        @if($stats['sos_week'] > 0)
+                            <span style="color:{{ $stats['sos_treated_week'] >= $stats['sos_week'] ? '#067D49' : '#D13212' }};font-weight:600">
+                                ({{ round($stats['sos_treated_week'] / $stats['sos_week'] * 100) }}% résolues)
+                            </span>
+                        @endif
+                    </span>
+                @else
+                    <span style="color:#879596;font-size:11px">Aucune alerte cette semaine</span>
+                @endif
+            </div>
         </div>
         </a>
 
+        {{-- Administrateurs --}}
         <a href="{{ route('admin.profiles.index') }}" style="text-decoration:none;color:inherit">
         <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
             <div class="stat-icon" style="background:#EDE9FE">
@@ -94,6 +154,9 @@
             <div class="stat-val">{{ $stats['total_admins'] }}</div>
             <div class="stat-lbl">Administrateurs</div>
             <div class="stat-sub">Comptes admin actifs</div>
+            <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f1f5f9">
+                <span style="color:#879596;font-size:11px">— Accès sécurisé</span>
+            </div>
         </div>
         </a>
 

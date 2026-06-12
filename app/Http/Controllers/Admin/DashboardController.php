@@ -16,6 +16,11 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
+        $yesterday     = today()->subDay();
+        $thisMonth     = now()->month;
+        $thisYear      = now()->year;
+        $lastMonthDate = now()->subMonth();
+
         $stats = [
             'total_users'       => User::count(),
             'new_users_today'   => User::whereDate('created_at', today())->count(),
@@ -29,6 +34,28 @@ class DashboardController extends Controller
             'total_commission'  => Payment::where('status', 'success')->sum('commission'),
             'sos_active'        => SosAlert::where('status', 'active')->count(),
             'total_admins'      => AdminUser::count(),
+
+            // ── Comparaisons ──
+            'users_this_month'        => User::whereMonth('created_at', $thisMonth)->whereYear('created_at', $thisYear)->count(),
+            'users_last_month'        => User::whereMonth('created_at', $lastMonthDate->month)->whereYear('created_at', $lastMonthDate->year)->count(),
+
+            'companies_this_month'    => Company::whereMonth('created_at', $thisMonth)->whereYear('created_at', $thisYear)->count(),
+            'companies_last_month'    => Company::whereMonth('created_at', $lastMonthDate->month)->whereYear('created_at', $lastMonthDate->year)->count(),
+
+            'drivers_pending'         => Driver::where('status', 'pending')->count(),
+            'drivers_last_week'       => Driver::where('status', 'approved')->whereDate('created_at', '<', today()->subDays(7))->count(),
+
+            'rides_yesterday'         => Trip::whereDate('created_at', $yesterday)->count(),
+            'rides_this_week'         => Trip::whereDate('created_at', '>=', today()->subDays(6))->count(),
+            'rides_last_week'         => Trip::whereBetween('created_at', [today()->subDays(13), today()->subDays(7)])->count(),
+
+            'revenue_yesterday'       => Payment::where('status', 'success')->whereDate('created_at', $yesterday)->sum('amount'),
+
+            'commission_this_month'   => Payment::where('status', 'success')->whereMonth('created_at', $thisMonth)->whereYear('created_at', $thisYear)->sum('commission'),
+            'commission_last_month'   => Payment::where('status', 'success')->whereMonth('created_at', $lastMonthDate->month)->whereYear('created_at', $lastMonthDate->year)->sum('commission'),
+
+            'sos_week'                => SosAlert::whereDate('created_at', '>=', today()->subDays(6))->count(),
+            'sos_treated_week'        => SosAlert::where('status', 'treated')->whereDate('treated_at', '>=', today()->subDays(6))->count(),
         ];
 
         $drivers = Driver::where('status', 'approved')
