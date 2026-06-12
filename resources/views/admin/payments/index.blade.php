@@ -78,9 +78,10 @@
     .prow { display:grid; align-items:center; padding:12px 20px; border-bottom:1px solid #f8fafc; transition:background .1s; }
     .prow:hover { background:#fafbff; }
     .prow:last-child { border-bottom:none; }
-    .prow-mm { grid-template-columns:2fr 1.2fr 0.8fr 0.8fr 0.8fr; }
-    .prow-cb { grid-template-columns:2fr 1.2fr 0.8fr 0.8fr 0.8fr; }
-    .prow-head { background:#f8fafc; padding:8px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-3); border-bottom:1px solid var(--border); }
+    .prow-mm { grid-template-columns:2fr 1.4fr 0.9fr 0.9fr 0.9fr; }
+    .prow-cb { grid-template-columns:1.8fr 1.4fr 0.8fr 0.8fr 0.8fr; }
+    .prow-head { background:#f8fafc; padding:8px 20px; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-3); border-bottom:1px solid var(--border); white-space:nowrap; }
+    .prow-head > div { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .pcell-r { text-align:right; }
     .prow-foot { background:#f1f5f9; padding:12px 20px; font-weight:800; font-size:13px; border-top:2px solid var(--border); display:grid; align-items:center; }
     .picon { width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
@@ -103,7 +104,7 @@
                 <div>Opérateur</div>
                 <div class="pcell-r">Montant (FCFA)</div>
                 <div class="pcell-r">Paiements</div>
-                <div class="pcell-r" style="color:#f97316">En attente</div>
+                <div class="pcell-r" style="color:#f97316">Attente</div>
                 <div class="pcell-r" style="color:#ef4444">Échoués</div>
             </div>
             @foreach($mobileMoney as $key)
@@ -145,7 +146,7 @@
                 <div>Réseau</div>
                 <div class="pcell-r">Montant (FCFA)</div>
                 <div class="pcell-r">Paiements</div>
-                <div class="pcell-r" style="color:#f97316">En attente</div>
+                <div class="pcell-r" style="color:#f97316">Attente</div>
                 <div class="pcell-r" style="color:#ef4444">Échoués</div>
             </div>
             @foreach($cardMoney as $key)
