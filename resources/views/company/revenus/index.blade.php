@@ -1,85 +1,86 @@
 @extends('company.layouts.app')
-@section('title', 'Revenus')
-@section('page-title', 'Revenus & Analyses')
+@section('title', 'Revenus & Analyses')
 
 @section('content')
 
-<!-- KPI Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+<div class="aws-crumb"><a href="{{ route('company.dashboard') }}">Dashboard</a> › Revenus</div>
+<div class="aws-page-title" style="margin-bottom:16px">Revenus & Analyses</div>
 
-    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-        <p class="text-sm text-gray-500 font-medium mb-2">Revenus ce mois</p>
-        <p class="text-3xl font-bold text-gray-800">{{ number_format($revenueThisMonth, 0, ',', ' ') }} <span class="text-base font-normal text-gray-400">FCFA</span></p>
-        <p class="text-xs text-gray-400 mt-1">{{ $tripsThisMonth }} course(s)</p>
+<!-- KPI -->
+<div class="aws-stat-grid" style="grid-template-columns:repeat(3,1fr)">
+    <div class="aws-stat-card" style="border-top:3px solid #1d8102">
+        <div class="aws-stat-label">Revenus ce mois</div>
+        <div class="aws-stat-value" style="font-size:22px">{{ number_format($revenueThisMonth, 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
+        <div class="aws-stat-sub">{{ $tripsThisMonth }} course(s)</div>
     </div>
-
-    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-        <p class="text-sm text-gray-500 font-medium mb-2">Revenus total</p>
-        <p class="text-3xl font-bold text-gray-800">{{ number_format($revenueTotal, 0, ',', ' ') }} <span class="text-base font-normal text-gray-400">FCFA</span></p>
-        <p class="text-xs text-gray-400 mt-1">{{ $tripsTotal }} course(s) au total</p>
+    <div class="aws-stat-card" style="border-top:3px solid #0073bb">
+        <div class="aws-stat-label">Revenus total</div>
+        <div class="aws-stat-value" style="font-size:22px">{{ number_format($revenueTotal, 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
+        <div class="aws-stat-sub">{{ $tripsTotal }} course(s) au total</div>
     </div>
-
-    <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100">
-        <p class="text-sm text-gray-500 font-medium mb-2">Commission plateforme</p>
-        <p class="text-3xl font-bold text-red-500">{{ $company->commission_rate }}%</p>
-        <p class="text-xs text-gray-400 mt-1">déduite sur chaque course</p>
+    <div class="aws-stat-card" style="border-top:3px solid #d13212">
+        <div class="aws-stat-label">Commission plateforme</div>
+        <div class="aws-stat-value" style="color:#d13212">{{ $company->commission_rate }}%</div>
+        <div class="aws-stat-sub">déduite sur chaque course</div>
     </div>
-
 </div>
 
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
 
     <!-- Évolution mensuelle -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 class="font-semibold text-gray-800 mb-5">Évolution mensuelle (12 derniers mois)</h2>
-        <div class="space-y-3">
-            @php
-                $maxMonth = $monthlyRevenue->max('total') ?: 1;
-            @endphp
-            @foreach($monthlyRevenue as $month)
-            <div class="flex items-center gap-3">
-                <p class="text-xs text-gray-500 w-20 flex-shrink-0">{{ \Carbon\Carbon::createFromFormat('Y-m', $month->month)->locale('fr')->translatedFormat('M Y') }}</p>
-                <div class="flex-1 bg-gray-100 rounded-full h-2">
-                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ ($month->total / $maxMonth) * 100 }}%"></div>
+    <div class="aws-panel">
+        <div class="aws-panel-header"><span class="aws-panel-title">Évolution mensuelle (12 derniers mois)</span></div>
+        <div class="aws-panel-body">
+            @php $maxMonth = $monthlyRevenue->max('total') ?: 1; @endphp
+            @forelse($monthlyRevenue as $month)
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+                <span style="font-size:12px;color:var(--aws-sub);width:70px;flex-shrink:0">
+                    {{ \Carbon\Carbon::createFromFormat('Y-m', $month->month)->locale('fr')->translatedFormat('M Y') }}
+                </span>
+                <div style="flex:1;background:#f2f3f3;border-radius:2px;height:8px">
+                    <div style="width:{{ ($month->total/$maxMonth)*100 }}%;background:var(--aws-orange);height:8px;border-radius:2px"></div>
                 </div>
-                <p class="text-xs font-semibold text-gray-700 w-28 text-right">{{ number_format($month->total, 0, ',', ' ') }} FCFA</p>
+                <span style="font-size:12px;font-weight:600;color:var(--aws-header);width:110px;text-align:right;white-space:nowrap">
+                    {{ number_format($month->total, 0, ',', ' ') }} FCFA
+                </span>
             </div>
-            @endforeach
+            @empty
+            <p style="text-align:center;color:var(--aws-sub);font-size:13px;padding:20px 0">Aucune donnée disponible</p>
+            @endforelse
         </div>
     </div>
 
-    <!-- Top chauffeurs -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 class="font-semibold text-gray-800 mb-5">Top Chauffeurs (ce mois)</h2>
-        <div class="space-y-4">
+    <!-- Top Chauffeurs -->
+    <div class="aws-panel">
+        <div class="aws-panel-header"><span class="aws-panel-title">Top Chauffeurs (ce mois)</span></div>
+        <div class="aws-panel-body">
             @forelse($topDrivers as $index => $item)
             @php $driver = $item['driver']; $total = $item['total']; $count = $item['count']; @endphp
-            <div class="flex items-center gap-3">
-                <span class="w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold flex items-center justify-center flex-shrink-0">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+                <div style="width:22px;height:22px;border-radius:50%;background:var(--aws-orange);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     {{ $index + 1 }}
-                </span>
+                </div>
                 @if($driver->profile_photo)
-                    <img src="{{ $driver->profile_photo }}" class="w-9 h-9 rounded-full object-cover flex-shrink-0">
+                    <img src="{{ $driver->profile_photo }}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--aws-border);flex-shrink:0">
                 @else
-                    <div class="w-9 h-9 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    <div style="width:32px;height:32px;border-radius:50%;background:#0073bb;color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                         {{ strtoupper(substr($driver->first_name, 0, 1)) }}
                     </div>
                 @endif
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-800">{{ $driver->first_name }} {{ $driver->last_name }}</p>
-                    <p class="text-xs text-gray-400">{{ $count }} course(s)</p>
+                <div style="flex:1">
+                    <div style="font-size:13px;font-weight:600;color:var(--aws-header)">{{ $driver->first_name }} {{ $driver->last_name }}</div>
+                    <div style="font-size:12px;color:var(--aws-sub)">{{ $count }} course(s)</div>
                 </div>
-                <div class="text-right">
-                    <p class="text-sm font-semibold text-blue-700">{{ number_format($total, 0, ',', ' ') }}</p>
-                    <p class="text-xs text-gray-400">FCFA</p>
+                <div style="text-align:right">
+                    <div style="font-size:13px;font-weight:700;color:#0073bb">{{ number_format($total, 0, ',', ' ') }}</div>
+                    <div style="font-size:11px;color:var(--aws-sub)">FCFA</div>
                 </div>
             </div>
             @empty
-            <p class="text-gray-400 text-sm text-center py-4">Aucune course ce mois</p>
+            <p style="text-align:center;color:var(--aws-sub);font-size:13px;padding:20px 0">Aucune course ce mois</p>
             @endforelse
         </div>
     </div>
 
 </div>
-
 @endsection

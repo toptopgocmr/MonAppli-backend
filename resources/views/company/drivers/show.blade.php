@@ -1,93 +1,118 @@
 @extends('company.layouts.app')
-@section('title', 'Profil Chauffeur')
-@section('page-title', 'Profil Chauffeur')
+@section('title', 'Profil — ' . $driver->first_name . ' ' . $driver->last_name)
 
 @section('content')
-<div class="max-w-4xl">
 
-    <a href="{{ route('company.drivers.index') }}" class="text-blue-600 text-sm hover:underline flex items-center gap-1 mb-6">
-        ← Retour à la liste
-    </a>
+<div class="aws-crumb">
+    <a href="{{ route('company.dashboard') }}">Dashboard</a> ›
+    <a href="{{ route('company.drivers.index') }}">Chauffeurs</a> ›
+    {{ $driver->first_name }} {{ $driver->last_name }}
+</div>
 
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 mb-6">
-        <div class="flex items-center gap-6 mb-6">
-            @if($driver->profile_photo)
-                <img src="{{ $driver->profile_photo }}" class="w-20 h-20 rounded-full object-cover border-4 border-blue-200">
-            @else
-                <div class="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold text-white">
-                    {{ strtoupper(substr($driver->first_name, 0, 1)) }}
-                </div>
-            @endif
-            <div>
-                <h2 class="text-2xl font-bold text-gray-800">{{ $driver->first_name }} {{ $driver->last_name }}</h2>
-                <p class="text-gray-500">{{ $driver->phone }}</p>
-                <div class="flex gap-2 mt-2">
-                    @php $colors = ['approved'=>'green','pending'=>'yellow','rejected'=>'red','suspended'=>'gray']; @endphp
-                    <span class="text-xs px-3 py-1 rounded-full font-medium bg-{{ $colors[$driver->status] ?? 'gray' }}-100 text-{{ $colors[$driver->status] ?? 'gray' }}-700">
-                        {{ ['approved'=>'Approuvé','pending'=>'En attente','rejected'=>'Rejeté','suspended'=>'Suspendu'][$driver->status] ?? $driver->status }}
-                    </span>
-                    <span class="text-xs px-3 py-1 rounded-full font-medium {{ $driver->driver_status === 'online' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500' }}">
-                        {{ $driver->driver_status === 'online' ? 'En ligne' : 'Hors ligne' }}
-                    </span>
-                </div>
+<!-- Header -->
+<div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px">
+    <div style="display:flex;align-items:center;gap:14px">
+        @if($driver->profile_photo)
+            <img src="{{ $driver->profile_photo }}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--aws-border)">
+        @else
+            <div style="width:48px;height:48px;border-radius:50%;background:#0073bb;color:#fff;font-size:20px;font-weight:700;display:flex;align-items:center;justify-content:center">
+                {{ strtoupper(substr($driver->first_name, 0, 1)) }}
             </div>
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
-            <div class="bg-gray-50 p-4 rounded-xl">
-                <p class="text-xs text-gray-400 uppercase mb-1">Véhicule</p>
-                <p class="font-semibold text-gray-800">{{ $driver->vehicle_brand ?? '—' }} {{ $driver->vehicle_model ?? '' }}</p>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-xl">
-                <p class="text-xs text-gray-400 uppercase mb-1">Plaque</p>
-                <p class="font-semibold text-gray-800">{{ $driver->vehicle_plate ?? '—' }}</p>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-xl">
-                <p class="text-xs text-gray-400 uppercase mb-1">Couleur</p>
-                <p class="font-semibold text-gray-800">{{ $driver->vehicle_color ?? '—' }}</p>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-xl">
-                <p class="text-xs text-gray-400 uppercase mb-1">Ville</p>
-                <p class="font-semibold text-gray-800">{{ $driver->vehicle_city ?? '—' }}</p>
-            </div>
-            <div class="bg-gray-50 p-4 rounded-xl">
-                <p class="text-xs text-gray-400 uppercase mb-1">Inscrit le</p>
-                <p class="font-semibold text-gray-800">{{ $driver->created_at->format('d/m/Y') }}</p>
-            </div>
+        @endif
+        <div>
+            <div class="aws-page-title">{{ $driver->first_name }} {{ $driver->last_name }}</div>
+            <div style="font-size:13px;color:var(--aws-sub)">{{ $driver->phone }}</div>
         </div>
     </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="{{ route('company.drivers.edit', $driver->id) }}" class="aws-btn aws-btn-primary">✎ Modifier</a>
+        @if($driver->status === 'approved')
+            <form method="POST" action="{{ route('company.drivers.suspend', $driver->id) }}" style="display:inline" onsubmit="return confirm('Suspendre ce chauffeur ?')">
+                @csrf
+                <button type="submit" class="aws-btn" style="background:#fff;border-color:#df8244;color:#df8244">⏸ Suspendre</button>
+            </form>
+        @else
+            <form method="POST" action="{{ route('company.drivers.activate', $driver->id) }}" style="display:inline">
+                @csrf
+                <button type="submit" class="aws-btn aws-btn-normal">▶ Activer</button>
+            </form>
+        @endif
+        <form method="POST" action="{{ route('company.drivers.remove', $driver->id) }}" style="display:inline" onsubmit="return confirm('Retirer ce chauffeur de votre société ?')">
+            @csrf
+            <button type="submit" class="aws-btn aws-btn-danger">✕ Retirer</button>
+        </form>
+    </div>
+</div>
 
-    <!-- Documents KYC (lecture seule) -->
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <h3 class="font-semibold text-gray-700 mb-4 pb-3 border-b border-gray-100">Documents KYC</h3>
-        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+<!-- Details -->
+<div class="aws-panel">
+    <div class="aws-panel-header">
+        <span class="aws-panel-title">Détails</span>
+        @php
+            $kycMap = ['approved'=>['aws-badge-green','Approuvé'],'pending'=>['aws-badge-yellow','En attente'],'rejected'=>['aws-badge-red','Rejeté'],'suspended'=>['aws-badge-red','Suspendu']];
+            $kc = $kycMap[$driver->status] ?? ['aws-badge-gray',$driver->status];
+        @endphp
+        <div style="display:flex;gap:8px;align-items:center">
+            <span class="aws-badge {{ $kc[0] }}">{{ $kc[1] }}</span>
+            @if($driver->driver_status === 'online')
+                <span class="aws-badge aws-badge-green">En ligne</span>
+            @else
+                <span class="aws-badge aws-badge-gray">Hors ligne</span>
+            @endif
+        </div>
+    </div>
+    <div class="aws-panel-body">
+        <div class="aws-detail-grid">
+            @php $fields = [
+                ['Véhicule',   ($driver->getRawOriginal('vehicle_brand') ?? '—') . ' ' . ($driver->getRawOriginal('vehicle_model') ?? '')],
+                ['Plaque',     $driver->vehicle_plate ?? '—'],
+                ['Couleur',    $driver->getRawOriginal('vehicle_color') ?? '—'],
+                ['Type',       $driver->getRawOriginal('vehicle_type') ?? '—'],
+                ['Ville',      $driver->getRawOriginal('vehicle_city') ?? '—'],
+                ['Naissance',  $driver->birth_date ? \Carbon\Carbon::parse($driver->birth_date)->format('d/m/Y') : '—'],
+                ['Lieu naiss.', $driver->birth_place ?? '—'],
+                ['Inscrit le', $driver->created_at->format('d/m/Y')],
+            ]; @endphp
+            @foreach($fields as [$label, $value])
+            <div class="aws-detail-item">
+                <div class="aws-detail-label">{{ $label }}</div>
+                <div class="aws-detail-value">{{ $value }}</div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+</div>
+
+<!-- Documents KYC -->
+<div class="aws-panel">
+    <div class="aws-panel-header"><span class="aws-panel-title">Documents KYC</span></div>
+    <div class="aws-panel-body">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
             @foreach([
                 ['CNI Recto','id_card_front'],['CNI Verso','id_card_back'],
                 ['Permis Recto','license_front'],['Permis Verso','license_back'],
                 ['Carte grise','vehicle_registration'],['Assurance','insurance']
             ] as [$label, $field])
-            <div class="border border-gray-200 rounded-xl overflow-hidden">
-                <div class="bg-gray-50 px-3 py-2 border-b border-gray-200">
-                    <p class="text-xs font-semibold text-gray-700">{{ $label }}</p>
-                </div>
-                <div class="p-2">
+            <div style="border:1px solid var(--aws-border);border-radius:4px;overflow:hidden">
+                <div style="background:#fafafa;padding:8px 12px;border-bottom:1px solid var(--aws-border);font-size:12px;font-weight:700;color:var(--aws-header)">{{ $label }}</div>
+                <div style="padding:8px">
                     @if($driver->{$field})
                         @php $ext = strtolower(pathinfo(parse_url($driver->{$field}, PHP_URL_PATH), PATHINFO_EXTENSION)); @endphp
                         @if(in_array($ext, ['jpg','jpeg','png','webp']))
                             <a href="{{ $driver->{$field} }}" target="_blank">
-                                <img src="{{ $driver->{$field} }}" class="w-full h-24 object-cover rounded-lg">
+                                <img src="{{ $driver->{$field} }}" style="width:100%;height:90px;object-fit:cover;border-radius:3px">
                             </a>
                         @else
-                            <a href="{{ $driver->{$field} }}" target="_blank" class="text-blue-600 text-xs hover:underline">Voir le fichier</a>
+                            <a href="{{ $driver->{$field} }}" target="_blank" style="font-size:12px;color:var(--aws-blue)">Voir le fichier →</a>
                         @endif
                     @else
-                        <div class="h-24 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 text-xs">Non fourni</div>
+                        <div style="height:90px;background:#f2f3f3;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--aws-sub)">Non fourni</div>
                     @endif
                 </div>
             </div>
             @endforeach
         </div>
     </div>
-
 </div>
+
 @endsection

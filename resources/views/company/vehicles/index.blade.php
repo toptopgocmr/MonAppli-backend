@@ -1,76 +1,81 @@
 @extends('company.layouts.app')
 @section('title', 'Flotte Véhicules')
-@section('page-title', 'Flotte Véhicules')
 
 @section('content')
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+<div class="aws-crumb"><a href="{{ route('company.dashboard') }}">Dashboard</a> › Flotte Véhicules</div>
 
-    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-        <p class="text-sm text-gray-400">{{ $drivers->total() }} véhicule(s) dans votre flotte</p>
-        <form method="GET" class="flex gap-3">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..."
-                   class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-56">
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700 transition">
-                Filtrer
-            </button>
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div class="aws-page-title">Flotte Véhicules</div>
+    <a href="{{ route('company.vehicles.create') }}" class="aws-btn aws-btn-primary">+ Ajouter un véhicule</a>
+</div>
+
+<div class="aws-panel">
+    <div style="padding:12px 20px;border-bottom:1px solid var(--aws-border);display:flex;gap:10px;align-items:center;justify-content:space-between;background:#fafafa;border-radius:4px 4px 0 0">
+        <form method="GET" style="display:flex;gap:8px;align-items:center">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Rechercher..." class="aws-input" style="width:220px">
+            <button type="submit" class="aws-btn aws-btn-primary" style="padding:7px 14px">Filtrer</button>
         </form>
+        <span style="font-size:12px;color:var(--aws-sub)">{{ $drivers->total() }} véhicule(s)</span>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+    <div style="overflow-x:auto">
+        <table class="aws-table">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left">Chauffeur</th>
-                    <th class="px-6 py-3 text-left">Marque / Modèle</th>
-                    <th class="px-6 py-3 text-left">Plaque</th>
-                    <th class="px-6 py-3 text-left">Couleur</th>
-                    <th class="px-6 py-3 text-left">Type</th>
-                    <th class="px-6 py-3 text-left">Ville</th>
-                    <th class="px-6 py-3 text-left">Actions</th>
+                    <th>Chauffeur</th>
+                    <th>Marque / Modèle</th>
+                    <th>Plaque</th>
+                    <th>Couleur</th>
+                    <th>Type</th>
+                    <th>Ville</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50">
+            <tbody>
                 @forelse($drivers as $driver)
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
+                <tr>
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px">
                             @if($driver->profile_photo)
-                                <img src="{{ $driver->profile_photo }}" class="w-8 h-8 rounded-full object-cover">
+                                <img src="{{ $driver->profile_photo }}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:1px solid var(--aws-border)">
                             @else
-                                <div class="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                                <div style="width:30px;height:30px;border-radius:50%;background:#0073bb;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center">
                                     {{ strtoupper(substr($driver->first_name, 0, 1)) }}
                                 </div>
                             @endif
                             <div>
-                                <p class="text-sm font-medium text-gray-800">{{ $driver->first_name }} {{ $driver->last_name }}</p>
-                                <p class="text-xs text-gray-400">{{ $driver->phone }}</p>
+                                <div style="font-weight:600;font-size:13px">{{ $driver->first_name }} {{ $driver->last_name }}</div>
+                                <div style="font-size:12px;color:var(--aws-sub)">{{ $driver->phone }}</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-700">
-                        {{ $driver->vehicle_brand ?? '—' }} {{ $driver->vehicle_model ?? '' }}
-                    </td>
-                    <td class="px-6 py-4">
+                    <td>{{ $driver->vehicle_brand ?? '—' }} {{ $driver->vehicle_model ?? '' }}</td>
+                    <td>
                         @if($driver->vehicle_plate)
-                            <span class="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm font-mono font-medium">{{ $driver->vehicle_plate }}</span>
-                        @else
-                            <span class="text-gray-400 text-sm">—</span>
+                            <code style="background:#f2f3f3;padding:2px 8px;border-radius:3px;font-size:12px;border:1px solid var(--aws-border)">{{ $driver->vehicle_plate }}</code>
+                        @else —
                         @endif
                     </td>
-                    <td class="px-6 py-4 text-sm text-gray-600">{{ $driver->vehicle_color ?? '—' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">{{ $driver->vehicle_type ?? '—' }}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">{{ $driver->vehicle_city ?? '—' }}</td>
-                    <td class="px-6 py-4">
-                        <a href="{{ route('company.vehicles.edit', $driver->id) }}"
-                           class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition font-medium">
-                            Modifier
-                        </a>
+                    <td style="color:var(--aws-sub)">{{ $driver->vehicle_color ?? '—' }}</td>
+                    <td>{{ $driver->vehicle_type ?? '—' }}</td>
+                    <td style="color:var(--aws-sub)">{{ $driver->vehicle_city ?? '—' }}</td>
+                    <td>
+                        <div style="display:flex;gap:6px">
+                            <a href="{{ route('company.vehicles.edit', $driver->id) }}" class="aws-btn aws-btn-normal" style="padding:4px 10px;font-size:12px">Modifier</a>
+                            <form method="POST" action="{{ route('company.vehicles.destroy', $driver->id) }}" onsubmit="return confirm('Retirer ce véhicule ?')" style="display:inline">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="aws-btn aws-btn-danger" style="padding:4px 10px;font-size:12px">Retirer</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">Aucun véhicule dans votre flotte</td>
+                    <td colspan="7" style="text-align:center;padding:40px;color:var(--aws-sub)">
+                        Aucun véhicule dans votre flotte —
+                        <a href="{{ route('company.vehicles.create') }}" style="color:var(--aws-blue)">Ajouter un véhicule</a>
+                    </td>
                 </tr>
                 @endforelse
             </tbody>
@@ -78,10 +83,7 @@
     </div>
 
     @if($drivers->hasPages())
-    <div class="px-6 py-4 border-t border-gray-100">
-        {{ $drivers->links() }}
-    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--aws-border)">{{ $drivers->links() }}</div>
     @endif
-
 </div>
 @endsection

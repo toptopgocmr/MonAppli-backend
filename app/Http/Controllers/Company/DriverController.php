@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\Driver\Driver;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 class DriverController extends Controller
 {
@@ -34,13 +35,113 @@ class DriverController extends Controller
         return view('company.drivers.index', compact('drivers'));
     }
 
+    public function create()
+    {
+        return view('company.drivers.create');
+    }
+
+    public function store(Request $request)
+    {
+        $request->validate([
+            'first_name'   => 'required|string|max:100',
+            'last_name'    => 'required|string|max:100',
+            'phone'        => 'required|string|max:20|unique:drivers,phone',
+            'password'     => 'required|string|min:8|confirmed',
+            'birth_date'   => 'nullable|date',
+            'birth_place'  => 'nullable|string|max:100',
+            'vehicle_brand'=> 'nullable|string|max:50',
+            'vehicle_model'=> 'nullable|string|max:50',
+            'vehicle_plate'=> 'nullable|string|max:20',
+            'vehicle_color'=> 'nullable|string|max:30',
+            'vehicle_type' => 'nullable|string|max:30',
+            'vehicle_city' => 'nullable|string|max:100',
+        ]);
+
+        $company = $this->company();
+
+        Driver::create([
+            'first_name'    => $request->first_name,
+            'last_name'     => $request->last_name,
+            'phone'         => $request->phone,
+            'password'      => Hash::make($request->password),
+            'birth_date'    => $request->birth_date,
+            'birth_place'   => $request->birth_place,
+            'vehicle_brand' => $request->vehicle_brand,
+            'vehicle_model' => $request->vehicle_model,
+            'vehicle_plate' => $request->vehicle_plate,
+            'vehicle_color' => $request->vehicle_color,
+            'vehicle_type'  => $request->vehicle_type,
+            'vehicle_city'  => $request->vehicle_city,
+            'company_id'    => $company->id,
+            'status'        => 'pending',
+            'driver_status' => 'offline',
+        ]);
+
+        return redirect()->route('company.drivers.index')
+                         ->with('success', 'Chauffeur créé avec succès. En attente de validation KYC.');
+    }
+
     public function show($id)
     {
         $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
         return view('company.drivers.show', compact('driver'));
     }
 
-    // Affecter un chauffeur indépendant à la société (si admin l'a autorisé)
+    public function edit($id)
+    {
+        $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
+        return view('company.drivers.edit', compact('driver'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
+
+        $request->validate([
+            'first_name'   => 'required|string|max:100',
+            'last_name'    => 'required|string|max:100',
+            'phone'        => 'required|string|max:20|unique:drivers,phone,' . $driver->id,
+            'password'     => 'nullable|string|min:8|confirmed',
+            'birth_date'   => 'nullable|date',
+            'birth_place'  => 'nullable|string|max:100',
+            'vehicle_brand'=> 'nullable|string|max:50',
+            'vehicle_model'=> 'nullable|string|max:50',
+            'vehicle_plate'=> 'nullable|string|max:20',
+            'vehicle_color'=> 'nullable|string|max:30',
+            'vehicle_type' => 'nullable|string|max:30',
+            'vehicle_city' => 'nullable|string|max:100',
+        ]);
+
+        $data = $request->only([
+            'first_name','last_name','phone','birth_date','birth_place',
+            'vehicle_brand','vehicle_model','vehicle_plate',
+            'vehicle_color','vehicle_type','vehicle_city',
+        ]);
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $driver->update($data);
+
+        return redirect()->route('company.drivers.show', $driver->id)
+                         ->with('success', 'Profil chauffeur mis à jour.');
+    }
+
+    public function activate($id)
+    {
+        $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
+        $driver->update(['status' => 'approved']);
+        return back()->with('success', 'Chauffeur activé.');
+    }
+
+    public function suspend($id)
+    {
+        $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
+        $driver->update(['status' => 'suspended']);
+        return back()->with('success', 'Chauffeur suspendu.');
+    }
+
     public function assign(Request $request, $id)
     {
         $driver = Driver::findOrFail($id);
@@ -53,7 +154,6 @@ class DriverController extends Controller
         return back()->with('success', 'Chauffeur affecté à votre société.');
     }
 
-    // Retirer un chauffeur de la société
     public function remove($id)
     {
         $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);

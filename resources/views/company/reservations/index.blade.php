@@ -1,93 +1,76 @@
 @extends('company.layouts.app')
 @section('title', 'Réservations')
-@section('page-title', 'Réservations & Courses')
 
 @section('content')
 
-<div class="bg-white rounded-2xl shadow-sm border border-gray-100">
+<div class="aws-crumb"><a href="{{ route('company.dashboard') }}">Dashboard</a> › Réservations</div>
+<div class="aws-page-title" style="margin-bottom:16px">Réservations & Courses</div>
 
-    <!-- Filters -->
-    <div class="px-6 py-4 border-b border-gray-100 flex flex-wrap gap-3 items-center justify-between">
-        <form method="GET" class="flex flex-wrap gap-3">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Chauffeur, adresse..."
-                   class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-56">
-            <select name="status" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+<div class="aws-panel">
+    <div style="padding:12px 20px;border-bottom:1px solid var(--aws-border);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#fafafa;border-radius:4px 4px 0 0">
+        <form method="GET" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Chauffeur, adresse..." class="aws-input" style="width:220px">
+            <select name="status" class="aws-input" style="width:160px">
                 <option value="">Tous les statuts</option>
                 @foreach(['pending'=>'En attente','accepted'=>'Acceptée','in_progress'=>'En cours','completed'=>'Terminée','cancelled'=>'Annulée'] as $val => $label)
                     <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm hover:bg-blue-700 transition">
-                Filtrer
-            </button>
+            <button type="submit" class="aws-btn aws-btn-primary" style="padding:7px 14px">Filtrer</button>
         </form>
-        <p class="text-sm text-gray-400">{{ $trips->total() }} course(s)</p>
+        <span style="font-size:12px;color:var(--aws-sub)">{{ $trips->total() }} course(s)</span>
     </div>
 
-    <!-- Table -->
-    <div class="overflow-x-auto">
-        <table class="w-full">
-            <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+    <div style="overflow-x:auto">
+        <table class="aws-table">
+            <thead>
                 <tr>
-                    <th class="px-6 py-3 text-left">#</th>
-                    <th class="px-6 py-3 text-left">Chauffeur</th>
-                    <th class="px-6 py-3 text-left">Départ → Arrivée</th>
-                    <th class="px-6 py-3 text-left">Montant</th>
-                    <th class="px-6 py-3 text-left">Statut</th>
-                    <th class="px-6 py-3 text-left">Date</th>
-                    <th class="px-6 py-3 text-left">Détails</th>
+                    <th>#</th>
+                    <th>Chauffeur</th>
+                    <th>Départ → Arrivée</th>
+                    <th>Montant</th>
+                    <th>Statut</th>
+                    <th>Date</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-50">
+            <tbody>
                 @forelse($trips as $trip)
                 @php
-                    $statusColors = [
-                        'pending'   => ['bg-yellow-100','text-yellow-700','En attente'],
-                        'accepted' => ['bg-blue-100','text-blue-700','Acceptée'],
-                        'in_progress' => ['bg-indigo-100','text-indigo-700','En cours'],
-                        'completed' => ['bg-green-100','text-green-700','Terminée'],
-                        'cancelled' => ['bg-red-100','text-red-700','Annulée'],
-                    ];
-                    $sc = $statusColors[$trip->status] ?? ['bg-gray-100','text-gray-700',$trip->status];
+                    $statusMap = ['pending'=>['aws-badge-yellow','En attente'],'accepted'=>['aws-badge-blue','Acceptée'],'in_progress'=>['aws-badge-blue','En cours'],'completed'=>['aws-badge-green','Terminée'],'cancelled'=>['aws-badge-red','Annulée']];
+                    $sc = $statusMap[$trip->status] ?? ['aws-badge-gray', $trip->status];
                 @endphp
-                <tr class="hover:bg-gray-50 transition">
-                    <td class="px-6 py-4 text-sm font-mono text-gray-400">#{{ $trip->id }}</td>
-                    <td class="px-6 py-4">
+                <tr>
+                    <td style="font-family:monospace;color:var(--aws-sub)">#{{ $trip->id }}</td>
+                    <td>
                         @if($trip->driver)
-                        <div class="flex items-center gap-2">
-                            <div class="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                        <div style="display:flex;align-items:center;gap:8px">
+                            <div style="width:26px;height:26px;border-radius:50%;background:#0073bb;color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                                 {{ strtoupper(substr($trip->driver->first_name, 0, 1)) }}
                             </div>
-                            <p class="text-sm font-medium text-gray-800">{{ $trip->driver->first_name }} {{ $trip->driver->last_name }}</p>
+                            <span style="font-size:13px;font-weight:600">{{ $trip->driver->first_name }} {{ $trip->driver->last_name }}</span>
                         </div>
                         @else
-                            <span class="text-gray-400 text-sm">—</span>
+                            <span style="color:var(--aws-sub)">—</span>
                         @endif
                     </td>
-                    <td class="px-6 py-4">
-                        <p class="text-sm text-gray-700 truncate max-w-xs">
-                            {{ Str::limit($trip->departure ?? '—', 25) }}
-                            <span class="text-gray-400 mx-1">→</span>
-                            {{ Str::limit($trip->destination ?? '—', 25) }}
-                        </p>
+                    <td>
+                        <span style="font-size:13px;color:var(--aws-header)">
+                            {{ Str::limit($trip->departure ?? '—', 22) }}
+                            <span style="color:var(--aws-sub);margin:0 3px">→</span>
+                            {{ Str::limit($trip->destination ?? '—', 22) }}
+                        </span>
                     </td>
-                    <td class="px-6 py-4">
-                        <p class="text-sm font-semibold text-blue-700">{{ number_format($trip->amount ?? 0, 0, ',', ' ') }} FCFA</p>
-                    </td>
-                    <td class="px-6 py-4">
-                        <span class="text-xs px-2 py-1 rounded-full font-medium {{ $sc[0] }} {{ $sc[1] }}">{{ $sc[2] }}</span>
-                    </td>
-                    <td class="px-6 py-4 text-xs text-gray-400">{{ $trip->created_at->format('d/m/Y H:i') }}</td>
-                    <td class="px-6 py-4">
-                        <a href="{{ route('company.reservations.show', $trip->id) }}"
-                           class="text-xs bg-blue-50 text-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-100 transition font-medium">
-                            Voir
-                        </a>
+                    <td style="font-weight:700;color:#0073bb">{{ number_format($trip->amount ?? 0, 0, ',', ' ') }} FCFA</td>
+                    <td><span class="aws-badge {{ $sc[0] }}">{{ $sc[1] }}</span></td>
+                    <td style="color:var(--aws-sub);font-size:12px">{{ $trip->created_at->format('d/m/Y H:i') }}</td>
+                    <td>
+                        <a href="{{ route('company.reservations.show', $trip->id) }}" class="aws-btn aws-btn-normal" style="padding:4px 10px;font-size:12px">Voir / Reçu</a>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">Aucune course trouvée</td>
+                    <td colspan="7" style="text-align:center;padding:40px;color:var(--aws-sub)">Aucune course trouvée</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -95,10 +78,7 @@
     </div>
 
     @if($trips->hasPages())
-    <div class="px-6 py-4 border-t border-gray-100">
-        {{ $trips->links() }}
-    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--aws-border)">{{ $trips->links() }}</div>
     @endif
-
 </div>
 @endsection
