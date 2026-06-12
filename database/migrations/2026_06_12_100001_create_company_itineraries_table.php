@@ -11,12 +11,16 @@ return new class extends Migration
         Schema::create('company_itineraries', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('company_id');
-            $table->string('departure');           // Ville / lieu de départ
-            $table->string('destination');         // Ville / lieu d'arrivée
-            $table->decimal('price', 10, 2)->nullable();   // Tarif indicatif
+            $table->string('departure');                    // Ville de départ
+            $table->string('departure_point')->nullable();  // Point précis d'embarquement
+            $table->time('departure_time')->nullable();     // Heure de départ
+            $table->string('destination');                  // Ville d'arrivée
+            $table->string('arrival_point')->nullable();    // Point précis de débarquement
+            $table->time('arrival_time')->nullable();       // Heure d'arrivée estimée
+            $table->decimal('price', 10, 2)->nullable();
             $table->decimal('distance_km', 8, 2)->nullable();
-            $table->integer('duration_min')->nullable();   // Durée estimée en minutes
-            $table->string('vehicle_type')->nullable();    // Type de véhicule suggéré
+            $table->integer('duration_min')->nullable();
+            $table->string('vehicle_type')->nullable();
             $table->boolean('is_active')->default(true);
             $table->text('notes')->nullable();
             $table->timestamps();

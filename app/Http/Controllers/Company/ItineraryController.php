@@ -41,25 +41,33 @@ class ItineraryController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'departure'    => 'required|string|max:200',
-            'destination'  => 'required|string|max:200',
-            'price'        => 'nullable|numeric|min:0',
-            'distance_km'  => 'nullable|numeric|min:0',
-            'duration_min' => 'nullable|integer|min:0',
-            'vehicle_type' => 'nullable|string|max:50',
-            'notes'        => 'nullable|string|max:500',
+            'departure'       => 'required|string|max:200',
+            'departure_point' => 'nullable|string|max:300',
+            'departure_time'  => 'nullable|date_format:H:i',
+            'destination'     => 'required|string|max:200',
+            'arrival_point'   => 'nullable|string|max:300',
+            'arrival_time'    => 'nullable|date_format:H:i',
+            'price'           => 'nullable|numeric|min:0',
+            'distance_km'     => 'nullable|numeric|min:0',
+            'duration_min'    => 'nullable|integer|min:0',
+            'vehicle_type'    => 'nullable|string|max:50',
+            'notes'           => 'nullable|string|max:500',
         ]);
 
         CompanyItinerary::create([
-            'company_id'   => $this->company()->id,
-            'departure'    => $request->departure,
-            'destination'  => $request->destination,
-            'price'        => $request->price,
-            'distance_km'  => $request->distance_km,
-            'duration_min' => $request->duration_min,
-            'vehicle_type' => $request->vehicle_type,
-            'is_active'    => true,
-            'notes'        => $request->notes,
+            'company_id'      => $this->company()->id,
+            'departure'       => $request->departure,
+            'departure_point' => $request->departure_point,
+            'departure_time'  => $request->departure_time,
+            'destination'     => $request->destination,
+            'arrival_point'   => $request->arrival_point,
+            'arrival_time'    => $request->arrival_time,
+            'price'           => $request->price,
+            'distance_km'     => $request->distance_km,
+            'duration_min'    => $request->duration_min,
+            'vehicle_type'    => $request->vehicle_type,
+            'is_active'       => true,
+            'notes'           => $request->notes,
         ]);
 
         return redirect()->route('company.itineraries.index')
@@ -77,18 +85,23 @@ class ItineraryController extends Controller
         $itinerary = CompanyItinerary::where('company_id', $this->company()->id)->findOrFail($id);
 
         $request->validate([
-            'departure'    => 'required|string|max:200',
-            'destination'  => 'required|string|max:200',
-            'price'        => 'nullable|numeric|min:0',
-            'distance_km'  => 'nullable|numeric|min:0',
-            'duration_min' => 'nullable|integer|min:0',
-            'vehicle_type' => 'nullable|string|max:50',
-            'notes'        => 'nullable|string|max:500',
+            'departure'       => 'required|string|max:200',
+            'departure_point' => 'nullable|string|max:300',
+            'departure_time'  => 'nullable|date_format:H:i',
+            'destination'     => 'required|string|max:200',
+            'arrival_point'   => 'nullable|string|max:300',
+            'arrival_time'    => 'nullable|date_format:H:i',
+            'price'           => 'nullable|numeric|min:0',
+            'distance_km'     => 'nullable|numeric|min:0',
+            'duration_min'    => 'nullable|integer|min:0',
+            'vehicle_type'    => 'nullable|string|max:50',
+            'notes'           => 'nullable|string|max:500',
         ]);
 
         $itinerary->update($request->only([
-            'departure','destination','price','distance_km',
-            'duration_min','vehicle_type','notes',
+            'departure','departure_point','departure_time',
+            'destination','arrival_point','arrival_time',
+            'price','distance_km','duration_min','vehicle_type','notes',
         ]));
 
         return redirect()->route('company.itineraries.index')

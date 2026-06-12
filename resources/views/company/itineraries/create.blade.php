@@ -10,7 +10,7 @@
 </div>
 <div class="aws-page-title" style="margin-bottom:16px">Créer un itinéraire</div>
 
-<div style="max-width:780px">
+<div style="max-width:860px">
 
     @if($errors->any())
     <div class="aws-alert aws-alert-error">
@@ -21,27 +21,63 @@
     <form method="POST" action="{{ route('company.itineraries.store') }}">
     @csrf
 
+    <!-- Départ -->
     <div class="aws-panel">
         <div class="aws-panel-header">
-            <span class="aws-panel-title">Trajet</span>
-            <span style="font-size:12px;color:var(--aws-sub)">Définissez le départ et la destination</span>
+            <span class="aws-panel-title">Point de départ</span>
+            <span style="font-size:12px;color:var(--aws-sub)">Ville et lieu précis d'embarquement</span>
         </div>
         <div class="aws-panel-body">
             <div class="aws-grid-2">
                 <div class="aws-field">
-                    <label class="aws-label">Ville / Lieu de départ</label>
-                    <input type="text" name="departure" value="{{ old('departure') }}" required class="aws-input" placeholder="Yaoundé — Gare Routière">
+                    <label class="aws-label">Ville de départ</label>
+                    <input type="text" name="departure" value="{{ old('departure') }}" required class="aws-input" placeholder="Yaoundé">
                 </div>
                 <div class="aws-field">
-                    <label class="aws-label">Ville / Lieu de destination</label>
-                    <input type="text" name="destination" value="{{ old('destination') }}" required class="aws-input" placeholder="Douala — Akwa">
+                    <label class="aws-label">Heure de départ</label>
+                    <input type="time" name="departure_time" value="{{ old('departure_time') }}" class="aws-input">
+                    <p class="aws-hint">Heure de prise en charge des passagers.</p>
+                </div>
+                <div class="aws-field" style="grid-column:span 2">
+                    <label class="aws-label">Point précis d'embarquement <span class="aws-label-opt">— facultatif</span></label>
+                    <input type="text" name="departure_point" value="{{ old('departure_point') }}" class="aws-input" placeholder="Ex: Gare Routière de Mvan, Carrefour Total Nlongkak...">
+                    <p class="aws-hint">Adresse ou lieu-dit exact où les passagers sont pris en charge.</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Arrivée -->
     <div class="aws-panel">
-        <div class="aws-panel-header"><span class="aws-panel-title">Détails <span style="font-size:12px;font-weight:400;color:var(--aws-sub)">— facultatif</span></span></div>
+        <div class="aws-panel-header">
+            <span class="aws-panel-title">Point d'arrivée</span>
+            <span style="font-size:12px;color:var(--aws-sub)">Ville et lieu précis de débarquement</span>
+        </div>
+        <div class="aws-panel-body">
+            <div class="aws-grid-2">
+                <div class="aws-field">
+                    <label class="aws-label">Ville de destination</label>
+                    <input type="text" name="destination" value="{{ old('destination') }}" required class="aws-input" placeholder="Douala">
+                </div>
+                <div class="aws-field">
+                    <label class="aws-label">Heure d'arrivée estimée</label>
+                    <input type="time" name="arrival_time" value="{{ old('arrival_time') }}" class="aws-input">
+                    <p class="aws-hint">Heure d'arrivée prévue à destination.</p>
+                </div>
+                <div class="aws-field" style="grid-column:span 2">
+                    <label class="aws-label">Point précis de débarquement <span class="aws-label-opt">— facultatif</span></label>
+                    <input type="text" name="arrival_point" value="{{ old('arrival_point') }}" class="aws-input" placeholder="Ex: Gare de Bessengue, Carrefour Akwa-Nord...">
+                    <p class="aws-hint">Adresse ou lieu-dit exact où les passagers sont déposés.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails -->
+    <div class="aws-panel">
+        <div class="aws-panel-header">
+            <span class="aws-panel-title">Détails <span style="font-size:12px;font-weight:400;color:var(--aws-sub)">— facultatif</span></span>
+        </div>
         <div class="aws-panel-body">
             <div class="aws-grid-3">
                 <div class="aws-field">
@@ -67,8 +103,8 @@
                 </select>
             </div>
             <div class="aws-field">
-                <label class="aws-label">Notes <span class="aws-label-opt">— instructions, arrêts, tarifs spéciaux...</span></label>
-                <textarea name="notes" rows="3" class="aws-input" style="resize:vertical" placeholder="Ex: Arrêt à Bafoussam possible. Tarif bagages supplémentaires : 500 FCFA/kg.">{{ old('notes') }}</textarea>
+                <label class="aws-label">Notes <span class="aws-label-opt">— arrêts, conditions, tarifs spéciaux...</span></label>
+                <textarea name="notes" rows="3" class="aws-input" style="resize:vertical" placeholder="Ex: Arrêt possible à Bafoussam. Bagages supplémentaires : 500 FCFA/kg.">{{ old('notes') }}</textarea>
             </div>
         </div>
     </div>

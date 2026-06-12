@@ -28,11 +28,11 @@
         <table class="aws-table">
             <thead>
                 <tr>
-                    <th>Départ → Destination</th>
+                    <th>Départ</th>
+                    <th>Arrivée</th>
+                    <th>Horaires</th>
                     <th>Tarif</th>
-                    <th>Distance</th>
-                    <th>Durée</th>
-                    <th>Véhicule</th>
+                    <th>Distance / Durée</th>
                     <th>Statut</th>
                     <th>Actions</th>
                 </tr>
@@ -41,13 +41,29 @@
                 @forelse($itineraries as $it)
                 <tr>
                     <td>
-                        <div style="font-weight:600;font-size:13px;color:var(--aws-header)">
-                            {{ $it->departure }}
-                            <span style="color:var(--aws-sub);margin:0 4px">→</span>
-                            {{ $it->destination }}
-                        </div>
-                        @if($it->notes)
-                            <div style="font-size:11px;color:var(--aws-sub);margin-top:2px">{{ Str::limit($it->notes, 60) }}</div>
+                        <div style="font-weight:600;font-size:13px;color:var(--aws-header)">{{ $it->departure }}</div>
+                        @if($it->departure_point)
+                            <div style="font-size:11px;color:var(--aws-sub);margin-top:2px">📍 {{ $it->departure_point }}</div>
+                        @endif
+                    </td>
+                    <td>
+                        <div style="font-weight:600;font-size:13px;color:var(--aws-header)">{{ $it->destination }}</div>
+                        @if($it->arrival_point)
+                            <div style="font-size:11px;color:var(--aws-sub);margin-top:2px">📍 {{ $it->arrival_point }}</div>
+                        @endif
+                    </td>
+                    <td>
+                        @if($it->departure_time || $it->arrival_time)
+                            <div style="font-size:13px">
+                                @if($it->departure_time)
+                                    <span style="color:#1d8102;font-weight:600">⬆ {{ \Carbon\Carbon::parse($it->departure_time)->format('H:i') }}</span>
+                                @endif
+                                @if($it->arrival_time)
+                                    <br><span style="color:#d13212;font-weight:600">⬇ {{ \Carbon\Carbon::parse($it->arrival_time)->format('H:i') }}</span>
+                                @endif
+                            </div>
+                        @else
+                            <span style="color:var(--aws-sub)">—</span>
                         @endif
                     </td>
                     <td>
@@ -58,9 +74,10 @@
                             <span style="color:var(--aws-sub)">—</span>
                         @endif
                     </td>
-                    <td style="color:var(--aws-sub)">{{ $it->distance_km ? $it->distance_km . ' km' : '—' }}</td>
-                    <td style="color:var(--aws-sub)">{{ $it->duration_min ? $it->duration_min . ' min' : '—' }}</td>
-                    <td style="color:var(--aws-sub)">{{ $it->vehicle_type ?? '—' }}</td>
+                    <td style="color:var(--aws-sub)">
+                        {{ $it->distance_km ? $it->distance_km . ' km' : '—' }}
+                        @if($it->duration_min) <br>{{ $it->duration_min }} min @endif
+                    </td>
                     <td>
                         @if($it->is_active)
                             <span class="aws-badge aws-badge-green">Actif</span>

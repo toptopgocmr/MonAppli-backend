@@ -14,7 +14,11 @@ class CompanyItinerary extends Model
     protected $fillable = [
         'company_id',
         'departure',
+        'departure_point',
+        'departure_time',
         'destination',
+        'arrival_point',
+        'arrival_time',
         'price',
         'distance_km',
         'duration_min',

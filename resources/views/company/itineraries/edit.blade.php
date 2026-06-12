@@ -8,9 +8,11 @@
     <a href="{{ route('company.itineraries.index') }}">Itinéraires</a> ›
     Modifier
 </div>
-<div class="aws-page-title" style="margin-bottom:16px">Modifier l'itinéraire</div>
+<div class="aws-page-title" style="margin-bottom:16px">
+    {{ $itinerary->departure }} → {{ $itinerary->destination }}
+</div>
 
-<div style="max-width:780px">
+<div style="max-width:860px">
 
     @if($errors->any())
     <div class="aws-alert aws-alert-error">
@@ -21,22 +23,49 @@
     <form method="POST" action="{{ route('company.itineraries.update', $itinerary->id) }}">
     @csrf @method('PUT')
 
+    <!-- Départ -->
     <div class="aws-panel">
-        <div class="aws-panel-header"><span class="aws-panel-title">Trajet</span></div>
+        <div class="aws-panel-header"><span class="aws-panel-title">Point de départ</span></div>
         <div class="aws-panel-body">
             <div class="aws-grid-2">
                 <div class="aws-field">
-                    <label class="aws-label">Lieu de départ</label>
+                    <label class="aws-label">Ville de départ</label>
                     <input type="text" name="departure" value="{{ old('departure', $itinerary->departure) }}" required class="aws-input">
                 </div>
                 <div class="aws-field">
-                    <label class="aws-label">Destination</label>
-                    <input type="text" name="destination" value="{{ old('destination', $itinerary->destination) }}" required class="aws-input">
+                    <label class="aws-label">Heure de départ</label>
+                    <input type="time" name="departure_time" value="{{ old('departure_time', $itinerary->departure_time ? \Carbon\Carbon::parse($itinerary->departure_time)->format('H:i') : '') }}" class="aws-input">
+                </div>
+                <div class="aws-field" style="grid-column:span 2">
+                    <label class="aws-label">Point précis d'embarquement <span class="aws-label-opt">— facultatif</span></label>
+                    <input type="text" name="departure_point" value="{{ old('departure_point', $itinerary->departure_point) }}" class="aws-input" placeholder="Ex: Gare Routière de Mvan...">
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Arrivée -->
+    <div class="aws-panel">
+        <div class="aws-panel-header"><span class="aws-panel-title">Point d'arrivée</span></div>
+        <div class="aws-panel-body">
+            <div class="aws-grid-2">
+                <div class="aws-field">
+                    <label class="aws-label">Ville de destination</label>
+                    <input type="text" name="destination" value="{{ old('destination', $itinerary->destination) }}" required class="aws-input">
+                </div>
+                <div class="aws-field">
+                    <label class="aws-label">Heure d'arrivée estimée</label>
+                    <input type="time" name="arrival_time" value="{{ old('arrival_time', $itinerary->arrival_time ? \Carbon\Carbon::parse($itinerary->arrival_time)->format('H:i') : '') }}" class="aws-input">
+                </div>
+                <div class="aws-field" style="grid-column:span 2">
+                    <label class="aws-label">Point précis de débarquement <span class="aws-label-opt">— facultatif</span></label>
+                    <input type="text" name="arrival_point" value="{{ old('arrival_point', $itinerary->arrival_point) }}" class="aws-input" placeholder="Ex: Gare de Bessengue...">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Détails -->
     <div class="aws-panel">
         <div class="aws-panel-header"><span class="aws-panel-title">Détails</span></div>
         <div class="aws-panel-body">
