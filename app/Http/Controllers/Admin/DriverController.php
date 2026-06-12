@@ -107,11 +107,18 @@ class DriverController extends Controller
         $driver = Driver::findOrFail($id);
 
         $request->validate([
-            'first_name'    => 'required|string|max:100',
-            'last_name'     => 'required|string|max:100',
-            'phone'         => 'required|string|unique:drivers,phone,' . $id,
-            'vehicle_plate' => 'nullable|string|unique:drivers,vehicle_plate,' . $id,
-            'password'      => 'nullable|string|min:8|confirmed',
+            'first_name'           => 'required|string|max:100',
+            'last_name'            => 'required|string|max:100',
+            'phone'                => 'required|string|unique:drivers,phone,' . $id,
+            'vehicle_plate'        => 'nullable|string|unique:drivers,vehicle_plate,' . $id,
+            'password'             => 'nullable|string|min:8|confirmed',
+            'profile_photo'        => 'nullable|file|mimes:jpg,jpeg,png,webp|max:5120',
+            'id_card_front'        => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'id_card_back'         => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'license_front'        => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'license_back'         => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'vehicle_registration' => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
+            'insurance'            => 'nullable|file|mimes:jpg,jpeg,png,webp,pdf|max:5120',
         ]);
 
         $data = $request->except([
@@ -208,12 +215,21 @@ class DriverController extends Controller
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path     = $folder . '/' . $filename;
 
-        Storage::disk('backblaze')->put($path, file_get_contents($file), 'public');
+        // Tenter l'upload Backblaze B2 si les credentials sont configurés
+        if (env('BACKBLAZE_KEY_ID') && env('BACKBLAZE_BUCKET') && env('BACKBLAZE_ENDPOINT')) {
+            try {
+                Storage::disk('backblaze')->put($path, file_get_contents($file), 'public');
+                return rtrim(env('BACKBLAZE_ENDPOINT'), '/')
+                    . '/' . env('BACKBLAZE_BUCKET')
+                    . '/' . $path;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Backblaze upload failed, fallback local: ' . $e->getMessage());
+            }
+        }
 
-        // ✅ Construction manuelle de l'URL — plus fiable que Storage::url()
-        return rtrim(env('BACKBLAZE_ENDPOINT'), '/')
-            . '/' . env('BACKBLAZE_BUCKET')
-            . '/' . $path;
+        // Fallback : disk public local
+        Storage::disk('public')->put($path, file_get_contents($file));
+        return Storage::disk('public')->url($path);
     }
 
     /**
