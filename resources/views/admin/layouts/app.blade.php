@@ -167,8 +167,7 @@
 <!-- TOP NAV -->
 <nav id="topnav">
     <div class="tn-logo">
-        <img src="{{ asset('images/logo4.png') }}" alt="TTG">
-        <span>TopTopGo</span>
+        <span style="font-size:18px;font-weight:900;letter-spacing:-.5px;color:#fff"><span style="color:#1DA1F2">TopTop</span><span style="color:#ec7211">Go</span></span>
     </div>
 
     <button id="sidebar-toggle" onclick="toggleSidebarDesktop()" title="Réduire/Ouvrir le menu">
