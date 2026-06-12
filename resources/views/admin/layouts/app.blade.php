@@ -67,7 +67,7 @@
     #breadcrumb a{color:var(--info);text-decoration:none}
     #breadcrumb a:hover{text-decoration:underline}
     main{flex:1;padding:20px 24px;overflow-y:auto}
-    #pg-footer{padding:12px 24px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text-3);display:flex;justify-content:space-between}
+    #pg-footer{padding:12px 24px;border-top:1px solid var(--border);background:var(--surface);font-size:11px;color:var(--text-3);text-align:center}
 
     /* PAGE HEADER */
     .page-header{margin-bottom:20px}
@@ -167,7 +167,7 @@
 <!-- TOP NAV -->
 <nav id="topnav">
     <div class="tn-logo">
-        <span style="font-size:18px;font-weight:900;letter-spacing:-.5px;color:#fff"><span style="color:#1DA1F2">TopTop</span><span style="color:#ec7211">Go</span></span>
+        <span style="font-size:22px;font-weight:900;letter-spacing:-1px;text-shadow:0 2px 8px rgba(0,0,0,.3)"><span style="color:#1DA1F2;text-shadow:0 0 18px rgba(29,161,242,.5)">TopTop</span><span style="color:#FF6B00;text-shadow:0 0 18px rgba(255,107,0,.5)">Go</span></span>
     </div>
 
     <button id="sidebar-toggle" onclick="toggleSidebarDesktop()" title="Réduire/Ouvrir le menu">
@@ -356,8 +356,7 @@
         </main>
 
         <footer id="pg-footer">
-            <span>© {{ date('Y') }} TopTopGo — Administration</span>
-            <span>Développé avec ❤ par <strong style="color:var(--text-2)">Basile Marius NGASSAKI ZONI</strong></span>
+            © {{ date('Y') }} TopTopGo — Administration &nbsp;·&nbsp; Développé avec <span style="color:#e53e3e">❤</span> par <strong style="color:var(--text-2)">Basile Marius NGASSAKI ZONI</strong>
         </footer>
     </div>
 </div>
