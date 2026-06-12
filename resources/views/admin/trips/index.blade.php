@@ -130,8 +130,12 @@
                             </td>
                             <td style="font-size:12px">
                                 {{ $trip->departure_date ?? '—' }}
-                                @if($trip->departure_time)
-                                    <div style="color:#94a3b8">{{ \Carbon\Carbon::parse($trip->departure_time)->format('H:i') }}</div>
+                                @if($trip->departure_time && strlen(trim($trip->departure_time)) > 2)
+                                    @php
+                                        try { $t = \Carbon\Carbon::parse($trip->departure_time)->format('H:i'); }
+                                        catch(\Exception $e) { $t = substr($trip->departure_time, 0, 5); }
+                                    @endphp
+                                    <div style="color:#94a3b8">{{ $t }}</div>
                                 @endif
                             </td>
                             <td style="text-align:center">{{ $trip->available_seats ?? '—' }}</td>
