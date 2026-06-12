@@ -348,7 +348,7 @@
 
         <footer id="pg-footer">
             <span>© {{ date('Y') }} TopTopGo — Administration</span>
-            <span>Développé par <strong style="color:var(--text-2)">Basile NGASSAKI</strong></span>
+            <span>Développé avec ❤ par <strong style="color:var(--text-2)">Basile Marius NGASSAKI ZONI</strong></span>
         </footer>
     </div>
 </div>

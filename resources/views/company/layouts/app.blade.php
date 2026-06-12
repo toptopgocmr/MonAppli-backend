@@ -281,7 +281,7 @@
 
                 @yield('content')
             </div>
-            <footer class="aws-footer">© {{ date('Y') }} TopTopGo — Panel Société</footer>
+            <footer class="aws-footer">© {{ date('Y') }} TopTopGo — Administration &nbsp;·&nbsp; Développé avec ❤ par <strong>Basile Marius NGASSAKI ZONI</strong></footer>
         </div>
 
     </div>
