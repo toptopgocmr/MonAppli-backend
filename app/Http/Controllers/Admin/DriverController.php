@@ -66,7 +66,7 @@ class DriverController extends Controller
 
         $data['password'] = Hash::make($request->password);
 
-        // ── Upload fichiers → Backblaze B2 ────────────────────────
+        // ── Upload fichiers → Railway Volume (disk public) ───────
         foreach ($this->fileFields() as $field) {
             if ($request->hasFile($field)) {
                 $data[$field] = $this->uploadToBackblaze(
@@ -131,12 +131,12 @@ class DriverController extends Controller
             $data['password'] = Hash::make($request->password);
         }
 
-        // ── Upload fichiers → Backblaze B2 ────────────────────────
+        // ── Upload fichiers → Railway Volume (disk public) ───────
         foreach ($this->fileFields() as $field) {
             if ($request->hasFile($field)) {
-                // Supprimer l'ancien fichier s'il existe sur Backblaze
-                if ($driver->$field && str_contains($driver->$field, 'backblazeb2.com')) {
-                    $this->deleteFromBackblaze($driver->$field);
+                // Supprimer l'ancien fichier local s'il existe (chemin relatif)
+                if ($driver->$field && !str_starts_with($driver->$field, 'http')) {
+                    Storage::disk('public')->delete($driver->$field);
                 }
 
                 $data[$field] = $this->uploadToBackblaze(
@@ -201,69 +201,20 @@ class DriverController extends Controller
     }
 
     // ================================================================
-    // HELPERS UPLOAD BACKBLAZE
+    // HELPERS UPLOAD (Railway Volume — disk public local)
     // ================================================================
 
     /**
-     * Upload un fichier vers Backblaze B2
-     * Retourne l'URL publique complète au format S3 compatible
-     *
-     * ✅ URL générée : https://s3.us-west-004.backblazeb2.com/toptopgo2026/drivers/profile_photo/uuid.jpg
+     * Upload un fichier vers le stockage local (Railway Volume).
+     * Retourne le chemin RELATIF (ex: drivers/id_card_front/uuid.jpg).
+     * Les vues construisent l'URL avec asset('storage/' . $path).
      */
     private function uploadToBackblaze($file, string $folder): string
     {
         $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path     = $folder . '/' . $filename;
-
-        // Tenter l'upload Backblaze B2 si les credentials sont configurés
-        if (env('BACKBLAZE_KEY_ID') && env('BACKBLAZE_BUCKET') && env('BACKBLAZE_ENDPOINT')) {
-            try {
-                Storage::disk('backblaze')->put($path, file_get_contents($file), 'public');
-                return rtrim(env('BACKBLAZE_ENDPOINT'), '/')
-                    . '/' . env('BACKBLAZE_BUCKET')
-                    . '/' . $path;
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Backblaze upload failed, fallback local: ' . $e->getMessage());
-            }
-        }
-
-        // Fallback : disk public local — stocker le chemin relatif
         Storage::disk('public')->put($path, file_get_contents($file));
         return $path;
-    }
-
-    /**
-     * Supprimer un fichier de Backblaze via son URL publique
-     *
-     * Gère les deux formats d'URL possibles :
-     *  - Format S3  : https://s3.us-west-004.backblazeb2.com/toptopgo2026/drivers/...
-     *  - Format natif B2 (ancien) : https://s3.us-west-004.backblazeb2.com/file/toptopgo2026/drivers/...
-     */
-    private function deleteFromBackblaze(string $url): void
-    {
-        try {
-            $endpoint = rtrim(env('BACKBLAZE_ENDPOINT'), '/');
-            $bucket   = env('BACKBLAZE_BUCKET');
-
-            // Format S3 : endpoint/bucket/path
-            $prefixS3 = $endpoint . '/' . $bucket . '/';
-            // Format natif B2 : endpoint/file/bucket/path (ancien format stocké en base)
-            $prefixB2 = $endpoint . '/file/' . $bucket . '/';
-
-            if (str_starts_with($url, $prefixS3)) {
-                $path = substr($url, strlen($prefixS3));
-            } elseif (str_starts_with($url, $prefixB2)) {
-                $path = substr($url, strlen($prefixB2));
-            } else {
-                return; // URL non reconnue, on ne fait rien
-            }
-
-            if ($path) {
-                Storage::disk('backblaze')->delete($path);
-            }
-        } catch (\Exception $e) {
-            // Silencieux — ne pas bloquer l'update si la suppression échoue
-        }
     }
 
     private function fileFields(): array
