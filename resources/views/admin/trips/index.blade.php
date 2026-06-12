@@ -172,20 +172,20 @@
 
 {{-- MODAL DÉTAIL --}}
 <div id="trip-modal"
-     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 hidden"
+     style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.5);align-items:center;justify-content:center"
      onclick="closeTripModalOutside(event)">
 
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+    <div style="background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:680px;margin:16px;padding:24px;max-height:90vh;overflow-y:auto">
 
-        <div class="flex justify-between items-center mb-6">
-            <h2 class="font-bold text-gray-800 text-lg">Détail du trajet</h2>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <h2 style="font-size:16px;font-weight:700;color:#1e293b;margin:0">Détail du trajet</h2>
             <button onclick="closeTripModal()"
-                    class="text-gray-400 hover:text-gray-600 text-xl font-bold transition">× </button>
+                    style="background:none;border:none;font-size:22px;color:#94a3b8;cursor:pointer;line-height:1">&times;</button>
         </div>
 
-        <div id="modal-content" class="text-gray-500 text-sm">
-            <div class="flex justify-center py-8">
-                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+        <div id="modal-content" style="color:#64748b;font-size:14px">
+            <div style="display:flex;justify-content:center;padding:32px">
+                <div style="width:32px;height:32px;border:3px solid #f97316;border-top-color:transparent;border-radius:50%"></div>
             </div>
         </div>
 
@@ -198,66 +198,102 @@
 @push('scripts')
 <script>
 function openTripModal(id) {
-    document.getElementById('trip-modal').classList.remove('hidden');
-    document.getElementById('modal-content').innerHTML = `
-        <div class="flex justify-center py-8">
-            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-        </div>`;
+    document.getElementById('trip-modal').style.display = 'flex';
+    document.getElementById('modal-content').innerHTML =
+        '<div style="display:flex;justify-content:center;padding:32px">' +
+        '<div style="width:32px;height:32px;border:3px solid #f97316;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite"></div>' +
+        '</div>';
 
-    fetch(`/admin/trips/${id}/detail`)
-        .then(res => res.json())
-        .then(data => {
-            const trip   = data.data ?? data;
-            const driver = trip.driver;
+    fetch('/admin/trips/' + id + '/detail')
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+            var trip   = data.data ?? data;
+            var driver = trip.driver;
 
-            const statusColors = {
-                active:      'bg-blue-100 text-blue-700',
-                pending:     'bg-yellow-100 text-yellow-700',
-                in_progress: 'bg-indigo-100 text-indigo-700',
-                completed:   'bg-green-100 text-green-700',
-                cancelled:   'bg-red-100 text-red-700',
+            var statusMap = {
+                active:      { label: 'Actif',      color: '#1DA1F2', bg: '#EFF8FF' },
+                pending:     { label: 'En attente', color: '#F59E0B', bg: '#FFFBEB' },
+                in_progress: { label: 'En cours',   color: '#6366F1', bg: '#EEF2FF' },
+                completed:   { label: 'Terminé',    color: '#10B981', bg: '#ECFDF5' },
+                cancelled:   { label: 'Annulé',     color: '#EF4444', bg: '#FEF2F2' },
             };
-            const color = statusColors[trip.status] ?? 'bg-gray-100 text-gray-600';
+            var s = statusMap[trip.status] ?? { label: trip.status, color: '#64748b', bg: '#f1f5f9' };
 
-            document.getElementById('modal-content').innerHTML = `
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            var driverHtml = driver
+                ? '<div style="font-weight:600;font-size:14px">' + (driver.first_name ?? '') + ' ' + (driver.last_name ?? '') + '</div>' +
+                  '<div style="color:#64748b;font-size:12px">' + (driver.phone ?? '—') + '</div>' +
+                  '<div style="color:#94a3b8;font-size:12px">' + (driver.email ?? '') + '</div>'
+                : '<span style="color:#94a3b8">—</span>';
 
-                    <div class="bg-gray-50 rounded-xl p-4 space-y-2">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">Itinéraire</h3>
-                        <div class="flex items-start gap-2">
-                            <span class="text-blue-500 mt-0.5"></span>
-                            <div>
-                                <p class="text-xs text-gray-400">Départ</p>
-                                <p class="font-semibold text-gray-800">${trip.departure ?? trip.pickup_address ?? '—'}</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-2">
-                            <span class="text-orange-500 mt-0.5"></span>
-                            <div>
-                                <p class="text-xs text-gray-400">Destination</p>
-                                <p class="font-semibold text-gray-800">${trip.destination ?? trip.dropoff_address ?? '—'}</p>
-                            </div>
-                        </div>
-                    </div>
+            var bookings = trip.bookings ?? [];
+            var bookingsHtml = '';
+            if (bookings.length > 0) {
+                bookings.forEach(function(b) {
+                    var u = b.user ?? {};
+                    bookingsHtml +=
+                        '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+                        '<div>' +
+                        '<div style="font-size:13px;font-weight:600">' + (u.first_name ?? '') + ' ' + (u.last_name ?? '') + '</div>' +
+                        '<div style="font-size:11px;color:#94a3b8">' + (u.phone ?? '—') + '</div>' +
+                        '</div>' +
+                        '<span style="font-size:12px;padding:2px 8px;border-radius:12px;background:#ECFDF5;color:#10B981">' + (b.status ?? '') + '</span>' +
+                        '</div>';
+                });
+            } else {
+                bookingsHtml = '<div style="color:#94a3b8;font-size:13px">Aucune réservation</div>';
+            }
 
-                    <div class="bg-gray-50 rounded-xl p-4 space-y-2">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">Horaire & Prix</h3>
-                        <p class="text-sm"><span class="text-gray-400">Date :</span>
-                            <span class="font-semibold">${trip.departure_date ?? '—'}</span></p>
-                        <p class="text-sm"><span class="text-gray-400">Heure :</span>
-                            <span class="font-semibold">${trip.departure_time ?? '—'}</span></p>
-                        <p class="text-sm"><span class="text-gray-400">Prix/place :</span>
-                            <span class="font-bold text-orange-500">${Number(trip.price_per_seat ?? 0).toLocaleString()} FCFA</span></p>
-                        <p class="text-sm"><span class="text-gray-400">Places dispo :</span>
-                            <span class="font-semibold">${trip.available_seats ?? '—'}</span></p>
-                    </div>
+            document.getElementById('modal-content').innerHTML =
+                '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
 
-                    <div class="bg-gray-50 rounded-xl p-4 space-y-2">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">Chauffeur</h3>
-                        ${driver ? `
-                        <p class="text-sm font-semibold text-gray-800">
-                            ${driver.first_name ?? ''} ${driver.last_name ?? ''}
-                        </p>
-                        <p class="text-xs text-gray-400">${driver.pho
+                /* Itinéraire */
+                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
+                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Itinéraire</div>' +
+                '<div style="margin-bottom:8px"><div style="font-size:11px;color:#94a3b8">Départ</div>' +
+                '<div style="font-weight:600;font-size:13px">' + (trip.departure ?? trip.pickup_address ?? '—') + '</div></div>' +
+                '<div><div style="font-size:11px;color:#94a3b8">Destination</div>' +
+                '<div style="font-weight:600;font-size:13px">' + (trip.destination ?? trip.dropoff_address ?? '—') + '</div></div>' +
+                '</div>' +
+
+                /* Horaire & Prix */
+                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
+                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Horaire & Prix</div>' +
+                '<div style="font-size:13px;margin-bottom:6px"><span style="color:#94a3b8">Date : </span><strong>' + (trip.departure_date ?? '—') + '</strong></div>' +
+                '<div style="font-size:13px;margin-bottom:6px"><span style="color:#94a3b8">Heure : </span><strong>' + (trip.departure_time ?? '—') + '</strong></div>' +
+                '<div style="font-size:13px;margin-bottom:6px"><span style="color:#94a3b8">Prix/place : </span><strong style="color:#f97316">' + Number(trip.price_per_seat ?? 0).toLocaleString() + ' FCFA</strong></div>' +
+                '<div style="font-size:13px;margin-bottom:6px"><span style="color:#94a3b8">Places dispo : </span><strong>' + (trip.available_seats ?? '—') + '</strong></div>' +
+                '<div style="margin-top:8px"><span style="padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:' + s.bg + ';color:' + s.color + '">' + s.label + '</span></div>' +
+                '</div>' +
+
+                /* Chauffeur */
+                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
+                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Chauffeur</div>' +
+                driverHtml +
+                '</div>' +
+
+                /* Réservations */
+                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
+                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Réservations (' + bookings.length + ')</div>' +
+                bookingsHtml +
+                '</div>' +
+
+                '</div>';
+        })
+        .catch(function(err) {
+            document.getElementById('modal-content').innerHTML =
+                '<div style="text-align:center;padding:32px;color:#EF4444">Erreur lors du chargement</div>';
+        });
+}
+
+function closeTripModal() {
+    document.getElementById('trip-modal').style.display = 'none';
+}
+
+function closeTripModalOutside(event) {
+    if (event.target === document.getElementById('trip-modal')) {
+        closeTripModal();
+    }
+}
 </script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 @endpush
