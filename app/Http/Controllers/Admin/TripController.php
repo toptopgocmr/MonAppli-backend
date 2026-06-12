@@ -69,6 +69,12 @@ class TripController extends Controller
         return view('admin.trips.index', compact('trips', 'stats'));
     }
 
+    public function detail($id)
+    {
+        $trip = Trip::with(['driver', 'bookings.user'])->findOrFail($id);
+        return response()->json(['data' => $trip->load('driver')]);
+    }
+
     public function show($id)
     {
         $trip = Trip::with(['driver', 'vehicle', 'bookings.user'])->findOrFail($id);

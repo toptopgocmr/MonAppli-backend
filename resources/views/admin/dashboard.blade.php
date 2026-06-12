@@ -1,102 +1,84 @@
 @extends('admin.layouts.app')
+@section('title','Dashboard')
 
 @section('content')
-<div class="space-y-6">
+<div style="display:flex;flex-direction:column;gap:20px">
 
-    {{-- ===== CARTE INTERACTIVE ===== --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    {{-- KPI Cards --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">👤 Clients inscrits</div>
+            <div class="val" style="color:#1DA1F2">{{ $stats['total_users'] }}</div>
+            <div class="sub" style="color:#22c55e">+{{ $stats['new_users_today'] }} aujourd'hui</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #FFC107">
+            <div class="lbl">🚗 Chauffeurs actifs</div>
+            <div class="val" style="color:#d97706">{{ $stats['active_drivers'] }}</div>
+            <div class="sub" style="color:#22c55e">{{ $stats['online_drivers'] }} en ligne maintenant</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #6366f1">
+            <div class="lbl">📍 Courses aujourd'hui</div>
+            <div class="val" style="color:#4f46e5">{{ $stats['today_rides'] }}</div>
+            <div class="sub">{{ $stats['active_rides'] }} en cours</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">💰 Revenus du jour</div>
+            <div class="val" style="color:#16a34a;font-size:22px">{{ number_format($stats['today_revenue'],0,',',' ') }} XAF</div>
+            <div class="sub">Commission : {{ number_format($stats['today_commission'],0,',',' ') }} XAF</div>
+        </div>
+    </div>
 
-        {{-- Header carte --}}
-        <div class="p-4 border-b border-gray-100 flex items-center justify-between flex-wrap gap-3">
-            <div class="flex items-center gap-3">
-                <span class="text-lg">📍</span>
+    {{-- Carte temps réel --}}
+    <div class="panel">
+        <div class="panel-header">
+            <div style="display:flex;align-items:center;gap:12px">
                 <div>
-                    <h2 class="font-bold text-gray-800">Suivi des chauffeurs en temps réel</h2>
-                    <p class="text-xs text-gray-400">Mis à jour toutes les 10 secondes</p>
+                    <h2 style="font-size:15px;font-weight:700;color:#0f172a">📍 Suivi des chauffeurs en temps réel</h2>
+                    <p style="font-size:12px;color:#94a3b8;margin-top:2px">Mis à jour toutes les 10 secondes</p>
                 </div>
-                <div class="flex items-center gap-2 ml-4">
-                    <span class="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></span>
-                    <span class="text-xs text-green-600 font-medium" id="onlineCount">— en ligne</span>
+                <div style="display:flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 12px;border-radius:99px">
+                    <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 1.5s infinite"></span>
+                    <span style="font-size:12px;color:#16a34a;font-weight:600" id="onlineCount">— en ligne</span>
                 </div>
             </div>
-
-            {{-- Légende --}}
-            <div class="flex items-center gap-4 text-xs">
-                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-green-500 inline-block"></span> En ligne</span>
-                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-yellow-400 inline-block"></span> En pause</span>
-                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-full bg-gray-400 inline-block"></span> Hors ligne</span>
+            <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:#64748b">
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block"></span>En ligne</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#facc15;display:inline-block"></span>En pause</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block"></span>Hors ligne</span>
             </div>
         </div>
 
-        {{-- Barre de recherche --}}
-        <div class="p-4 bg-gray-50 border-b border-gray-100">
-            <div class="flex gap-3 flex-wrap items-end">
-                <div class="flex-1 min-w-40">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">👤 Nom chauffeur</label>
-                    <input type="text" id="search_chauffeur" placeholder="Ex: Jean Dupont"
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+        {{-- Filtres --}}
+        <div style="padding:14px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+                <div style="flex:1;min-width:160px">
+                    <label class="ttg-label">👤 Nom chauffeur</label>
+                    <input type="text" id="search_chauffeur" placeholder="Ex: Jean Dupont" class="ttg-input">
                 </div>
-                <div class="flex-1 min-w-36">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">🔢 Immatriculation</label>
-                    <input type="text" id="search_matricule" placeholder="Ex: AB-1234-CD"
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div style="flex:1;min-width:140px">
+                    <label class="ttg-label">🔢 Immatriculation</label>
+                    <input type="text" id="search_matricule" placeholder="Ex: AB-1234-CD" class="ttg-input">
                 </div>
-                <div class="flex-1 min-w-32">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">🎨 Couleur</label>
-                    <input type="text" id="search_couleur" placeholder="Ex: Blanc"
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div style="flex:1;min-width:120px">
+                    <label class="ttg-label">🎨 Couleur</label>
+                    <input type="text" id="search_couleur" placeholder="Ex: Blanc" class="ttg-input">
                 </div>
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">📡 Statut</label>
-                    <select id="search_status"
-                            class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="ttg-label">📡 Statut</label>
+                    <select id="search_status" class="ttg-select" style="min-width:120px">
                         <option value="all">Tous</option>
                         <option value="online">En ligne</option>
                         <option value="pause">En pause</option>
                         <option value="offline">Hors ligne</option>
                     </select>
                 </div>
-                <button onclick="searchAndZoom()"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                    🔍 Rechercher & Zoomer
-                </button>
-                <button onclick="resetSearch()"
-                    class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                    ✕ Reset
-                </button>
+                <button onclick="searchAndZoom()" class="btn btn-primary">🔍 Rechercher & Zoomer</button>
+                <button onclick="resetSearch()" class="btn btn-gray">✕ Reset</button>
             </div>
-
-            {{-- Résultats recherche --}}
-            <div id="searchResults" class="hidden mt-3 flex gap-2 flex-wrap"></div>
+            <div id="searchResults" class="hidden" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
         </div>
 
-        {{-- Carte Leaflet --}}
-        <div id="map" style="height: 480px; z-index: 1;"></div>
-
-    </div>
-
-    {{-- ===== STATS ===== --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-blue-500">
-            <div class="text-sm text-gray-500 mb-1">Utilisateurs</div>
-            <div class="text-3xl font-bold text-gray-800">{{ $stats['total_users'] }}</div>
-            <div class="text-xs text-green-500 mt-1">+{{ $stats['new_users_today'] }} aujourd'hui</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-yellow-400">
-            <div class="text-sm text-gray-500 mb-1">Chauffeurs actifs</div>
-            <div class="text-3xl font-bold text-yellow-500">{{ $stats['active_drivers'] }}</div>
-            <div class="text-xs text-green-500 mt-1">{{ $stats['online_drivers'] }} en ligne</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-gray-800">
-            <div class="text-sm text-gray-500 mb-1">Courses aujourd'hui</div>
-            <div class="text-3xl font-bold text-gray-800">{{ $stats['today_rides'] }}</div>
-            <div class="text-xs text-gray-400 mt-1">{{ $stats['active_rides'] }} en cours</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-green-500">
-            <div class="text-sm text-gray-500 mb-1">Revenus du jour</div>
-            <div class="text-2xl font-bold text-green-600">{{ number_format($stats['today_revenue'], 0, ',', ' ') }} XAF</div>
-            <div class="text-xs text-gray-400 mt-1">Commission : {{ number_format($stats['today_commission'], 0, ',', ' ') }} XAF</div>
-        </div>
+        <div id="map" style="height:480px;z-index:1"></div>
     </div>
 
 </div>

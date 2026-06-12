@@ -1,48 +1,36 @@
 @extends('admin.layouts.app')
+@section('title','Support Admin ↔ Utilisateurs')
 
 @section('content')
-<div class="p-6">
+<div style="display:flex;flex-direction:column;gap:16px">
 
-    {{-- ===== HEADER ===== --}}
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">🛡 Support Admin ↔ Utilisateurs</h1>
-            <p class="text-sm text-gray-500 mt-1">Écrivez à n'importe quel utilisateur depuis cette interface</p>
+    <div>
+        <h1 class="page-title">🛡 Support Admin ↔ Utilisateurs</h1>
+        <p class="page-sub">Écrivez à n'importe quel utilisateur depuis cette interface</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">Conversations actives</div>
+            <div class="val" style="color:#1DA1F2">{{ $totalConversations }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">Messages envoyés</div>
+            <div class="val" style="color:#16a34a">{{ $totalMessages }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #f59e0b">
+            <div class="lbl">Non lus</div>
+            <div class="val" style="color:#d97706">{{ $unreadMessages }}</div>
         </div>
     </div>
 
-    {{-- ===== STATS ===== --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Conversations actives</div>
-            <div class="text-3xl font-bold text-blue-600">{{ $totalConversations }}</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Total Messages envoyés</div>
-            <div class="text-3xl font-bold text-green-600">{{ $totalMessages }}</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Non lus</div>
-            <div class="text-3xl font-bold text-orange-500">{{ $unreadMessages }}</div>
-        </div>
-    </div>
-
-    {{-- ===== RECHERCHE ===== --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <form method="GET" action="{{ route('admin.support.users.index') }}" class="flex gap-3 items-center">
-            <div class="flex-1">
-                <input type="text" name="search" value="{{ request('search') }}"
-                    placeholder="🔍 Rechercher par nom, téléphone ou email..."
-                    class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            </div>
-            <button type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
-                Rechercher
-            </button>
-            <a href="{{ route('admin.support.users.index') }}"
-                class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                ✕ Reset
-            </a>
+    <div class="filter-bar">
+        <form method="GET" action="{{ route('admin.support.users.index') }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input type="text" name="search" value="{{ request('search') }}"
+                placeholder="🔍 Rechercher par nom, téléphone ou email..."
+                class="ttg-input" style="flex:1;min-width:220px">
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+            <a href="{{ route('admin.support.users.index') }}" class="btn btn-secondary">✕ Reset</a>
         </form>
     </div>
 
@@ -241,10 +229,10 @@
         </div>
     </div>
 
-</div>
+</div>{{-- /page wrapper --}}
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     const box = document.getElementById('messagesBox');
     if (box) box.scrollTop = box.scrollHeight;
@@ -253,4 +241,4 @@
     setInterval(() => location.reload(), 10000);
     @endif
 </script>
-@endsection
+@endpush

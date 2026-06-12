@@ -18,7 +18,7 @@ class Trip extends Model
         'pickup_lat', 'pickup_lng',
         'destination', 'dropoff_address', 'dropoff_point', 'destination_city',
         'dropoff_lat', 'dropoff_lng',
-        'departure_date', 'departure_time',
+        'departure_date', 'departure_time', 'arrival_time',
         'price_per_seat', 'amount', 'commission', 'driver_net',
         'available_seats', 'total_seats',
         'luggage_included', 'luggage_kg', 'luggage_weight_kg',
@@ -94,6 +94,6 @@ class Trip extends Model
     {
         return (int) $this->bookings()
             ->whereIn('status', ['confirmed', 'paid'])
-            ->sum('seats');
+            ->sum('passengers');
     }
 }

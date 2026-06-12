@@ -1,81 +1,53 @@
 @extends('admin.layouts.app')
+@section('title','Revenus')
 
 @section('content')
+<div style="display:flex;flex-direction:column;gap:20px">
 
-{{-- ═══════════════════════════════════════════════════════════
-     EN-TÊTE
-═══════════════════════════════════════════════════════════ --}}
-<div class="flex items-center justify-between mb-8">
+{{-- Header --}}
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
-        <h1 class="text-2xl font-bold text-gray-800">💰 Revenus</h1>
-        <p class="text-sm text-gray-500 mt-1">Analyse complète des revenus générés par la plateforme</p>
+        <h1 class="page-title">💰 Revenus</h1>
+        <p class="page-sub">Analyse complète des revenus générés par la plateforme</p>
     </div>
-    <a href="{{ route('admin.revenus.export', request()->query()) }}"
-       class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg font-semibold transition-all duration-300">
+    <a href="{{ route('admin.revenus.export', request()->query()) }}" class="btn btn-success">
         📥 Exporter Excel
     </a>
 </div>
 
-{{-- ═══════════════════════════════════════════════════════════
-     KPI CARDS
-═══════════════════════════════════════════════════════════ --}}
-<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-
-    <div class="bg-white rounded-xl p-5 shadow border-l-4 border-[#1DA1F2]">
-        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Aujourd'hui</p>
-        <p class="text-2xl font-bold text-[#1DA1F2] mt-1">
-            {{ number_format($kpis['today'], 0, ',', ' ') }} XAF
-        </p>
-        @php $diffDay = $kpis['yesterday'] > 0 ? (($kpis['today'] - $kpis['yesterday']) / $kpis['yesterday']) * 100 : 0; @endphp
-        <p class="text-xs mt-1 {{ $diffDay >= 0 ? 'text-green-600' : 'text-red-500' }} font-semibold">
-            {{ $diffDay >= 0 ? '↑' : '↓' }} {{ number_format(abs($diffDay), 1) }}% vs hier
-        </p>
+{{-- KPI Cards --}}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
+    @php $diffDay = $kpis['yesterday'] > 0 ? (($kpis['today'] - $kpis['yesterday']) / $kpis['yesterday']) * 100 : 0; @endphp
+    <div class="stat-card" style="border-left:4px solid #1DA1F2">
+        <div class="lbl">AUJOURD'HUI</div>
+        <div class="val" style="color:#1DA1F2;font-size:20px">{{ number_format($kpis['today'],0,',',' ') }} XAF</div>
+        <div class="sub" style="color:{{ $diffDay>=0?'#16a34a':'#dc2626' }};font-weight:600">{{ $diffDay>=0?'↑':'↓' }} {{ number_format(abs($diffDay),1) }}% vs hier</div>
     </div>
-
-    <div class="bg-white rounded-xl p-5 shadow border-l-4 border-purple-500">
-        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Cette semaine</p>
-        <p class="text-2xl font-bold text-purple-600 mt-1">
-            {{ number_format($kpis['this_week'], 0, ',', ' ') }} XAF
-        </p>
-        @php $diffWeek = $kpis['last_week_total'] > 0 ? (($kpis['this_week'] - $kpis['last_week_total']) / $kpis['last_week_total']) * 100 : 0; @endphp
-        <p class="text-xs mt-1 {{ $diffWeek >= 0 ? 'text-green-600' : 'text-red-500' }} font-semibold">
-            {{ $diffWeek >= 0 ? '↑' : '↓' }} {{ number_format(abs($diffWeek), 1) }}% vs sem. dern.
-        </p>
+    @php $diffWeek = $kpis['last_week_total'] > 0 ? (($kpis['this_week'] - $kpis['last_week_total']) / $kpis['last_week_total']) * 100 : 0; @endphp
+    <div class="stat-card" style="border-left:4px solid #8b5cf6">
+        <div class="lbl">CETTE SEMAINE</div>
+        <div class="val" style="color:#7c3aed;font-size:20px">{{ number_format($kpis['this_week'],0,',',' ') }} XAF</div>
+        <div class="sub" style="color:{{ $diffWeek>=0?'#16a34a':'#dc2626' }};font-weight:600">{{ $diffWeek>=0?'↑':'↓' }} {{ number_format(abs($diffWeek),1) }}% vs sem. dern.</div>
     </div>
-
-    <div class="bg-white rounded-xl p-5 shadow border-l-4 border-green-500">
-        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Ce mois</p>
-        <p class="text-2xl font-bold text-green-600 mt-1">
-            {{ number_format($kpis['this_month'], 0, ',', ' ') }} XAF
-        </p>
-        @php $diffMonth = $kpis['last_month'] > 0 ? (($kpis['this_month'] - $kpis['last_month']) / $kpis['last_month']) * 100 : 0; @endphp
-        <p class="text-xs mt-1 {{ $diffMonth >= 0 ? 'text-green-600' : 'text-red-500' }} font-semibold">
-            {{ $diffMonth >= 0 ? '↑' : '↓' }} {{ number_format(abs($diffMonth), 1) }}% vs mois dern.
-        </p>
+    @php $diffMonth = $kpis['last_month'] > 0 ? (($kpis['this_month'] - $kpis['last_month']) / $kpis['last_month']) * 100 : 0; @endphp
+    <div class="stat-card" style="border-left:4px solid #22c55e">
+        <div class="lbl">CE MOIS</div>
+        <div class="val" style="color:#16a34a;font-size:20px">{{ number_format($kpis['this_month'],0,',',' ') }} XAF</div>
+        <div class="sub" style="color:{{ $diffMonth>=0?'#16a34a':'#dc2626' }};font-weight:600">{{ $diffMonth>=0?'↑':'↓' }} {{ number_format(abs($diffMonth),1) }}% vs mois dern.</div>
     </div>
-
-    <div class="bg-white rounded-xl p-5 shadow border-l-4 border-yellow-500">
-        <p class="text-xs text-gray-400 uppercase font-semibold tracking-wider">Cette année</p>
-        <p class="text-2xl font-bold text-yellow-600 mt-1">
-            {{ number_format($kpis['this_year'], 0, ',', ' ') }} XAF
-        </p>
-        <p class="text-xs mt-1 text-gray-400 font-semibold">
-            Total all time : {{ number_format($kpis['total_all'], 0, ',', ' ') }} XAF
-        </p>
+    <div class="stat-card" style="border-left:4px solid #f59e0b">
+        <div class="lbl">CETTE ANNÉE</div>
+        <div class="val" style="color:#d97706;font-size:20px">{{ number_format($kpis['this_year'],0,',',' ') }} XAF</div>
+        <div class="sub">Total all time : {{ number_format($kpis['total_all'],0,',',' ') }} XAF</div>
     </div>
-
 </div>
 
-{{-- ═══════════════════════════════════════════════════════════
-     ONGLETS PÉRIODE
-═══════════════════════════════════════════════════════════ --}}
-<div class="flex gap-2 mb-6">
-    @foreach(['day' => 'Journalier', 'week' => 'Hebdomadaire', 'month' => 'Mensuel', 'year' => 'Annuel'] as $key => $label)
-        <a href="{{ route('admin.revenus.index', array_merge(request()->query(), ['period' => $key])) }}"
-           class="px-4 py-2 rounded-lg text-sm font-semibold border transition-all duration-200
-           {{ request('period', 'month') === $key
-               ? 'bg-[#1DA1F2] text-white border-[#1DA1F2]'
-               : 'bg-white text-gray-500 border-gray-200 hover:border-[#1DA1F2] hover:text-[#1DA1F2]' }}">
+{{-- Onglets période --}}
+<div style="display:flex;gap:8px;flex-wrap:wrap">
+    @foreach(['day'=>'Journalier','week'=>'Hebdomadaire','month'=>'Mensuel','year'=>'Annuel'] as $key=>$label)
+        <a href="{{ route('admin.revenus.index', array_merge(request()->query(), ['period'=>$key])) }}"
+           style="padding:8px 18px;border-radius:9px;font-size:13px;font-weight:600;border:1.5px solid;text-decoration:none;transition:all .2s;
+           {{ request('period','month')===$key ? 'background:#1DA1F2;color:#fff;border-color:#1DA1F2' : 'background:#fff;color:#475569;border-color:#e2e8f0' }}">
             {{ $label }}
         </a>
     @endforeach
@@ -261,4 +233,5 @@
 
 </div>
 
+</div>{{-- /page wrapper --}}
 @endsection

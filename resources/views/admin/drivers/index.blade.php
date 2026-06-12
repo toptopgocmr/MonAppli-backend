@@ -1,289 +1,190 @@
 @extends('admin.layouts.app')
+@section('title','Chauffeurs')
 
 @section('content')
 
-<!-- HEADER -->
-<div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+<div style="display:flex;flex-direction:column;gap:20px">
+
+{{-- Header --}}
+<div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
-        <h1 class="text-3xl font-bold text-gray-800">
-            🚗 Gestion des <span class="text-[#1DA1F2]">Chauffeurs</span>
-        </h1>
-        <p class="text-gray-500 text-sm mt-1">Liste et gestion de tous les chauffeurs</p>
+        <h1 class="page-title">🚗 Gestion des Chauffeurs</h1>
+        <p class="page-sub">Liste et gestion de tous les chauffeurs</p>
     </div>
-    <a href="{{ route('admin.drivers.create') }}"
-       class="bg-[#1DA1F2] text-white px-6 py-3 rounded-xl font-semibold
-              hover:bg-[#FFC107] hover:text-black transition-all duration-300
-              hover:-translate-y-1 hover:shadow-lg flex items-center gap-2">
-        ➕ Nouveau Chauffeur
-    </a>
+    <a href="{{ route('admin.drivers.create') }}" class="btn btn-primary">➕ Nouveau Chauffeur</a>
 </div>
 
-<!-- STATS -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-    <div class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-blue-500">
-        <p class="text-gray-500 text-sm">Total</p>
-        <h2 class="text-3xl font-bold text-blue-500 mt-1">{{ $drivers->total() }}</h2>
+{{-- Stats --}}
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+    <div class="stat-card" style="border-left:4px solid #1DA1F2">
+        <div class="lbl">Total</div>
+        <div class="val" style="color:#1DA1F2">{{ $drivers->total() }}</div>
     </div>
-    <div class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-green-500">
-        <p class="text-gray-500 text-sm">Approuvés</p>
-        <h2 class="text-3xl font-bold text-green-500 mt-1">{{ \App\Models\Driver\Driver::where('status','approved')->count() }}</h2>
+    <div class="stat-card" style="border-left:4px solid #22c55e">
+        <div class="lbl">Approuvés</div>
+        <div class="val" style="color:#16a34a">{{ \App\Models\Driver\Driver::where('status','approved')->count() }}</div>
     </div>
-    <div class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-yellow-500">
-        <p class="text-gray-500 text-sm">En attente</p>
-        <h2 class="text-3xl font-bold text-yellow-500 mt-1">{{ \App\Models\Driver\Driver::where('status','pending')->count() }}</h2>
+    <div class="stat-card" style="border-left:4px solid #f59e0b">
+        <div class="lbl">En attente</div>
+        <div class="val" style="color:#d97706">{{ \App\Models\Driver\Driver::where('status','pending')->count() }}</div>
     </div>
-    <div class="bg-white p-5 rounded-2xl shadow-md border-l-4 border-red-500">
-        <p class="text-gray-500 text-sm">Suspendus</p>
-        <h2 class="text-3xl font-bold text-red-500 mt-1">{{ \App\Models\Driver\Driver::where('status','suspended')->count() }}</h2>
+    <div class="stat-card" style="border-left:4px solid #ef4444">
+        <div class="lbl">Suspendus</div>
+        <div class="val" style="color:#dc2626">{{ \App\Models\Driver\Driver::where('status','suspended')->count() }}</div>
     </div>
 </div>
 
-<!-- FILTRES -->
-<div class="bg-white p-6 rounded-2xl shadow-md mb-6">
-    <form method="GET" action="{{ route('admin.drivers.index') }}" class="flex flex-wrap gap-4">
-        <input type="text" name="search" value="{{ request('search') }}"
-               placeholder="Nom, téléphone..."
-               class="px-4 py-2 border rounded-xl focus:ring-2 focus:ring-[#1DA1F2] outline-none flex-1">
-        <select name="status" class="px-4 py-2 border rounded-xl focus:ring-2 focus:ring-[#1DA1F2] outline-none bg-white">
+{{-- Filtres --}}
+<div class="filter-bar">
+    <form method="GET" action="{{ route('admin.drivers.index') }}" style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;width:100%">
+        <div style="flex:1;min-width:180px">
+            <input type="text" name="search" value="{{ request('search') }}"
+                   placeholder="Nom, téléphone..." class="ttg-input">
+        </div>
+        <select name="status" class="ttg-select" style="min-width:160px">
             <option value="">Tous les statuts</option>
-            <option value="pending"   {{ request('status') == 'pending'   ? 'selected' : '' }}>⏳ En attente</option>
-            <option value="approved"  {{ request('status') == 'approved'  ? 'selected' : '' }}>✅ Approuvés</option>
-            <option value="rejected"  {{ request('status') == 'rejected'  ? 'selected' : '' }}>❌ Rejetés</option>
-            <option value="suspended" {{ request('status') == 'suspended' ? 'selected' : '' }}>🚫 Suspendus</option>
+            <option value="pending"   {{ request('status')=='pending'   ?'selected':'' }}>⏳ En attente</option>
+            <option value="approved"  {{ request('status')=='approved'  ?'selected':'' }}>✅ Approuvés</option>
+            <option value="rejected"  {{ request('status')=='rejected'  ?'selected':'' }}>❌ Rejetés</option>
+            <option value="suspended" {{ request('status')=='suspended' ?'selected':'' }}>🚫 Suspendus</option>
         </select>
-        <button type="submit" class="bg-[#1DA1F2] text-white px-6 py-2 rounded-xl hover:bg-[#FFC107] hover:text-black transition">
-            Filtrer
-        </button>
-        <a href="{{ route('admin.drivers.index') }}" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-xl hover:bg-gray-300 transition">
-            Reset
-        </a>
+        <button type="submit" class="btn btn-primary">Filtrer</button>
+        <a href="{{ route('admin.drivers.index') }}" class="btn btn-gray">Reset</a>
     </form>
 </div>
 
-<!-- TABLEAU -->
-<div class="bg-white rounded-2xl shadow-md overflow-hidden">
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+{{-- Tableau --}}
+<div class="panel">
+    <div style="overflow-x:auto">
+        <table class="ttg-table">
+            <thead>
                 <tr>
-                    <th class="px-6 py-4 text-left">Chauffeur</th>
-                    <th class="px-6 py-4 text-left">Téléphone</th>
-                    <th class="px-6 py-4 text-left">Véhicule</th>
-                    <th class="px-6 py-4 text-left">Type</th>
-                    <th class="px-6 py-4 text-left">Statut KYC</th>
-                    <th class="px-6 py-4 text-left">En ligne</th>
-                    <th class="px-6 py-4 text-left">Inscrit le</th>
-                    <th class="px-6 py-4 text-center">Actions</th>
+                    <th>Chauffeur</th>
+                    <th>Téléphone</th>
+                    <th>Véhicule</th>
+                    <th>Type</th>
+                    <th>Statut KYC</th>
+                    <th>En ligne</th>
+                    <th>Inscrit le</th>
+                    <th style="text-align:center">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-100">
+            <tbody>
                 @forelse($drivers as $driver)
-                <tr class="hover:bg-gray-50 transition" id="driver-row-{{ $driver->id }}">
-
-                    <!-- Nom -->
-                    <td class="px-6 py-4">
-                        <div class="flex items-center gap-3">
+                <tr id="driver-row-{{ $driver->id }}">
+                    <td>
+                        <div style="display:flex;align-items:center;gap:10px">
                             @if($driver->profile_photo)
-                                <img src="{{ $driver->profile_photo }}"
-                                     class="w-9 h-9 rounded-full object-cover border"
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                <div class="w-9 h-9 rounded-full bg-[#1DA1F2] items-center justify-center text-white font-bold text-sm hidden">
-                                    {{ strtoupper(substr($driver->first_name, 0, 1)) }}
-                                </div>
+                                <img src="{{ $driver->profile_photo }}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid #e2e8f0"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                                <div class="avatar" style="background:#1DA1F2;color:#fff;display:none">{{ strtoupper(substr($driver->first_name,0,1)) }}</div>
                             @else
-                                <div class="w-9 h-9 rounded-full bg-[#1DA1F2] flex items-center justify-center text-white font-bold text-sm">
-                                    {{ strtoupper(substr($driver->first_name, 0, 1)) }}
-                                </div>
+                                <div class="avatar" style="background:#1DA1F2;color:#fff">{{ strtoupper(substr($driver->first_name,0,1)) }}</div>
                             @endif
                             <div>
-                                <p class="font-semibold text-gray-800">{{ $driver->first_name }} {{ $driver->last_name }}</p>
-                                <p class="text-xs text-gray-400">{{ $driver->vehicle_city ?? '—' }}</p>
+                                <p style="font-weight:600;color:#0f172a;font-size:13px">{{ $driver->first_name }} {{ $driver->last_name }}</p>
+                                <p style="font-size:11px;color:#94a3b8">{{ $driver->vehicle_city ?? '—' }}</p>
                             </div>
                         </div>
                     </td>
-
-                    <!-- Téléphone -->
-                    <td class="px-6 py-4 text-gray-600">{{ $driver->phone }}</td>
-
-                    <!-- Véhicule -->
-                    <td class="px-6 py-4 text-gray-600">
-                        {{ $driver->vehicle_brand ?? '—' }} {{ $driver->vehicle_model ?? '' }}<br>
-                        <span class="text-xs text-gray-400">{{ $driver->vehicle_plate ?? '—' }}</span>
+                    <td style="color:#475569">{{ $driver->phone }}</td>
+                    <td>
+                        <p style="font-size:13px;color:#374151">{{ $driver->vehicle_brand ?? '—' }} {{ $driver->vehicle_model ?? '' }}</p>
+                        <p style="font-size:11px;color:#94a3b8">{{ $driver->vehicle_plate ?? '—' }}</p>
                     </td>
-
-                    <!-- Type -->
-                    <td class="px-6 py-4">
-                        <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">
-                            {{ $driver->vehicle_type ?? '—' }}
-                        </span>
-                    </td>
-
-                    <!-- Statut KYC -->
-                    <td class="px-6 py-4">
-                        @if($driver->status == 'approved')
-                            <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">✅ Approuvé</span>
-                        @elseif($driver->status == 'pending')
-                            <span class="bg-yellow-100 text-yellow-700 text-xs font-semibold px-3 py-1 rounded-full">⏳ En attente</span>
-                        @elseif($driver->status == 'rejected')
-                            <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">❌ Rejeté</span>
+                    <td><span class="badge badge-gray">{{ $driver->vehicle_type ?? '—' }}</span></td>
+                    <td>
+                        @if($driver->status=='approved')
+                            <span class="badge badge-green">✅ Approuvé</span>
+                        @elseif($driver->status=='pending')
+                            <span class="badge badge-yellow">⏳ En attente</span>
+                        @elseif($driver->status=='rejected')
+                            <span class="badge badge-red">❌ Rejeté</span>
                         @else
-                            <span class="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">🚫 Suspendu</span>
+                            <span class="badge badge-gray">🚫 Suspendu</span>
                         @endif
                     </td>
-
-                    <!-- Statut En ligne — mis à jour en temps réel via Pusher -->
-                    <td class="px-6 py-4">
+                    <td>
                         <span id="driver-status-{{ $driver->id }}">
-                            @if($driver->driver_status == 'online')
-                                <span class="flex items-center gap-1 text-green-600 text-xs font-semibold">
-                                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> En ligne
+                            @if($driver->driver_status=='online')
+                                <span style="display:flex;align-items:center;gap:5px;color:#16a34a;font-size:12px;font-weight:600">
+                                    <span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 1.5s infinite"></span> En ligne
                                 </span>
-                            @elseif($driver->driver_status == 'pause')
-                                <span class="flex items-center gap-1 text-yellow-600 text-xs font-semibold">
-                                    <span class="w-2 h-2 bg-yellow-500 rounded-full"></span> Pause
+                            @elseif($driver->driver_status=='pause')
+                                <span style="display:flex;align-items:center;gap:5px;color:#d97706;font-size:12px;font-weight:600">
+                                    <span style="width:7px;height:7px;border-radius:50%;background:#facc15;display:inline-block"></span> Pause
                                 </span>
                             @else
-                                <span class="flex items-center gap-1 text-gray-400 text-xs font-semibold">
-                                    <span class="w-2 h-2 bg-gray-400 rounded-full"></span> Hors ligne
+                                <span style="display:flex;align-items:center;gap:5px;color:#9ca3af;font-size:12px;font-weight:600">
+                                    <span style="width:7px;height:7px;border-radius:50%;background:#9ca3af;display:inline-block"></span> Hors ligne
                                 </span>
                             @endif
                         </span>
                     </td>
-
-                    <!-- Date -->
-                    <td class="px-6 py-4 text-gray-500 text-xs">
-                        {{ $driver->created_at->format('d/m/Y') }}
-                    </td>
-
-                    <!-- Actions -->
-                    <td class="px-6 py-4">
-                        <div class="flex justify-center items-center gap-2 flex-wrap">
-
-                            <a href="{{ route('admin.drivers.show', $driver->id) }}"
-                               class="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-gray-200 transition">
-                                👁 Voir
-                            </a>
-
-                            <a href="{{ route('admin.drivers.edit', $driver->id) }}"
-                               class="bg-blue-100 text-blue-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-blue-200 transition">
-                                ✏️ Modifier
-                            </a>
-
-                            @if($driver->status == 'pending')
-                                <form method="POST" action="{{ route('admin.drivers.approve', $driver->id) }}">
-                                    @csrf
-                                    <button type="submit"
-                                            class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-green-200 transition">
-                                        ✅ Approuver
-                                    </button>
+                    <td style="font-size:12px;color:#64748b">{{ $driver->created_at->format('d/m/Y') }}</td>
+                    <td>
+                        <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
+                            <a href="{{ route('admin.drivers.show',$driver->id) }}" class="btn btn-gray btn-sm">👁 Voir</a>
+                            <a href="{{ route('admin.drivers.edit',$driver->id) }}" class="btn btn-primary btn-sm">✏️</a>
+                            @if($driver->status=='pending')
+                                <form method="POST" action="{{ route('admin.drivers.approve',$driver->id) }}">@csrf
+                                    <button class="btn btn-success btn-sm">✅</button>
                                 </form>
-                                <form method="POST" action="{{ route('admin.drivers.reject', $driver->id) }}">
-                                    @csrf
-                                    <button type="submit" onclick="return confirm('Rejeter ce chauffeur ?')"
-                                            class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-200 transition">
-                                        ❌ Rejeter
-                                    </button>
+                                <form method="POST" action="{{ route('admin.drivers.reject',$driver->id) }}">@csrf
+                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Rejeter ?')">❌</button>
                                 </form>
-                            @elseif($driver->status == 'approved')
-                                <form method="POST" action="{{ route('admin.drivers.suspend', $driver->id) }}">
-                                    @csrf
-                                    <button type="submit" onclick="return confirm('Suspendre ce chauffeur ?')"
-                                            class="bg-orange-100 text-orange-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-orange-200 transition">
-                                        🚫 Suspendre
-                                    </button>
+                            @elseif($driver->status=='approved')
+                                <form method="POST" action="{{ route('admin.drivers.suspend',$driver->id) }}">@csrf
+                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Suspendre ?')">🚫</button>
                                 </form>
-                            @elseif($driver->status == 'suspended')
-                                <form method="POST" action="{{ route('admin.drivers.activate', $driver->id) }}">
-                                    @csrf
-                                    <button type="submit"
-                                            class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-green-200 transition">
-                                        ✅ Réactiver
-                                    </button>
+                            @elseif($driver->status=='suspended')
+                                <form method="POST" action="{{ route('admin.drivers.activate',$driver->id) }}">@csrf
+                                    <button class="btn btn-success btn-sm">♻️</button>
                                 </form>
-                            @elseif($driver->status == 'rejected')
-                                <form method="POST" action="{{ route('admin.drivers.approve', $driver->id) }}">
-                                    @csrf
-                                    <button type="submit"
-                                            class="bg-green-100 text-green-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-green-200 transition">
-                                        ✅ Approuver
-                                    </button>
+                            @elseif($driver->status=='rejected')
+                                <form method="POST" action="{{ route('admin.drivers.approve',$driver->id) }}">@csrf
+                                    <button class="btn btn-success btn-sm">✅</button>
                                 </form>
                             @endif
-
-                            <form method="POST" action="{{ route('admin.drivers.destroy', $driver->id) }}">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" onclick="return confirm('Supprimer définitivement ce chauffeur ?')"
-                                        class="bg-red-100 text-red-700 px-3 py-1 rounded-lg text-xs font-semibold hover:bg-red-200 transition">
-                                    🗑
-                                </button>
+                            <form method="POST" action="{{ route('admin.drivers.destroy',$driver->id) }}">
+                                @csrf @method('DELETE')
+                                <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer définitivement ?')">🗑</button>
                             </form>
-
                         </div>
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="8" class="px-6 py-10 text-center text-gray-400">
-                        Aucun chauffeur trouvé.
-                    </td>
-                </tr>
+                <tr><td colspan="8" style="padding:40px;text-align:center;color:#94a3b8">Aucun chauffeur trouvé.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
-
-    <!-- PAGINATION -->
     @if($drivers->hasPages())
-    <div class="px-6 py-4 border-t border-gray-100">
+    <div style="padding:16px 20px;border-top:1px solid #f1f5f9">
         {{ $drivers->appends(request()->query())->links() }}
     </div>
     @endif
 </div>
 
+</div>
 @endsection
 
 @push('scripts')
-<!-- Pusher JS -->
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
-    // Connexion Pusher
-    const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', {
-        cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
-        forceTLS: true,
-    });
-
-    // Écoute le canal drivers.status
-    const channel = pusher.subscribe('drivers.status');
-
-    channel.bind('status.updated', function(data) {
-        const el = document.getElementById('driver-status-' + data.driver_id);
-        if (!el) return;
-
-        let html = '';
-        if (data.status === 'online') {
-            html = `<span class="flex items-center gap-1 text-green-600 text-xs font-semibold">
-                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> En ligne
-                    </span>`;
-        } else if (data.status === 'pause') {
-            html = `<span class="flex items-center gap-1 text-yellow-600 text-xs font-semibold">
-                        <span class="w-2 h-2 bg-yellow-500 rounded-full"></span> Pause
-                    </span>`;
-        } else {
-            html = `<span class="flex items-center gap-1 text-gray-400 text-xs font-semibold">
-                        <span class="w-2 h-2 bg-gray-400 rounded-full"></span> Hors ligne
-                    </span>`;
-        }
-
-        el.innerHTML = html;
-
-        // Flash visuel sur la ligne
-        const row = document.getElementById('driver-row-' + data.driver_id);
-        if (row) {
-            row.style.transition = 'background 0.3s';
-            row.style.background = '#f0fdf4';
-            setTimeout(() => row.style.background = '', 1500);
-        }
-    });
+const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', { cluster: '{{ env("PUSHER_APP_CLUSTER") }}', forceTLS: true });
+const channel = pusher.subscribe('drivers.status');
+channel.bind('status.updated', function(data) {
+    const el = document.getElementById('driver-status-' + data.driver_id);
+    if (!el) return;
+    const map = {
+        online:  `<span style="display:flex;align-items:center;gap:5px;color:#16a34a;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 1.5s infinite"></span>En ligne</span>`,
+        pause:   `<span style="display:flex;align-items:center;gap:5px;color:#d97706;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#facc15;display:inline-block"></span>Pause</span>`,
+        offline: `<span style="display:flex;align-items:center;gap:5px;color:#9ca3af;font-size:12px;font-weight:600"><span style="width:7px;height:7px;border-radius:50%;background:#9ca3af;display:inline-block"></span>Hors ligne</span>`,
+    };
+    el.innerHTML = map[data.status] || map.offline;
+    const row = document.getElementById('driver-row-' + data.driver_id);
+    if (row) { row.style.background='#f0fdf4'; setTimeout(()=>row.style.background='',1500); }
+});
 </script>
 @endpush

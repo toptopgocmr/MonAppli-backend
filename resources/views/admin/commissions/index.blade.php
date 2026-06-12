@@ -1,20 +1,19 @@
 @extends('admin.layouts.app')
+@section('title','Commissions')
 
 @section('content')
-
-<div class="max-w-7xl mx-auto">
+<div style="display:flex;flex-direction:column;gap:20px">
 
     {{-- Header --}}
-    <div class="flex justify-between items-center mb-6">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
         <div>
-            <h2 class="text-2xl font-bold text-gray-800">📊 Gestion des Commissions</h2>
-            <p class="text-gray-500 text-sm mt-1">Définissez les taux par pays, type de véhicule ou chauffeur</p>
+            <h1 class="page-title">📈 Gestion des Commissions</h1>
+            <p class="page-sub">Définissez les taux par pays, type de véhicule ou chauffeur</p>
         </div>
-        <a href="{{ route('admin.commission-rates.export') }}"
-           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-            📥 Exporter CSV
-        </a>
+        <a href="{{ route('admin.commission-rates.export') }}" class="btn btn-success">📥 Exporter CSV</a>
     </div>
+
+<div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
@@ -451,4 +450,5 @@ function resetForm() {
 switchType('global');
 </script>
 @endpush
-@endsection
+
+</div>{{-- 

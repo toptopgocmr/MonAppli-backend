@@ -1,31 +1,30 @@
 @extends('admin.layouts.app')
+@section('title','Messagerie')
 
 @section('content')
-<div class="p-6">
+<div style="display:flex;flex-direction:column;gap:16px">
 
-    {{-- ===== HEADER ===== --}}
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">💬 Conversations Users ↔ Chauffeurs</h1>
-            <p class="text-sm text-gray-500 mt-1">Toutes les conversations entre utilisateurs et chauffeurs</p>
+    <div>
+        <h1 class="page-title">💬 Conversations Users ↔ Chauffeurs</h1>
+        <p class="page-sub">Toutes les conversations entre utilisateurs et chauffeurs</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">Total Messages</div>
+            <div class="val" style="color:#1DA1F2">{{ $totalMessages }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #f59e0b">
+            <div class="lbl">Non lus</div>
+            <div class="val" style="color:#d97706">{{ $unreadMessages }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">Conversations actives</div>
+            <div class="val" style="color:#16a34a">{{ $totalTripsWithMessages }}</div>
         </div>
     </div>
 
-    {{-- ===== STATS ===== --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Total Messages</div>
-            <div class="text-3xl font-bold text-blue-600">{{ $totalMessages }}</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Non lus</div>
-            <div class="text-3xl font-bold text-orange-500">{{ $unreadMessages }}</div>
-        </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Conversations actives</div>
-            <div class="text-3xl font-bold text-green-600">{{ $totalTripsWithMessages }}</div>
-        </div>
-    </div>
+    <div>
 
     {{-- ===== FILTRES ===== --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
@@ -269,7 +268,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script>
     const box = document.getElementById('messagesBox');
     if (box) {
@@ -282,4 +281,4 @@
     }, 10000);
     @endif
 </script>
-@endsection
+@endpush

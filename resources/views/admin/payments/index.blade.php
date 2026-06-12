@@ -1,133 +1,126 @@
 @extends('admin.layouts.app')
+@section('title','Partenaires Payeurs')
 
 @section('content')
-<div class="max-w-7xl mx-auto">
+<div style="display:flex;flex-direction:column;gap:20px">
 
     {{-- Header --}}
-    <div class="flex justify-between items-center mb-6">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
         <div>
-            <h2 class="text-2xl font-bold text-gray-800">💱 Partenaires Payeurs</h2>
-            <p class="text-gray-500 text-sm mt-1">Suivi en temps réel des paiements, retraits et wallets</p>
+            <h1 class="page-title">💳 Partenaires Payeurs</h1>
+            <p class="page-sub">Suivi en temps réel des paiements, retraits et wallets</p>
         </div>
-        <a href="{{ route('admin.payments.export') }}?period={{ $period }}"
-           class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-            📥 Exporter CSV
-        </a>
+        <a href="{{ route('admin.payments.export') }}?period={{ $period }}" class="btn btn-success">📥 Exporter CSV</a>
     </div>
 
     {{-- Période --}}
-    <div class="flex flex-wrap gap-2 mb-6">
-        @foreach(['today' => "Aujourd'hui", 'week' => 'Cette semaine', 'month' => 'Ce mois', 'year' => 'Cette année'] as $key => $label)
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+        @foreach(['today'=>"Aujourd'hui",'week'=>'Cette semaine','month'=>'Ce mois','year'=>'Cette année'] as $key=>$label)
         <a href="?period={{ $key }}"
-           class="px-3 py-1.5 rounded-lg text-sm font-medium transition
-           {{ $period === $key ? 'bg-[#1DA1F2] text-white' : 'bg-white text-gray-600 hover:bg-gray-100 shadow-sm' }}">
+           style="padding:7px 16px;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s;
+           {{ $period===$key ? 'background:#1DA1F2;color:#fff' : 'background:#fff;color:#475569;border:1.5px solid #e2e8f0' }}">
             {{ $label }}
         </a>
         @endforeach
     </div>
 
-    {{-- ===== KPI GLOBAUX ===== --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow p-4">
-            <p class="text-xs text-gray-400 font-semibold uppercase">Revenus total</p>
-            <p class="text-2xl font-bold text-gray-800 mt-1">{{ number_format($totalRevenue, 0, ',', ' ') }}</p>
-            <p class="text-xs text-gray-400">FCFA</p>
+    {{-- KPI --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #0f172a">
+            <div class="lbl">REVENUS TOTAL</div>
+            <div class="val" style="color:#0f172a;font-size:22px">{{ number_format($totalRevenue,0,',',' ') }}</div>
+            <div class="sub">FCFA</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-4">
-            <p class="text-xs text-gray-400 font-semibold uppercase">Commission TTG</p>
-            <p class="text-2xl font-bold text-blue-600 mt-1">{{ number_format($totalCommission, 0, ',', ' ') }}</p>
-            <p class="text-xs text-gray-400">FCFA</p>
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">COMMISSION TTG</div>
+            <div class="val" style="color:#1DA1F2;font-size:22px">{{ number_format($totalCommission,0,',',' ') }}</div>
+            <div class="sub">FCFA</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-4">
-            <p class="text-xs text-gray-400 font-semibold uppercase">Net Chauffeurs</p>
-            <p class="text-2xl font-bold text-green-600 mt-1">{{ number_format($totalDriverNet, 0, ',', ' ') }}</p>
-            <p class="text-xs text-gray-400">FCFA</p>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">NET CHAUFFEURS</div>
+            <div class="val" style="color:#16a34a;font-size:22px">{{ number_format($totalDriverNet,0,',',' ') }}</div>
+            <div class="sub">FCFA</div>
         </div>
-        <div class="bg-white rounded-xl shadow p-4">
-            <p class="text-xs text-gray-400 font-semibold uppercase">En attente</p>
-            <p class="text-2xl font-bold text-orange-500 mt-1">{{ $totalPending }}</p>
-            <p class="text-xs text-red-400">{{ $totalFailed }} échoués</p>
+        <div class="stat-card" style="border-left:4px solid #f59e0b">
+            <div class="lbl">EN ATTENTE</div>
+            <div class="val" style="color:#d97706;font-size:22px">{{ $totalPending }}</div>
+            <div class="sub" style="color:#ef4444">{{ $totalFailed }} échoués</div>
         </div>
     </div>
 
     {{-- ===== CARTES PARTENAIRES ===== --}}
-    <h3 class="text-lg font-bold text-gray-700 mb-3">📊 Par partenaire</h3>
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        @foreach($partnerStats as $key => $partner)
-        <div class="bg-white rounded-xl shadow p-4 border-t-4
-            @if($key === 'mtn') border-yellow-400
-            @elseif($key === 'orange') border-orange-400
-            @elseif($key === 'airtel') border-red-500
-            @elseif($key === 'moov') border-blue-500
-            @elseif($key === 'visa') border-indigo-500
-            @else border-purple-500 @endif">
-
-            <div class="text-2xl mb-1">{{ $partner['icon'] }}</div>
-            <p class="text-xs font-bold text-gray-700">{{ $partner['name'] }}</p>
-            <p class="text-xl font-bold text-gray-800 mt-2">{{ number_format($partner['total'], 0, ',', ' ') }}</p>
-            <p class="text-xs text-gray-400">FCFA — {{ $partner['count'] }} paiements</p>
-            <div class="flex gap-2 mt-2 text-xs">
-                <span class="text-orange-500">⏳ {{ $partner['pending'] }}</span>
-                <span class="text-red-500">✗ {{ $partner['failed'] }}</span>
+    <div>
+        <h3 class="page-sub" style="margin-bottom:10px">📊 Par partenaire</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px">
+            @foreach($partnerStats as $key => $partner)
+            @php
+                $pColor = match($key) {
+                    'mtn'  => '#f59e0b', 'orange' => '#f97316', 'airtel' => '#ef4444',
+                    'moov' => '#1DA1F2', 'visa'   => '#6366f1', default  => '#8b5cf6'
+                };
+            @endphp
+            <div class="stat-card" style="border-top:4px solid {{ $pColor }}">
+                <div style="font-size:22px;margin-bottom:4px">{{ $partner['icon'] }}</div>
+                <div class="lbl" style="font-weight:700">{{ $partner['name'] }}</div>
+                <div class="val" style="color:{{ $pColor }};font-size:18px">{{ number_format($partner['total'],0,',',' ') }}</div>
+                <div class="sub">{{ $partner['count'] }} paiements</div>
+                <div style="display:flex;gap:8px;margin-top:6px;font-size:11px">
+                    <span style="color:#f97316">⏳ {{ $partner['pending'] }}</span>
+                    <span style="color:#ef4444">✗ {{ $partner['failed'] }}</span>
+                </div>
             </div>
+            @endforeach
         </div>
-        @endforeach
     </div>
 
     {{-- ===== WALLET APPLICATION + RETRAITS ===== --}}
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px">
 
         {{-- Wallet App --}}
-        <div class="bg-gradient-to-br from-blue-600 to-blue-800 rounded-xl shadow p-5 text-white">
-            <p class="text-sm font-semibold opacity-80">💼 Wallet Application</p>
-            <p class="text-3xl font-bold mt-2">{{ number_format($totalWalletBalance, 0, ',', ' ') }}</p>
-            <p class="text-sm opacity-70">FCFA — {{ $totalWallets }} wallets actifs</p>
-            <div class="flex justify-between mt-4 text-sm">
-                <div>
-                    <p class="opacity-70">Crédits</p>
-                    <p class="font-bold text-green-300">+{{ number_format($totalCredits, 0, ',', ' ') }}</p>
-                </div>
-                <div>
-                    <p class="opacity-70">Débits</p>
-                    <p class="font-bold text-red-300">-{{ number_format($totalDebits, 0, ',', ' ') }}</p>
-                </div>
+        <div class="stat-card" style="background:linear-gradient(135deg,#1DA1F2,#0d6eb5);color:#fff;border:none">
+            <div class="lbl" style="color:rgba(255,255,255,.8)">💼 Wallet Application</div>
+            <div class="val" style="color:#fff;font-size:26px">{{ number_format($totalWalletBalance,0,',',' ') }}</div>
+            <div class="sub" style="color:rgba(255,255,255,.7)">FCFA — {{ $totalWallets }} wallets actifs</div>
+            <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px">
+                <div><div style="opacity:.7">Crédits</div><div style="font-weight:700;color:#86efac">+{{ number_format($totalCredits,0,',',' ') }}</div></div>
+                <div><div style="opacity:.7">Débits</div><div style="font-weight:700;color:#fca5a5">-{{ number_format($totalDebits,0,',',' ') }}</div></div>
             </div>
         </div>
 
         {{-- Retraits --}}
-        <div class="bg-white rounded-xl shadow p-5">
-            <p class="text-sm font-semibold text-gray-600">💸 Retraits Chauffeurs</p>
-            <div class="mt-3 space-y-2">
-                <div class="flex justify-between items-center">
-                    <span class="text-xs text-orange-500 font-semibold">⏳ En attente</span>
-                    <span class="text-lg font-bold text-orange-500">{{ $withdrawalsPending }}</span>
+        <div class="stat-card">
+            <div class="lbl">💸 Retraits Chauffeurs</div>
+            <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:12px;color:#f97316;font-weight:600">⏳ En attente</span>
+                    <span style="font-size:18px;font-weight:700;color:#f97316">{{ $withdrawalsPending }}</span>
                 </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-xs text-green-600 font-semibold">✓ Validés</span>
-                    <span class="text-lg font-bold text-green-600">{{ number_format($withdrawalsSuccess, 0, ',', ' ') }} FCFA</span>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:12px;color:#16a34a;font-weight:600">✓ Validés</span>
+                    <span style="font-size:14px;font-weight:700;color:#16a34a">{{ number_format($withdrawalsSuccess,0,',',' ') }} FCFA</span>
                 </div>
-                <div class="flex justify-between items-center">
-                    <span class="text-xs text-red-500 font-semibold">✗ Échoués</span>
-                    <span class="text-lg font-bold text-red-500">{{ $withdrawalsFailed }}</span>
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                    <span style="font-size:12px;color:#dc2626;font-weight:600">✗ Échoués</span>
+                    <span style="font-size:18px;font-weight:700;color:#dc2626">{{ $withdrawalsFailed }}</span>
                 </div>
             </div>
         </div>
 
         {{-- Top Wallets --}}
-        <div class="bg-white rounded-xl shadow p-5">
-            <p class="text-sm font-semibold text-gray-600 mb-3">🏆 Top Wallets</p>
-            <div class="space-y-2">
+        <div class="stat-card">
+            <div class="lbl">🏆 Top Wallets</div>
+            <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
                 @forelse($topWallets as $wallet)
-                <div class="flex justify-between items-center text-sm">
-                    <span class="text-gray-700 truncate">
+                <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+                    <span style="color:#374151;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:60%">
                         {{ optional($wallet->driver)->first_name }} {{ optional($wallet->driver)->last_name }}
                     </span>
-                    <span class="font-bold text-blue-600 shrink-0 ml-2">
-                        {{ number_format($wallet->balance, 0, ',', ' ') }} {{ $wallet->currency }}
+                    <span style="font-weight:700;color:#1DA1F2;white-space:nowrap;margin-left:8px">
+                        {{ number_format($wallet->balance,0,',',' ') }} {{ $wallet->currency }}
                     </span>
                 </div>
                 @empty
-                <p class="text-gray-400 text-xs">Aucun wallet</p>
+                <p style="color:#94a3b8;font-size:12px">Aucun wallet</p>
                 @endforelse
             </div>
         </div>
@@ -198,74 +191,62 @@
     @endif
 
     {{-- ===== FILTRES PAIEMENTS ===== --}}
-    <div class="bg-white rounded-xl shadow p-4 mb-4">
-        <form method="GET" action="{{ route('admin.payments.index') }}" class="flex flex-wrap gap-3 items-end">
-            <input type="hidden" name="period" value="{{ $period }}">
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">Méthode</label>
-                <select name="method" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Toutes</option>
-                    @foreach(['mtn' => 'MTN Money', 'orange' => 'Orange Money', 'airtel' => 'Airtel Money', 'moov' => 'Moov Money', 'visa' => 'Visa/Stripe', 'mastercard' => 'Mastercard'] as $val => $label)
-                        <option value="{{ $val }}" {{ request('method') === $val ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">Statut</label>
-                <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Tous</option>
-                    @foreach(['pending' => '⏳ En attente', 'success' => '✓ Succès', 'failed' => '✗ Échoué', 'cancelled' => 'Annulé', 'refunded' => 'Remboursé'] as $val => $label)
-                        <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div>
-                <label class="block text-xs font-semibold text-gray-500 mb-1">Pays</label>
-                <select name="country" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="">Tous</option>
-                    @foreach($countries as $country)
-                        <option value="{{ $country }}" {{ request('country') === $country ? 'selected' : '' }}>{{ $country }}</option>
-                    @endforeach
-                </select>
-            </div>
-
-            <div class="flex gap-2">
-                <button type="submit" class="bg-[#1DA1F2] hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition">
-                    🔍 Filtrer
-                </button>
-                <a href="{{ route('admin.payments.index') }}" class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                    ✕ Reset
-                </a>
-            </div>
-        </form>
-    </div>
+    <form method="GET" action="{{ route('admin.payments.index') }}" class="filter-bar" style="flex-wrap:wrap;gap:10px">
+        <input type="hidden" name="period" value="{{ $period }}">
+        <div style="display:flex;flex-direction:column;gap:4px">
+            <label class="ttg-label">Méthode</label>
+            <select name="method" class="ttg-select">
+                <option value="">Toutes</option>
+                @foreach(['mtn'=>'MTN Money','orange'=>'Orange Money','airtel'=>'Airtel Money','moov'=>'Moov Money','visa'=>'Visa/Stripe','mastercard'=>'Mastercard'] as $val=>$lbl)
+                    <option value="{{ $val }}" {{ request('method')===$val ? 'selected' : '' }}>{{ $lbl }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+            <label class="ttg-label">Statut</label>
+            <select name="status" class="ttg-select">
+                <option value="">Tous</option>
+                @foreach(['pending'=>'⏳ En attente','success'=>'✓ Succès','failed'=>'✗ Échoué','cancelled'=>'Annulé','refunded'=>'Remboursé'] as $val=>$lbl)
+                    <option value="{{ $val }}" {{ request('status')===$val ? 'selected' : '' }}>{{ $lbl }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+            <label class="ttg-label">Pays</label>
+            <select name="country" class="ttg-select">
+                <option value="">Tous</option>
+                @foreach($countries as $country)
+                    <option value="{{ $country }}" {{ request('country')===$country ? 'selected' : '' }}>{{ $country }}</option>
+                @endforeach
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end">🔍 Filtrer</button>
+        <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary" style="align-self:flex-end">✕ Reset</a>
+    </form>
 
     {{-- ===== TABLEAU PAIEMENTS ===== --}}
-    <div class="bg-white rounded-xl shadow overflow-hidden mb-6">
-        <div class="px-5 py-3 border-b flex items-center justify-between">
-            <span class="font-bold text-gray-700">💳 Transactions récentes</span>
-            <span class="text-xs text-gray-400">{{ $payments->total() }} transactions</span>
+    <div class="panel" style="padding:0;overflow:hidden">
+        <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
+            <span>💳 Transactions récentes</span>
+            <span style="font-size:12px;color:#94a3b8;font-weight:400">{{ $payments->total() }} transactions</span>
         </div>
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+        <div style="overflow-x:auto">
+            <table class="ttg-table">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left">Référence</th>
-                        <th class="px-4 py-3 text-left">Date</th>
-                        <th class="px-4 py-3 text-left">Client</th>
-                        <th class="px-4 py-3 text-left">Chauffeur</th>
-                        <th class="px-4 py-3 text-left">Méthode</th>
-                        <th class="px-4 py-3 text-right">Montant</th>
-                        <th class="px-4 py-3 text-right">Commission</th>
-                        <th class="px-4 py-3 text-right">Net</th>
-                        <th class="px-4 py-3 text-center">Statut</th>
-                        <th class="px-4 py-3 text-left">Pays</th>
+                        <th>Référence</th>
+                        <th>Date</th>
+                        <th>Client</th>
+                        <th>Chauffeur</th>
+                        <th>Méthode</th>
+                        <th style="text-align:right">Montant</th>
+                        <th style="text-align:right">Commission</th>
+                        <th style="text-align:right">Net</th>
+                        <th style="text-align:center">Statut</th>
+                        <th>Pays</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100">
+                <tbody>
                     @forelse($payments as $payment)
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3 font-mono text-xs text-gray-400">
@@ -319,80 +300,68 @@
             </table>
         </div>
         @if($payments->hasPages())
-        <div class="px-4 py-3 border-t">{{ $payments->links() }}</div>
+        <div style="padding:14px 20px;border-top:1px solid #f1f5f9">{{ $payments->links() }}</div>
         @endif
     </div>
 
     {{-- ===== WALLET TRANSACTIONS RÉCENTES ===== --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
 
-        {{-- Transactions wallet --}}
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-            <div class="px-5 py-3 border-b font-bold text-gray-700">💼 Mouvements Wallet</div>
-            <div class="divide-y">
+        <div class="panel" style="padding:0;overflow:hidden">
+            <div class="panel-header">💼 Mouvements Wallet</div>
+            <div>
                 @forelse($walletTransactions as $wt)
-                <div class="px-5 py-3 flex justify-between items-center">
+                <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f8fafc">
                     <div>
-                        <p class="text-sm font-medium text-gray-700">
+                        <div style="font-size:13px;font-weight:600;color:#1e293b">
                             {{ optional(optional($wt->wallet)->driver)->first_name }}
                             {{ optional(optional($wt->wallet)->driver)->last_name }}
-                        </p>
-                        <p class="text-xs text-gray-400">{{ $wt->description ?? $wt->reference ?? '—' }}</p>
-                        <p class="text-xs text-gray-300">{{ $wt->created_at->format('d/m/Y H:i') }}</p>
+                        </div>
+                        <div style="font-size:11px;color:#94a3b8">{{ $wt->description ?? $wt->reference ?? '—' }}</div>
+                        <div style="font-size:11px;color:#cbd5e1">{{ $wt->created_at->format('d/m/Y H:i') }}</div>
                     </div>
-                    <div class="text-right">
-                        <p class="font-bold {{ $wt->type === 'credit' ? 'text-green-600' : 'text-red-500' }}">
-                            {{ $wt->type === 'credit' ? '+' : '-' }}{{ number_format($wt->amount, 0, ',', ' ') }} XAF
-                        </p>
-                        <p class="text-xs text-gray-400">Solde : {{ number_format($wt->balance_after, 0, ',', ' ') }}</p>
+                    <div style="text-align:right">
+                        <div style="font-weight:700;color:{{ $wt->type==='credit'?'#16a34a':'#dc2626' }}">
+                            {{ $wt->type==='credit' ? '+' : '-' }}{{ number_format($wt->amount,0,',',' ') }} XAF
+                        </div>
+                        <div style="font-size:11px;color:#94a3b8">Solde : {{ number_format($wt->balance_after,0,',',' ') }}</div>
                     </div>
                 </div>
                 @empty
-                <div class="text-center text-gray-400 py-8">Aucun mouvement</div>
+                <div style="text-align:center;padding:32px;color:#94a3b8">Aucun mouvement</div>
                 @endforelse
             </div>
         </div>
 
-        {{-- Derniers retraits --}}
-        <div class="bg-white rounded-xl shadow overflow-hidden">
-            <div class="px-5 py-3 border-b font-bold text-gray-700">💸 Derniers Retraits</div>
-            <div class="divide-y">
+        <div class="panel" style="padding:0;overflow:hidden">
+            <div class="panel-header">💸 Derniers Retraits</div>
+            <div>
                 @forelse($withdrawals as $w)
-                <div class="px-5 py-3 flex justify-between items-center">
+                <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f8fafc">
                     <div>
-                        <p class="text-sm font-medium text-gray-700">
+                        <div style="font-size:13px;font-weight:600;color:#1e293b">
                             {{ optional($w->driver)->first_name }} {{ optional($w->driver)->last_name }}
-                        </p>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <span class="text-xs px-2 py-0.5 rounded-full font-semibold
-                                @if($w->method === 'mtn') bg-yellow-100 text-yellow-700
-                                @elseif($w->method === 'orange') bg-orange-100 text-orange-700
-                                @elseif($w->method === 'airtel') bg-red-100 text-red-700
-                                @else bg-blue-100 text-blue-700 @endif">
-                                {{ strtoupper($w->method) }}
-                            </span>
-                            <span class="text-xs text-gray-400">{{ $w->phone_number }}</span>
                         </div>
-                        <p class="text-xs text-gray-300">{{ $w->created_at->format('d/m/Y H:i') }}</p>
+                        <div style="display:flex;gap:6px;align-items:center;margin-top:3px">
+                            <span class="badge badge-warning" style="font-size:10px">{{ strtoupper($w->method) }}</span>
+                            <span style="font-size:11px;color:#94a3b8">{{ $w->phone_number }}</span>
+                        </div>
+                        <div style="font-size:11px;color:#cbd5e1">{{ $w->created_at->format('d/m/Y H:i') }}</div>
                     </div>
-                    <div class="text-right">
-                        <p class="font-bold text-gray-800">{{ number_format($w->amount, 0, ',', ' ') }} XAF</p>
-                        <span class="text-xs px-2 py-0.5 rounded-full font-semibold
-                            @if($w->status === 'success') bg-green-100 text-green-700
-                            @elseif($w->status === 'pending') bg-orange-100 text-orange-700
-                            @else bg-red-100 text-red-700 @endif">
-                            @if($w->status === 'success') ✓ Validé
-                            @elseif($w->status === 'pending') ⏳ Attente
+                    <div style="text-align:right">
+                        <div style="font-weight:700;color:#1e293b">{{ number_format($w->amount,0,',',' ') }} XAF</div>
+                        <span class="badge {{ $w->status==='success' ? 'badge-success' : ($w->status==='pending' ? 'badge-warning' : 'badge-danger') }}" style="font-size:10px">
+                            @if($w->status==='success') ✓ Validé
+                            @elseif($w->status==='pending') ⏳ Attente
                             @else ✗ Échoué @endif
                         </span>
                     </div>
                 </div>
                 @empty
-                <div class="text-center text-gray-400 py-8">Aucun retrait</div>
+                <div style="text-align:center;padding:32px;color:#94a3b8">Aucun retrait</div>
                 @endforelse
             </div>
         </div>
     </div>
 
-</div>
-@endsection
+</div>{{-- /page wr

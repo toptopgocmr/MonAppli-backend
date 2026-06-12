@@ -1,47 +1,44 @@
 @extends('admin.layouts.app')
+@section('title','Alertes SOS')
 
 @section('content')
-<div class="p-6">
+<div style="display:flex;flex-direction:column;gap:16px">
 
-    {{-- ===== HEADER ===== --}}
-    <div class="flex items-center justify-between mb-6">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800">🆘 Gestion des Alertes SOS</h1>
-            <p class="text-sm text-gray-500 mt-1">Surveillance en temps réel des alertes d'urgence</p>
+            <h1 class="page-title">🆘 Alertes SOS</h1>
+            <p class="page-sub">Surveillance en temps réel des alertes d'urgence</p>
         </div>
         @if($totalActive > 0)
         <form method="POST" action="{{ route('admin.sos.treat-all') }}"
               onsubmit="return confirm('Marquer toutes les alertes actives comme traitées ?')">
             @csrf
-            <button class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
-                ✓ Tout marquer traité ({{ $totalActive }})
-            </button>
+            <button class="btn btn-success">✓ Tout marquer traité ({{ $totalActive }})</button>
         </form>
         @endif
     </div>
 
-    {{-- ===== STATS ===== --}}
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-red-500">
-            <div class="text-sm text-gray-500 mb-1">Alertes actives</div>
-            <div class="text-3xl font-bold text-red-500 flex items-center gap-2">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #ef4444">
+            <div class="lbl">Alertes actives</div>
+            <div class="val" style="color:#dc2626;display:flex;align-items:center;gap:8px">
                 {{ $totalActive }}
                 @if($totalActive > 0)
-                    <span class="w-3 h-3 rounded-full bg-red-500 animate-ping inline-block"></span>
+                    <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;animation:ping 1s infinite"></span>
                 @endif
             </div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-green-500">
-            <div class="text-sm text-gray-500 mb-1">Traitées</div>
-            <div class="text-3xl font-bold text-green-600">{{ $totalTreated }}</div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">Traitées</div>
+            <div class="val" style="color:#16a34a">{{ $totalTreated }}</div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 border-l-4 border-l-blue-500">
-            <div class="text-sm text-gray-500 mb-1">Aujourd'hui</div>
-            <div class="text-3xl font-bold text-blue-600">{{ $totalToday }}</div>
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">Aujourd'hui</div>
+            <div class="val" style="color:#1DA1F2">{{ $totalToday }}</div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Total</div>
-            <div class="text-3xl font-bold text-gray-800">{{ $totalAll }}</div>
+        <div class="stat-card" style="border-left:4px solid #64748b">
+            <div class="lbl">Total</div>
+            <div class="val" style="color:#374151">{{ $totalAll }}</div>
         </div>
     </div>
 

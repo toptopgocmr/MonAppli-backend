@@ -102,8 +102,19 @@ class UserTripController extends Controller
     private function fmt(Trip $trip): array
     {
         $price = (float) ($trip->price_per_seat ?? $trip->amount ?? 0);
-        $time  = $trip->departure_time ?? null;
+
+        // ── Heure de départ ────────────────────────────────────────────
+        $time = $trip->departure_time ?? null;
         if ($time && strlen($time) > 5) $time = substr($time, 0, 5);
+        if ($time && str_starts_with($time, ':')) $time = '00' . $time; // Fix ":00" → "00:00"
+
+        // ── Heure d'arrivée ────────────────────────────────────────────
+        $arrivalTime = null;
+        try {
+            $arrivalTime = $trip->arrival_time ?? null;
+        } catch (\Exception $e) {}
+        if ($arrivalTime && strlen($arrivalTime) > 5) $arrivalTime = substr($arrivalTime, 0, 5);
+        if ($arrivalTime && str_starts_with($arrivalTime, ':')) $arrivalTime = '00' . $arrivalTime;
 
         $date = null;
         if ($trip->departure_date) {
@@ -138,6 +149,7 @@ class UserTripController extends Controller
             'dropoff_point'       => $trip->dropoff_point    ?? null,
             'departure_date'      => $date,
             'departure_time'      => $time,
+            'arrival_time'        => $arrivalTime,
             'price_per_seat'      => $price,
             'amount'              => $price,
             'available_seats'     => (int)   ($trip->available_seats     ?? 0),

@@ -26,12 +26,18 @@
             display: block;
             border-radius: 6px;
         }
-        .geo-bg .s1 { width: 200px; height: 200px; top: -60px;    left: -60px;   transform: rotate(25deg); background: rgba(29,161,242,0.18); }
-        .geo-bg .s2 { width: 140px; height: 140px; top: 30px;     left: 100px;   transform: rotate(15deg); background: rgba(255,193,7,0.20); }
-        .geo-bg .s3 { width: 180px; height: 180px; bottom: -50px; right: -50px;  transform: rotate(30deg); background: rgba(13,27,42,0.12); }
-        .geo-bg .s4 { width: 100px; height: 100px; bottom: 60px;  right: 130px;  transform: rotate(20deg); background: rgba(29,161,242,0.14); }
-        .geo-bg .s5 { width: 90px;  height: 90px;  top: 40%;      left: 5%;      transform: rotate(12deg); background: rgba(255,193,7,0.16); }
-        .geo-bg .s6 { width: 120px; height: 120px; top: 20%;      right: 6%;     transform: rotate(35deg); background: rgba(13,27,42,0.09); }
+        .geo-bg .s1 { width: 160px; height: 160px; top: -50px;    left: -50px;   transform: rotate(25deg); background: rgba(29,161,242,0.18); }
+        .geo-bg .s2 { width: 110px; height: 110px; top: 20px;     left: 80px;    transform: rotate(15deg); background: rgba(255,193,7,0.20); }
+        .geo-bg .s3 { width: 150px; height: 150px; bottom: -40px; right: -40px;  transform: rotate(30deg); background: rgba(13,27,42,0.12); }
+        .geo-bg .s4 { width: 80px;  height: 80px;  bottom: 50px;  right: 100px;  transform: rotate(20deg); background: rgba(29,161,242,0.14); }
+        .geo-bg .s5 { width: 70px;  height: 70px;  top: 42%;      left: 4%;      transform: rotate(12deg); background: rgba(255,193,7,0.16); }
+        .geo-bg .s6 { width: 90px;  height: 90px;  top: 18%;      right: 5%;     transform: rotate(35deg); background: rgba(13,27,42,0.09); }
+        /* Masquer certaines formes sur très petit écran */
+        @media (max-width: 400px) {
+            .geo-bg .s2, .geo-bg .s5 { display: none; }
+            .geo-bg .s1 { width: 110px; height: 110px; }
+            .geo-bg .s3 { width: 110px; height: 110px; }
+        }
 
         /* Card */
         .card {
@@ -65,20 +71,20 @@
     <div class="relative z-10 w-full max-w-md">
 
         <!-- Logo TopTopGo -->
-        <div class="flex flex-col items-center mb-6">
-            <h1 class="font-black tracking-tight" style="font-size:2.8rem; line-height:1;">
+        <div class="flex flex-col items-center mb-5">
+            <h1 class="font-black tracking-tight" style="font-size: clamp(1.8rem, 8vw, 2.8rem); line-height:1;">
                 <span style="color:#1DA1F2;">TopTop</span><span style="color:#FFC107;">Go</span>
             </h1>
         </div>
 
         <!-- Carte principale -->
-        <div class="card bg-white rounded-2xl shadow-lg px-8 py-9">
+        <div class="card bg-white rounded-2xl shadow-lg px-5 py-7 sm:px-8 sm:py-9">
 
             <!-- Titre -->
-            <h1 class="text-2xl font-bold text-gray-900 text-center mb-1">
+            <h1 class="text-lg sm:text-2xl font-bold text-gray-900 text-center mb-1">
                 Connectez-vous à votre compte
             </h1>
-            <p class="text-sm text-gray-400 text-center mb-7">
+            <p class="text-xs sm:text-sm text-gray-400 text-center mb-5 sm:mb-7">
                 Espace réservé aux administrateurs TopTopGo
             </p>
 

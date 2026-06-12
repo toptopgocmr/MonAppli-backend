@@ -59,7 +59,7 @@ class PaymentController extends Controller
     public function initiateRidePayment(Request $request, int $rideId): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'provider' => 'required|string|in:peex,mtn_momo,airtel_money,stripe',
+            'provider' => 'required|string|in:peex,mtn_momo,airtel_money,stripe,flutterwave',
             'phone' => 'required_unless:provider,stripe|string',
             'email' => 'required_if:provider,stripe|email',
         ]);
@@ -247,7 +247,7 @@ class PaymentController extends Controller
 
         $validator = Validator::make($request->all(), [
             'amount' => 'required|numeric|min:1000',
-            'provider' => 'required|string|in:peex,mtn_momo,airtel_money',
+            'provider' => 'required|string|in:peex,mtn_momo,airtel_money,flutterwave',
             'phone' => 'nullable|string',
         ]);
 

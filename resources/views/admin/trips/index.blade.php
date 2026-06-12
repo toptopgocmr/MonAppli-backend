@@ -1,52 +1,46 @@
 @extends('admin.layouts.app')
+@section('title','Trajets & Courses')
 
 @section('content')
+<div style="display:flex;flex-direction:column;gap:16px">
 
-<div class="space-y-6">
+    <div>
+        <h1 class="page-title">📋 Trajets & Courses</h1>
+        <p class="page-sub">Tous les trajets créés par les chauffeurs</p>
+    </div>
 
-    {{-- HEADER --}}
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">📋 Trajets & Courses</h1>
-            <p class="text-sm text-gray-500 mt-1">
-                Tous les trajets créés par les chauffeurs
-            </p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">Total</div>
+            <div class="val" style="color:#1DA1F2">{{ $stats['total'] ?? 0 }}</div>
         </div>
-
-        <div class="flex flex-wrap gap-3">
-            <span class="bg-blue-100 text-blue-700 text-xs font-bold px-3 py-2 rounded-lg">
-                🚗 Total : {{ $stats['total'] ?? 0 }}
-            </span>
-            <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-3 py-2 rounded-lg">
-                ⏳ En attente : {{ $stats['pending'] ?? 0 }}
-            </span>
-            <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-3 py-2 rounded-lg">
-                🚗 En cours : {{ $stats['in_progress'] ?? 0 }}
-            </span>
-            <span class="bg-green-100 text-green-700 text-xs font-bold px-3 py-2 rounded-lg">
-                🏁 Terminés : {{ $stats['completed'] ?? 0 }}
-            </span>
-            <span class="bg-red-100 text-red-700 text-xs font-bold px-3 py-2 rounded-lg">
-                ❌ Annulés : {{ $stats['cancelled'] ?? 0 }}
-            </span>
+        <div class="stat-card" style="border-left:4px solid #f59e0b">
+            <div class="lbl">En attente</div>
+            <div class="val" style="color:#d97706">{{ $stats['pending'] ?? 0 }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #6366f1">
+            <div class="lbl">En cours</div>
+            <div class="val" style="color:#4f46e5">{{ $stats['in_progress'] ?? 0 }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">Terminés</div>
+            <div class="val" style="color:#16a34a">{{ $stats['completed'] ?? 0 }}</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #ef4444">
+            <div class="lbl">Annulés</div>
+            <div class="val" style="color:#dc2626">{{ $stats['cancelled'] ?? 0 }}</div>
         </div>
     </div>
 
-    {{-- FILTRES --}}
-    <form method="GET" action="{{ request()->url() }}"
-          class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-wrap gap-3 items-end">
-
-        <div class="flex-1 min-w-[180px]">
-            <label class="text-xs text-gray-500 font-semibold mb-1 block">Recherche</label>
+    <form method="GET" action="{{ request()->url() }}" class="filter-bar" style="flex-wrap:wrap;gap:10px">
+        <div style="display:flex;flex-direction:column;gap:4px;flex:1;min-width:180px">
+            <label class="ttg-label">Recherche</label>
             <input type="text" name="search" value="{{ request('search') }}"
-                   placeholder="Départ ou destination..."
-                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300">
+                   placeholder="Départ ou destination..." class="ttg-input">
         </div>
-
-        <div class="min-w-[140px]">
-            <label class="text-xs text-gray-500 font-semibold mb-1 block">Statut</label>
-            <select name="status"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:140px">
+            <label class="ttg-label">Statut</label>
+            <select name="status" class="ttg-select">
                 <option value="">Tous</option>
                 <option value="active"      {{ request('status') === 'active'      ? 'selected' : '' }}>Actif</option>
                 <option value="pending"     {{ request('status') === 'pending'     ? 'selected' : '' }}>En attente</option>
@@ -55,157 +49,104 @@
                 <option value="cancelled"   {{ request('status') === 'cancelled'   ? 'selected' : '' }}>Annulé</option>
             </select>
         </div>
-
-        <div class="min-w-[140px]">
-            <label class="text-xs text-gray-500 font-semibold mb-1 block">Du</label>
-            <input type="date" name="from" value="{{ request('from') }}"
-                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:140px">
+            <label class="ttg-label">Du</label>
+            <input type="date" name="from" value="{{ request('from') }}" class="ttg-input">
         </div>
-
-        <div class="min-w-[140px]">
-            <label class="text-xs text-gray-500 font-semibold mb-1 block">Au</label>
-            <input type="date" name="to" value="{{ request('to') }}"
-                   class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-300">
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:140px">
+            <label class="ttg-label">Au</label>
+            <input type="date" name="to" value="{{ request('to') }}" class="ttg-input">
         </div>
-
-        <button type="submit"
-                class="bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold px-5 py-2 rounded-lg transition">
-            🔍 Filtrer
-        </button>
-
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end">🔍 Filtrer</button>
         @if(request()->anyFilled(['search','status','from','to']))
-        <a href="{{ request()->url() }}"
-           class="text-sm text-gray-400 hover:text-gray-600 px-3 py-2 rounded-lg border border-gray-200 transition">
-            ✕ Reset
-        </a>
+        <a href="{{ request()->url() }}" class="btn btn-secondary" style="align-self:flex-end">✕ Reset</a>
         @endif
     </form>
 
-    {{-- TABLEAU --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-
-        <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="font-bold text-gray-700 text-sm uppercase">
-                📋 Liste des trajets
-                <span class="ml-2 bg-gray-100 text-gray-500 text-xs px-2 py-0.5 rounded-full">
-                    {{ $trips->total() }} résultats
-                </span>
-            </h2>
+    <div class="panel">
+        <div class="panel-header">
+            📋 Liste des trajets
+            <span style="margin-left:8px;background:#f1f5f9;color:#64748b;font-size:11px;padding:2px 8px;border-radius:20px">
+                {{ $trips->total() }} résultats
+            </span>
         </div>
-
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-gray-50 text-xs text-gray-500 uppercase">
+        <div style="overflow-x:auto">
+            <table class="ttg-table">
+                <thead>
                     <tr>
-                        <th class="px-4 py-3 text-left">#</th>
-                        <th class="px-4 py-3 text-left">Chauffeur</th>
-                        <th class="px-4 py-3 text-left">Itinéraire</th>
-                        <th class="px-4 py-3 text-left">Date / Heure</th>
-                        <th class="px-4 py-3 text-left">Places</th>
-                        <th class="px-4 py-3 text-left">Prix</th>
-                        <th class="px-4 py-3 text-left">Statut</th>
-                        <th class="px-4 py-3 text-center">Actions</th>
+                        <th>#</th>
+                        <th>Chauffeur</th>
+                        <th>Itinéraire</th>
+                        <th>Date / Heure</th>
+                        <th>Places</th>
+                        <th>Prix</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
-
-                <tbody class="divide-y divide-gray-50">
+                <tbody>
                     @forelse($trips as $trip)
                         @php
                             $driver = $trip->driver;
-                            $statusColors = [
-                                'active'      => 'bg-blue-100 text-blue-700',
-                                'pending'     => 'bg-yellow-100 text-yellow-700',
-                                'in_progress' => 'bg-indigo-100 text-indigo-700',
-                                'completed'   => 'bg-green-100 text-green-700',
-                                'cancelled'   => 'bg-red-100 text-red-700',
-                            ];
-                            $statusLabels = [
+                            $statusBadge = [
+                                'active'      => 'badge-info',
+                                'pending'     => 'badge-warning',
+                                'in_progress' => 'badge badge-primary',
+                                'completed'   => 'badge-success',
+                                'cancelled'   => 'badge-danger',
+                            ][$trip->status] ?? 'badge';
+                            $statusLabel = [
                                 'active'      => 'Actif',
                                 'pending'     => 'En attente',
                                 'in_progress' => 'En cours',
                                 'completed'   => 'Terminé',
                                 'cancelled'   => 'Annulé',
-                            ];
-                            $color = $statusColors[$trip->status] ?? 'bg-gray-100 text-gray-600';
-                            $label = $statusLabels[$trip->status] ?? $trip->status;
+                            ][$trip->status] ?? $trip->status;
                         @endphp
-
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="px-4 py-3 text-gray-400 font-mono text-xs">#{{ $trip->id }}</td>
-
-                            <td class="px-4 py-3">
-                                <p class="font-semibold text-gray-800 text-xs">
-                                    {{ $driver?->first_name }} {{ $driver?->last_name ?? 'N/A' }}
-                                </p>
-                                <p class="text-gray-400 text-xs">{{ $driver?->phone ?? '-' }}</p>
+                        <tr>
+                            <td style="font-family:monospace;color:#94a3b8;font-size:11px">#{{ $trip->id }}</td>
+                            <td>
+                                <div style="font-weight:600;font-size:13px">{{ $driver?->first_name }} {{ $driver?->last_name ?? 'N/A' }}</div>
+                                <div style="color:#94a3b8;font-size:11px">{{ $driver?->phone ?? '—' }}</div>
                             </td>
-
-                            <td class="px-4 py-3">
-                                <p class="text-xs font-semibold text-gray-700">
-                                    📍 {{ $trip->departure ?? $trip->pickup_address ?? '—' }}
-                                </p>
-                                <p class="text-xs text-gray-500">
-                                    🏁 {{ $trip->destination ?? $trip->dropoff_address ?? '—' }}
-                                </p>
+                            <td>
+                                <div style="font-weight:600;font-size:12px">📍 {{ $trip->departure ?? $trip->pickup_address ?? '—' }}</div>
+                                <div style="color:#64748b;font-size:12px">🏁 {{ $trip->destination ?? $trip->dropoff_address ?? '—' }}</div>
                             </td>
-
-                            <td class="px-4 py-3 text-xs text-gray-600">
-                                <p>{{ $trip->departure_date ?? '—' }}</p>
+                            <td style="font-size:12px">
+                                {{ $trip->departure_date ?? '—' }}
                                 @if($trip->departure_time)
-                                    <p class="text-gray-400">
-                                        {{ \Carbon\Carbon::parse($trip->departure_time)->format('H:i') }}
-                                    </p>
+                                    <div style="color:#94a3b8">{{ \Carbon\Carbon::parse($trip->departure_time)->format('H:i') }}</div>
                                 @endif
                             </td>
-
-                            <td class="px-4 py-3 text-xs text-gray-600 text-center">
-                                {{ $trip->available_seats ?? '—' }}
+                            <td style="text-align:center">{{ $trip->available_seats ?? '—' }}</td>
+                            <td>
+                                <span style="color:#f97316;font-weight:700">{{ number_format($trip->price_per_seat ?? 0, 0, '.', ' ') }} FCFA</span>
                             </td>
-
-                            <td class="px-4 py-3">
-                                <span class="text-orange-500 font-bold text-sm">
-                                    {{ number_format($trip->price_per_seat ?? 0, 0, '.', ' ') }} FCFA
-                                </span>
-                            </td>
-
-                            <td class="px-4 py-3">
-                                <span class="text-xs font-bold px-2 py-1 rounded-lg {{ $color }}">
-                                    {{ $label }}
-                                </span>
-                            </td>
-
-                            <td class="px-4 py-3 text-center">
-                                <button onclick="openTripModal({{ $trip->id }})"
-                                        class="bg-blue-500 hover:bg-blue-600 text-white text-xs px-3 py-1.5 rounded-lg transition">
-                                    Voir
+                            <td><span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span></td>
+                            <td>
+                                <button onclick="openTripModal({{ $trip->id }})" class="btn btn-primary" style="font-size:12px;padding:4px 12px">
+                                    👁 Voir
                                 </button>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-16 text-center text-gray-400">
-                                <div class="flex flex-col items-center gap-3">
-                                    <span class="text-4xl">🚗</span>
-                                    <p class="font-semibold">Aucun trajet trouvé</p>
-                                    @if(request()->anyFilled(['search','status','from','to']))
-                                        <a href="{{ request()->url() }}"
-                                           class="text-orange-500 text-sm hover:underline">
-                                            Réinitialiser les filtres
-                                        </a>
-                                    @endif
-                                </div>
+                            <td colspan="8" style="text-align:center;padding:48px;color:#94a3b8">
+                                <div style="font-size:40px;margin-bottom:8px">🚗</div>
+                                <div style="font-weight:600">Aucun trajet trouvé</div>
+                                @if(request()->anyFilled(['search','status','from','to']))
+                                    <a href="{{ request()->url() }}" style="color:#1DA1F2;font-size:13px">Réinitialiser les filtres</a>
+                                @endif
                             </td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        {{-- PAGINATION --}}
-        <div class="px-6 py-4 border-t border-gray-100">
+        <div style="padding:16px 20px;border-top:1px solid #f1f5f9">
             {{ $trips->withQueryString()->links() }}
         </div>
-
     </div>
 </div>
 

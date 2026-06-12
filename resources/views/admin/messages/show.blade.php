@@ -111,7 +111,7 @@ Trip #{{ $t->id }}
 @endsection
 
 
-@section('scripts')
+@push('scripts')
 
 <script>
 
@@ -132,4 +132,4 @@ location.reload();
 
 </script>
 
-@endsection
+@endpush

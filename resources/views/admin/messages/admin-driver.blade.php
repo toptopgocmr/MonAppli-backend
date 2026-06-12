@@ -1,53 +1,37 @@
 @extends('admin.layouts.app')
+@section('title','Support Chauffeurs')
 
 @section('content')
-<div class="p-6">
+<div style="display:flex;flex-direction:column;gap:16px">
 
-    {{-- ===== HEADER ===== --}}
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">🛡 Support Admin ↔ Chauffeurs</h1>
-            <p class="text-sm text-gray-500 mt-1">Écrivez à n'importe quel chauffeur depuis cette interface</p>
-        </div>
-        @if(session('success'))
-            <div class="bg-green-100 text-green-700 px-4 py-2 rounded-lg text-sm font-medium">
-                ✅ {{ session('success') }}
-            </div>
-        @endif
+    <div>
+        <h1 class="page-title">🛡️ Support Admin ↔ Chauffeurs</h1>
+        <p class="page-sub">Écrivez à n'importe quel chauffeur depuis cette interface</p>
     </div>
 
-    {{-- ===== STATS ===== --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Conversations actives</div>
-            <div class="text-3xl font-bold text-blue-600">{{ $totalConversations }}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #1DA1F2">
+            <div class="lbl">Conversations actives</div>
+            <div class="val" style="color:#1DA1F2">{{ $totalConversations }}</div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Total Messages envoyés</div>
-            <div class="text-3xl font-bold text-green-600">{{ $totalMessages }}</div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">Total Messages envoyés</div>
+            <div class="val" style="color:#16a34a">{{ $totalMessages }}</div>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div class="text-sm text-gray-500 mb-1">Non lus</div>
-            <div class="text-3xl font-bold text-orange-500 unread-badge">{{ $unreadMessages }}</div>
+        <div class="stat-card" style="border-left:4px solid #f59e0b">
+            <div class="lbl">Non lus</div>
+            <div class="val unread-badge" style="color:#d97706">{{ $unreadMessages }}</div>
         </div>
     </div>
 
-    {{-- ===== RECHERCHE ===== --}}
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6">
-        <form method="GET" action="{{ route('admin.support.drivers.index') }}" class="flex gap-3 items-center">
-            <div class="flex-1">
+    <div class="filter-bar">
+        <form method="GET" action="{{ route('admin.support.drivers.index') }}" style="display:flex;gap:10px;align-items:center;width:100%">
+            <div style="flex:1">
                 <input type="text" name="search" value="{{ request('search') }}"
-                    placeholder="🔍 Rechercher par nom ou téléphone..."
-                    class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    placeholder="Rechercher par nom ou téléphone..." class="ttg-input">
             </div>
-            <button type="submit"
-                class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
-                Rechercher
-            </button>
-            <a href="{{ route('admin.support.drivers.index') }}"
-                class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                ✕ Reset
-            </a>
+            <button type="submit" class="btn btn-primary">Rechercher</button>
+            <a href="{{ route('admin.support.drivers.index') }}" class="btn btn-gray">✕ Reset</a>
         </form>
     </div>
 
@@ -291,7 +275,7 @@
 </div>
 @endsection
 
-@section('scripts')
+@push('scripts')
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
 // Scroll automatique en bas
@@ -417,4 +401,4 @@ channel.bind('message.received', function(data) {
     to   { opacity: 1; transform: translateY(0); }
 }
 </style>
-@endsection
+@endpush
