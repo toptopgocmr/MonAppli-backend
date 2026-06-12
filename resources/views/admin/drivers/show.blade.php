@@ -26,7 +26,7 @@
 
             @if($driver->profile_photo)
 
-                <img src="{{ asset('storage/'.$driver->profile_photo) }}"
+                <img src="{{ str_starts_with($driver->profile_photo, 'http') ? $driver->profile_photo : asset('storage/'.$driver->profile_photo) }}"
                      onclick="openImage(this.src)"
                      class="w-20 h-20 rounded-full object-cover border-4 border-[#1DA1F2] cursor-pointer hover:scale-110 transition"
                      onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
@@ -213,11 +213,9 @@
                     @if($driver->{$doc['field']})
 
                         @php
-
-                        $fileUrl = asset('storage/'.$driver->{$doc['field']});
-
-                        $ext = strtolower(pathinfo(parse_url($fileUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
-
+                        $docVal  = $driver->{$doc['field']};
+                        $fileUrl = str_starts_with($docVal, 'http') ? $docVal : asset('storage/'.$docVal);
+                        $ext     = strtolower(pathinfo(parse_url($fileUrl, PHP_URL_PATH), PATHINFO_EXTENSION));
                         @endphp
 
 
