@@ -106,9 +106,9 @@
                     <p class="text-sm font-medium text-gray-800 truncate max-w-xs">
                         {{ $trip->driver->first_name ?? '—' }} {{ $trip->driver->last_name ?? '' }}
                     </p>
-                    <span class="text-sm font-semibold text-blue-700">{{ number_format($trip->price ?? 0, 0, ',', ' ') }} FCFA</span>
+                    <span class="text-sm font-semibold text-blue-700">{{ number_format($trip->amount ?? 0, 0, ',', ' ') }} FCFA</span>
                 </div>
-                <p class="text-xs text-gray-400 truncate">{{ $trip->departure_address ?? '—' }} → {{ $trip->arrival_address ?? '—' }}</p>
+                <p class="text-xs text-gray-400 truncate">{{ $trip->departure ?? '—' }} → {{ $trip->destination ?? '—' }}</p>
             </div>
             @empty
             <div class="px-6 py-8 text-center text-gray-400 text-sm">Aucune course pour le moment</div>

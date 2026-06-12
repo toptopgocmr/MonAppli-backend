@@ -28,8 +28,10 @@ class ReservationController extends Controller
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('departure_address', 'like', '%' . $request->search . '%')
-                  ->orWhere('arrival_address',  'like', '%' . $request->search . '%');
+                $q->where('departure',   'like', '%' . $request->search . '%')
+                  ->orWhere('destination', 'like', '%' . $request->search . '%')
+                  ->orWhere('departure_city', 'like', '%' . $request->search . '%')
+                  ->orWhere('destination_city', 'like', '%' . $request->search . '%');
             });
         }
 

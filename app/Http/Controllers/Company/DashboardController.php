@@ -31,7 +31,7 @@ class DashboardController extends Controller
                                 ->whereMonth('created_at', now()->month)
                                 ->whereYear('created_at', now()->year)
                                 ->where('status', 'completed')
-                                ->sum('price');
+                                ->sum('amount');
 
         $recentDrivers = Driver::where('company_id', $company->id)
                                ->orderBy('created_at', 'desc')

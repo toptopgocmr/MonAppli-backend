@@ -12,8 +12,8 @@
     @php
         $statusColors = [
             'pending'   => ['bg-yellow-100','text-yellow-700','En attente'],
-            'confirmed' => ['bg-blue-100','text-blue-700','Confirmée'],
-            'ongoing'   => ['bg-indigo-100','text-indigo-700','En cours'],
+            'accepted' => ['bg-blue-100','text-blue-700','Acceptée'],
+            'in_progress' => ['bg-indigo-100','text-indigo-700','En cours'],
             'completed' => ['bg-green-100','text-green-700','Terminée'],
             'cancelled' => ['bg-red-100','text-red-700','Annulée'],
         ];
@@ -36,7 +36,7 @@
                 <div class="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
                 <div>
                     <p class="text-xs text-gray-400 uppercase">Départ</p>
-                    <p class="text-sm font-medium text-gray-800">{{ $trip->departure_address ?? '—' }}</p>
+                    <p class="text-sm font-medium text-gray-800">{{ $trip->departure ?? '—' }}</p>
                 </div>
             </div>
             <div class="ml-1.5 w-0.5 h-4 bg-gray-300"></div>
@@ -44,7 +44,7 @@
                 <div class="w-3 h-3 bg-red-500 rounded-full mt-1 flex-shrink-0"></div>
                 <div>
                     <p class="text-xs text-gray-400 uppercase">Arrivée</p>
-                    <p class="text-sm font-medium text-gray-800">{{ $trip->arrival_address ?? '—' }}</p>
+                    <p class="text-sm font-medium text-gray-800">{{ $trip->destination ?? '—' }}</p>
                 </div>
             </div>
         </div>
@@ -83,18 +83,18 @@
             <div class="space-y-3">
                 <div class="flex items-center justify-between">
                     <p class="text-sm text-gray-500">Montant course</p>
-                    <p class="text-sm font-semibold text-gray-800">{{ number_format($trip->price ?? 0, 0, ',', ' ') }} FCFA</p>
+                    <p class="text-sm font-semibold text-gray-800">{{ number_format($trip->amount ?? 0, 0, ',', ' ') }} FCFA</p>
                 </div>
                 <div class="flex items-center justify-between">
                     <p class="text-sm text-gray-500">Commission ({{ auth('company')->user()->commission_rate }}%)</p>
                     <p class="text-sm font-semibold text-red-500">
-                        - {{ number_format(($trip->price ?? 0) * auth('company')->user()->commission_rate / 100, 0, ',', ' ') }} FCFA
+                        - {{ number_format(($trip->amount ?? 0) * auth('company')->user()->commission_rate / 100, 0, ',', ' ') }} FCFA
                     </p>
                 </div>
                 <div class="border-t border-gray-100 pt-3 flex items-center justify-between">
                     <p class="text-sm font-medium text-gray-700">Net société</p>
                     <p class="text-base font-bold text-blue-700">
-                        {{ number_format(($trip->price ?? 0) * (1 - auth('company')->user()->commission_rate / 100), 0, ',', ' ') }} FCFA
+                        {{ number_format(($trip->amount ?? 0) * (1 - auth('company')->user()->commission_rate / 100), 0, ',', ' ') }} FCFA
                     </p>
                 </div>
             </div>
@@ -102,14 +102,14 @@
 
     </div>
 
-    @if($trip->distance || $trip->duration)
+    @if($trip->distance_km || $trip->duration)
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-6">
         <h3 class="font-semibold text-gray-700 mb-4 text-sm uppercase tracking-wide">Détails du trajet</h3>
         <div class="flex gap-8">
-            @if($trip->distance)
+            @if($trip->distance_km)
             <div>
                 <p class="text-xs text-gray-400 uppercase">Distance</p>
-                <p class="font-semibold text-gray-800">{{ $trip->distance }} km</p>
+                <p class="font-semibold text-gray-800">{{ $trip->distance_km }} km</p>
             </div>
             @endif
             @if($trip->duration)

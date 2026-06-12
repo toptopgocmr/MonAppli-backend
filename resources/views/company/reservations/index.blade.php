@@ -13,7 +13,7 @@
                    class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-56">
             <select name="status" class="border border-gray-200 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Tous les statuts</option>
-                @foreach(['pending'=>'En attente','confirmed'=>'Confirmée','ongoing'=>'En cours','completed'=>'Terminée','cancelled'=>'Annulée'] as $val => $label)
+                @foreach(['pending'=>'En attente','accepted'=>'Acceptée','in_progress'=>'En cours','completed'=>'Terminée','cancelled'=>'Annulée'] as $val => $label)
                     <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
@@ -43,8 +43,8 @@
                 @php
                     $statusColors = [
                         'pending'   => ['bg-yellow-100','text-yellow-700','En attente'],
-                        'confirmed' => ['bg-blue-100','text-blue-700','Confirmée'],
-                        'ongoing'   => ['bg-indigo-100','text-indigo-700','En cours'],
+                        'accepted' => ['bg-blue-100','text-blue-700','Acceptée'],
+                        'in_progress' => ['bg-indigo-100','text-indigo-700','En cours'],
                         'completed' => ['bg-green-100','text-green-700','Terminée'],
                         'cancelled' => ['bg-red-100','text-red-700','Annulée'],
                     ];
@@ -66,13 +66,13 @@
                     </td>
                     <td class="px-6 py-4">
                         <p class="text-sm text-gray-700 truncate max-w-xs">
-                            {{ Str::limit($trip->departure_address ?? '—', 25) }}
+                            {{ Str::limit($trip->departure ?? '—', 25) }}
                             <span class="text-gray-400 mx-1">→</span>
-                            {{ Str::limit($trip->arrival_address ?? '—', 25) }}
+                            {{ Str::limit($trip->destination ?? '—', 25) }}
                         </p>
                     </td>
                     <td class="px-6 py-4">
-                        <p class="text-sm font-semibold text-blue-700">{{ number_format($trip->price ?? 0, 0, ',', ' ') }} FCFA</p>
+                        <p class="text-sm font-semibold text-blue-700">{{ number_format($trip->amount ?? 0, 0, ',', ' ') }} FCFA</p>
                     </td>
                     <td class="px-6 py-4">
                         <span class="text-xs px-2 py-1 rounded-full font-medium {{ $sc[0] }} {{ $sc[1] }}">{{ $sc[2] }}</span>

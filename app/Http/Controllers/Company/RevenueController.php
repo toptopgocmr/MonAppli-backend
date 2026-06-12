@@ -14,47 +14,61 @@ class RevenueController extends Controller
         $company   = auth('company')->user();
         $driverIds = Driver::where('company_id', $company->id)->pluck('id');
 
-        $year  = $request->get('year',  now()->year);
-        $month = $request->get('month', null);
+        // Revenus ce mois
+        $revenueThisMonth = Trip::whereIn('driver_id', $driverIds)
+            ->where('status', 'completed')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->sum('amount');
 
-        $query = Trip::whereIn('driver_id', $driverIds)->where('status', 'completed');
+        $tripsThisMonth = Trip::whereIn('driver_id', $driverIds)
+            ->where('status', 'completed')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->count();
 
-        if ($month) {
-            $query->whereMonth('created_at', $month)->whereYear('created_at', $year);
-        } else {
-            $query->whereYear('created_at', $year);
-        }
+        // Revenus total
+        $revenueTotal = Trip::whereIn('driver_id', $driverIds)
+            ->where('status', 'completed')
+            ->sum('amount');
 
-        $totalRevenue    = $query->sum('price');
-        $commission      = $totalRevenue * ($company->commission_rate / 100);
-        $netRevenue      = $totalRevenue - $commission;
-        $totalTrips      = $query->count();
-        $avgPerTrip      = $totalTrips > 0 ? $totalRevenue / $totalTrips : 0;
+        $tripsTotal = Trip::whereIn('driver_id', $driverIds)
+            ->where('status', 'completed')
+            ->count();
 
-        // Revenus par mois pour le graphique
+        // Évolution mensuelle (12 derniers mois)
         $monthlyRevenue = Trip::whereIn('driver_id', $driverIds)
             ->where('status', 'completed')
-            ->whereYear('created_at', $year)
-            ->selectRaw('MONTH(created_at) as month, SUM(price) as total, COUNT(*) as trips')
+            ->where('created_at', '>=', now()->subMonths(12)->startOfMonth())
+            ->selectRaw("DATE_FORMAT(created_at, '%Y-%m') as month, SUM(amount) as total, COUNT(*) as trips")
             ->groupBy('month')
             ->orderBy('month')
-            ->get()
-            ->keyBy('month');
+            ->get();
 
-        // Top chauffeurs
-        $topDrivers = Trip::whereIn('driver_id', $driverIds)
+        // Top chauffeurs ce mois
+        $topDriversRaw = Trip::whereIn('driver_id', $driverIds)
             ->where('status', 'completed')
-            ->whereYear('created_at', $year)
-            ->selectRaw('driver_id, SUM(price) as total, COUNT(*) as trips')
+            ->whereMonth('created_at', now()->month)
+            ->whereYear('created_at', now()->year)
+            ->selectRaw('driver_id, SUM(amount) as total, COUNT(*) as count')
             ->groupBy('driver_id')
-            ->with('driver')
             ->orderByDesc('total')
             ->limit(5)
             ->get();
 
+        $topDrivers = $topDriversRaw->map(function ($row) {
+            return [
+                'driver' => Driver::find($row->driver_id),
+                'total'  => $row->total,
+                'count'  => $row->count,
+            ];
+        })->filter(fn($item) => $item['driver'] !== null)->values();
+
         return view('company.revenus.index', compact(
-            'totalRevenue', 'commission', 'netRevenue', 'totalTrips',
-            'avgPerTrip', 'monthlyRevenue', 'topDrivers', 'year', 'month', 'company'
+            'company',
+            'revenueThisMonth', 'tripsThisMonth',
+            'revenueTotal',     'tripsTotal',
+            'monthlyRevenue',   'topDrivers'
         ));
     }
 }
