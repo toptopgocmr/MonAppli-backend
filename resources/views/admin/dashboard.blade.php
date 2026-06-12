@@ -62,6 +62,41 @@
         </div>
         </a>
 
+        <a href="{{ route('admin.commission-rates.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+            <div class="stat-icon" style="background:#FFF7ED">
+                <svg width="18" height="18" fill="none" stroke="#EA580C" stroke-width="2" viewBox="0 0 24 24"><path d="M9 14l6-6m0 6l-6-6"/><circle cx="9" cy="9" r="1" fill="#EA580C" stroke="none"/><circle cx="15" cy="15" r="1" fill="#EA580C" stroke="none"/><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+            </div>
+            <div class="stat-val" style="font-size:22px">{{ number_format($stats['total_commission'],0,',',' ') }}</div>
+            <div class="stat-lbl">Commissions totales (XAF)</div>
+            <div class="stat-sub">Depuis le début</div>
+        </div>
+        </a>
+
+        <a href="{{ route('admin.sos.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s;{{ $stats['sos_active'] > 0 ? 'border-color:#D13212;' : '' }}" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+            <div class="stat-icon" style="background:#FEF2F2">
+                <svg width="18" height="18" fill="none" stroke="#DC2626" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div class="stat-val" style="{{ $stats['sos_active'] > 0 ? 'color:#DC2626' : '' }}">{{ $stats['sos_active'] }}</div>
+            <div class="stat-lbl">Alertes SOS actives</div>
+            <div class="stat-sub" style="{{ $stats['sos_active'] > 0 ? 'color:#DC2626;font-weight:600' : '' }}">
+                {{ $stats['sos_active'] > 0 ? '⚠ Intervention requise' : 'Aucune alerte' }}
+            </div>
+        </div>
+        </a>
+
+        <a href="{{ route('admin.profiles.index') }}" style="text-decoration:none;color:inherit">
+        <div class="stat-card" style="cursor:pointer;transition:box-shadow .15s,transform .15s" onmouseover="this.style.boxShadow='0 4px 18px rgba(0,0,0,.13)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
+            <div class="stat-icon" style="background:#EDE9FE">
+                <svg width="18" height="18" fill="none" stroke="#7C3AED" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['total_admins'] }}</div>
+            <div class="stat-lbl">Administrateurs</div>
+            <div class="stat-sub">Comptes admin actifs</div>
+        </div>
+        </a>
+
     </div>
 
     {{-- Carte --}}

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User\User;
 use App\Models\Driver\Driver;
+use App\Models\Admin\AdminUser;
 use App\Models\Company;
 use App\Models\Trip;
 use App\Models\Payment;
@@ -16,15 +17,18 @@ class DashboardController extends Controller
     public function index(Request $request)
     {
         $stats = [
-            'total_users'      => User::count(),
-            'new_users_today'  => User::whereDate('created_at', today())->count(),
-            'total_companies'  => Company::count(),
-            'active_drivers'   => Driver::where('status', 'approved')->count(),
-            'online_drivers'   => Driver::where('driver_status', 'online')->count(),
-            'today_rides'      => Trip::whereDate('created_at', today())->count(),
-            'active_rides'     => Trip::where('status', 'in_progress')->count(),
-            'today_revenue'    => Payment::where('status', 'success')->whereDate('created_at', today())->sum('amount'),
-            'today_commission' => Payment::where('status', 'success')->whereDate('created_at', today())->sum('commission'),
+            'total_users'       => User::count(),
+            'new_users_today'   => User::whereDate('created_at', today())->count(),
+            'total_companies'   => Company::count(),
+            'active_drivers'    => Driver::where('status', 'approved')->count(),
+            'online_drivers'    => Driver::where('driver_status', 'online')->count(),
+            'today_rides'       => Trip::whereDate('created_at', today())->count(),
+            'active_rides'      => Trip::where('status', 'in_progress')->count(),
+            'today_revenue'     => Payment::where('status', 'success')->whereDate('created_at', today())->sum('amount'),
+            'today_commission'  => Payment::where('status', 'success')->whereDate('created_at', today())->sum('commission'),
+            'total_commission'  => Payment::where('status', 'success')->sum('commission'),
+            'sos_active'        => SosAlert::where('status', 'active')->count(),
+            'total_admins'      => AdminUser::count(),
         ];
 
         $drivers = Driver::where('status', 'approved')

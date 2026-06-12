@@ -43,8 +43,9 @@
     #layout{display:flex;min-height:calc(100vh - var(--nav-h))}
 
     /* SIDEBAR */
-    #sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column}
+    #sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);flex-shrink:0;overflow-y:auto;display:flex;flex-direction:column;transition:width .22s ease,transform .22s ease}
     #sidebar::-webkit-scrollbar{width:0}
+    #sidebar.collapsed{width:0;overflow:hidden;border-right:none}
     .nav-section{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);padding:16px 16px 6px}
     .nav-item{display:flex;align-items:center;gap:9px;padding:7px 16px;font-size:13px;font-weight:500;color:var(--text-2);text-decoration:none;transition:all .1s;white-space:nowrap;overflow:hidden;border-left:3px solid transparent}
     .nav-item svg{flex-shrink:0;color:var(--text-3)}
@@ -55,6 +56,9 @@
     .nav-item.active{background:#EBF5FB;color:var(--brand);border-left-color:var(--brand);font-weight:600}
     .nav-item.active svg{color:var(--brand)}
     .sb-footer{padding:14px 16px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;margin-top:auto}
+    /* Toggle button desktop */
+    #sidebar-toggle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--radius);background:none;border:1px solid rgba(255,255,255,.18);cursor:pointer;color:rgba(255,255,255,.8);flex-shrink:0;transition:background .15s}
+    #sidebar-toggle:hover{background:rgba(255,255,255,.12);color:#fff}
     .sb-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--brand),var(--brand-d));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
 
     /* CONTENT */
@@ -164,6 +168,10 @@
         <img src="{{ asset('images/logo4.png') }}" alt="TTG">
         <span>TopTopGo</span>
     </div>
+
+    <button id="sidebar-toggle" onclick="toggleSidebarDesktop()" title="Réduire/Ouvrir le menu">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
 
     <div class="tn-search">
         <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:10px;top:50%;transform:translateY(-50%)"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
@@ -360,6 +368,17 @@
 function isMobile(){return window.innerWidth<768}
 function applyLayout(){document.getElementById('menu-toggle').style.display=isMobile()?'flex':'none'}
 function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sb-overlay').classList.toggle('show')}
+function toggleSidebarDesktop(){
+    var sb=document.getElementById('sidebar');
+    sb.classList.toggle('collapsed');
+    localStorage.setItem('sidebarCollapsed', sb.classList.contains('collapsed')?'1':'0');
+}
+// Restore sidebar state
+(function(){
+    if(localStorage.getItem('sidebarCollapsed')==='1' && !isMobile()){
+        document.getElementById('sidebar').classList.add('collapsed');
+    }
+})();
 window.addEventListener('resize',applyLayout);applyLayout();
 
 function showToast(msg,type){
