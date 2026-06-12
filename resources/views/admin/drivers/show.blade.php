@@ -273,11 +273,11 @@
 <!-- ZOOM PHOTO PROFIL -->
 
 <div id="imageModal"
-     class="fixed inset-0 bg-black bg-opacity-80 hidden
-            flex items-center justify-center z-50">
+     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;padding:16px"
+     onclick="if(event.target===this)closeImage()">
 
     <img id="modalImage"
-         class="max-h-[90vh] max-w-[90vw] rounded-xl shadow-lg">
+         style="max-height:90vh;max-width:90vw;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5)">
 
 </div>
 
@@ -285,18 +285,17 @@
 <script>
 
 function openImage(src){
-
     document.getElementById('modalImage').src = src;
-
-    document.getElementById('imageModal').classList.remove('hidden');
-
+    document.getElementById('imageModal').style.display = 'flex';
 }
 
-document.getElementById('imageModal').onclick = function(){
-
-    this.classList.add('hidden');
-
+function closeImage(){
+    document.getElementById('imageModal').style.display = 'none';
 }
+
+document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeImage();
+});
 
 </script>
 
