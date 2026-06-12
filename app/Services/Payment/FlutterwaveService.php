@@ -30,11 +30,11 @@ class FlutterwaveService implements PaymentProviderInterface
 
     public function __construct()
     {
-        $env           = config('flutterwave.env', 'sandbox');
-        $this->baseUrl = rtrim(config("flutterwave.base_url.{$env}"), '/');
+        $env              = config('flutterwave.env', 'sandbox');
+        $this->baseUrl    = rtrim((string) (config("flutterwave.base_url.{$env}") ?? ''), '/');
         $this->secretKey  = config('flutterwave.secret_key') ?: null;
-        $this->secretHash = config('flutterwave.secret_hash');
-        $this->currency   = config('flutterwave.currency', 'XAF');
+        $this->secretHash = config('flutterwave.secret_hash') ?: null;
+        $this->currency   = config('flutterwave.currency', 'XAF') ?? 'XAF';
     }
 
     // =========================================================================

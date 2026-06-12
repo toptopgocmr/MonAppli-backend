@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\AdminAuthController;
+use App\Http\Controllers\Admin\CompanyController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\DriverController;
@@ -204,6 +205,25 @@ Route::prefix('admin')->name('admin.')->group(function () {
         | PARTENAIRES PAYEURS
         |--------------------------------------------------------------------------
         */
+        /*
+        |--------------------------------------------------------------------------
+        | SOCIÉTÉS
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('companies')->name('companies.')->group(function () {
+            Route::get('/',                                  [CompanyController::class, 'index'])->name('index');
+            Route::get('/create',                            [CompanyController::class, 'create'])->name('create');
+            Route::post('/',                                 [CompanyController::class, 'store'])->name('store');
+            Route::get('/{company}',                         [CompanyController::class, 'show'])->name('show');
+            Route::get('/{company}/edit',                    [CompanyController::class, 'edit'])->name('edit');
+            Route::put('/{company}',                         [CompanyController::class, 'update'])->name('update');
+            Route::delete('/{company}',                      [CompanyController::class, 'destroy'])->name('destroy');
+            Route::post('/{company}/suspend',                [CompanyController::class, 'suspend'])->name('suspend');
+            Route::post('/{company}/activate',               [CompanyController::class, 'activate'])->name('activate');
+            Route::post('/{company}/assign-driver',          [CompanyController::class, 'assignDriver'])->name('assign-driver');
+            Route::delete('/{company}/drivers/{driver}',     [CompanyController::class, 'removeDriver'])->name('remove-driver');
+        });
+
         Route::get('payments', [PaymentPartnerController::class, 'index'])->name('payments.index');
         Route::get('payments/export', [PaymentPartnerController::class, 'export'])->name('payments.export');
         Route::post('payments/withdrawals/{withdrawal}/approve', [PaymentPartnerController::class, 'approveWithdrawal'])->name('payments.approve-withdrawal');

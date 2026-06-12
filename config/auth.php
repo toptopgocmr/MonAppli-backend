@@ -16,6 +16,10 @@ return [
             'driver'   => 'session',
             'provider' => 'admins',
         ],
+        'company' => [
+            'driver'   => 'session',
+            'provider' => 'companies',
+        ],
         'sanctum' => [
             'driver'   => 'sanctum',
             'provider' => null,
@@ -34,6 +38,10 @@ return [
         'drivers' => [
             'driver' => 'eloquent',
             'model'  => App\Models\Driver::class,
+        ],
+        'companies' => [
+            'driver' => 'eloquent',
+            'model'  => App\Models\Company::class,
         ],
     ],
 

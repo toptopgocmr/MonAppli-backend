@@ -14,6 +14,8 @@ return Application::configure(basePath: dirname(__DIR__))
         then: function () {
             Route::middleware('web')
                 ->group(base_path('routes/admin.php'));
+            Route::middleware('web')
+                ->group(base_path('routes/company.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -31,6 +33,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role.permission' => \App\Http\Middleware\RolePermissionMiddleware::class,
             'admin.session'   => \App\Http\Middleware\AdminSessionMiddleware::class,
+            'company'         => \App\Http\Middleware\CompanyMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
