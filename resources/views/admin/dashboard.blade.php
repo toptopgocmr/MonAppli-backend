@@ -5,66 +5,83 @@
 <div style="display:flex;flex-direction:column;gap:20px">
 
     {{-- KPI Cards --}}
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px">
-        <div class="stat-card" style="border-left:4px solid #1DA1F2">
-            <div class="lbl">👤 Clients inscrits</div>
-            <div class="val" style="color:#1DA1F2">{{ $stats['total_users'] }}</div>
-            <div class="sub" style="color:#22c55e">+{{ $stats['new_users_today'] }} aujourd'hui</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px">
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EFF8FF">
+                <svg width="18" height="18" fill="none" stroke="#1DA1F2" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['total_users'] }}</div>
+            <div class="stat-lbl">Clients inscrits</div>
+            <div class="stat-sub" style="color:#10B981">+{{ $stats['new_users_today'] }} aujourd'hui</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #FFC107">
-            <div class="lbl">🚗 Chauffeurs actifs</div>
-            <div class="val" style="color:#d97706">{{ $stats['active_drivers'] }}</div>
-            <div class="sub" style="color:#22c55e">{{ $stats['online_drivers'] }} en ligne maintenant</div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#FFFBEB">
+                <svg width="18" height="18" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['active_drivers'] }}</div>
+            <div class="stat-lbl">Chauffeurs actifs</div>
+            <div class="stat-sub">{{ $stats['online_drivers'] }} en ligne maintenant</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #6366f1">
-            <div class="lbl">📍 Courses aujourd'hui</div>
-            <div class="val" style="color:#4f46e5">{{ $stats['today_rides'] }}</div>
-            <div class="sub">{{ $stats['active_rides'] }} en cours</div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EEF2FF">
+                <svg width="18" height="18" fill="none" stroke="#6366F1" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['today_rides'] }}</div>
+            <div class="stat-lbl">Courses aujourd'hui</div>
+            <div class="stat-sub">{{ $stats['active_rides'] }} en cours</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #22c55e">
-            <div class="lbl">💰 Revenus du jour</div>
-            <div class="val" style="color:#16a34a;font-size:22px">{{ number_format($stats['today_revenue'],0,',',' ') }} XAF</div>
-            <div class="sub">Commission : {{ number_format($stats['today_commission'],0,',',' ') }} XAF</div>
+
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#ECFDF5">
+                <svg width="18" height="18" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            </div>
+            <div class="stat-val" style="font-size:22px">{{ number_format($stats['today_revenue'],0,',',' ') }}</div>
+            <div class="stat-lbl">Revenus du jour (XAF)</div>
+            <div class="stat-sub">Commission : {{ number_format($stats['today_commission'],0,',',' ') }} XAF</div>
         </div>
+
     </div>
 
-    {{-- Carte temps réel --}}
+    {{-- Carte --}}
     <div class="panel">
         <div class="panel-header">
-            <div style="display:flex;align-items:center;gap:12px">
+            <div style="display:flex;align-items:center;gap:14px">
                 <div>
-                    <h2 style="font-size:15px;font-weight:700;color:#0f172a">📍 Suivi des chauffeurs en temps réel</h2>
-                    <p style="font-size:12px;color:#94a3b8;margin-top:2px">Mis à jour toutes les 10 secondes</p>
+                    <div style="font-size:14px;font-weight:600;color:#0F172A">Suivi des chauffeurs en temps réel</div>
+                    <div style="font-size:12px;color:#94A3B8;margin-top:1px">Mis à jour toutes les 10 secondes</div>
                 </div>
-                <div style="display:flex;align-items:center;gap:6px;background:#f0fdf4;border:1px solid #bbf7d0;padding:4px 12px;border-radius:99px">
-                    <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 1.5s infinite"></span>
-                    <span style="font-size:12px;color:#16a34a;font-weight:600" id="onlineCount">— en ligne</span>
-                </div>
+                <span style="display:inline-flex;align-items:center;gap:6px;background:#ECFDF5;border:1px solid #BBF7D0;padding:4px 12px;border-radius:99px;font-size:12px;color:#15803D;font-weight:600">
+                    <span style="width:7px;height:7px;border-radius:50%;background:#22C55E;display:inline-block;animation:pulse 1.5s infinite"></span>
+                    <span id="onlineCount">—</span>
+                </span>
             </div>
-            <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:#64748b">
-                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block"></span>En ligne</span>
-                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#facc15;display:inline-block"></span>En pause</span>
-                <span style="display:flex;align-items:center;gap:5px"><span style="width:10px;height:10px;border-radius:50%;background:#9ca3af;display:inline-block"></span>Hors ligne</span>
+            <div style="display:flex;align-items:center;gap:14px;font-size:12px;color:#64748B">
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#22C55E;display:inline-block"></span>En ligne</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#FACC15;display:inline-block"></span>En pause</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="width:8px;height:8px;border-radius:50%;background:#9CA3AF;display:inline-block"></span>Hors ligne</span>
             </div>
         </div>
 
-        {{-- Filtres --}}
-        <div style="padding:14px 20px;background:#f8fafc;border-bottom:1px solid #e2e8f0">
+        {{-- Filtres carte --}}
+        <div style="padding:14px 20px;border-bottom:1px solid #F1F5F9;background:#FAFBFC">
             <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
-                <div style="flex:1;min-width:160px">
-                    <label class="ttg-label">👤 Nom chauffeur</label>
-                    <input type="text" id="search_chauffeur" placeholder="Ex: Jean Dupont" class="ttg-input">
+                <div style="flex:1;min-width:150px">
+                    <label class="ttg-label">Nom chauffeur</label>
+                    <input type="text" id="search_chauffeur" placeholder="Jean Dupont" class="ttg-input">
                 </div>
-                <div style="flex:1;min-width:140px">
-                    <label class="ttg-label">🔢 Immatriculation</label>
-                    <input type="text" id="search_matricule" placeholder="Ex: AB-1234-CD" class="ttg-input">
+                <div style="flex:1;min-width:130px">
+                    <label class="ttg-label">Immatriculation</label>
+                    <input type="text" id="search_matricule" placeholder="AB-1234-CD" class="ttg-input">
                 </div>
-                <div style="flex:1;min-width:120px">
-                    <label class="ttg-label">🎨 Couleur</label>
-                    <input type="text" id="search_couleur" placeholder="Ex: Blanc" class="ttg-input">
+                <div style="flex:1;min-width:110px">
+                    <label class="ttg-label">Couleur</label>
+                    <input type="text" id="search_couleur" placeholder="Blanc" class="ttg-input">
                 </div>
                 <div>
-                    <label class="ttg-label">📡 Statut</label>
+                    <label class="ttg-label">Statut</label>
                     <select id="search_status" class="ttg-select" style="min-width:120px">
                         <option value="all">Tous</option>
                         <option value="online">En ligne</option>
@@ -72,8 +89,11 @@
                         <option value="offline">Hors ligne</option>
                     </select>
                 </div>
-                <button onclick="searchAndZoom()" class="btn btn-primary">🔍 Rechercher & Zoomer</button>
-                <button onclick="resetSearch()" class="btn btn-gray">✕ Reset</button>
+                <button onclick="searchAndZoom()" class="btn btn-primary">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    Rechercher
+                </button>
+                <button onclick="resetSearch()" class="btn btn-secondary">Réinitialiser</button>
             </div>
             <div id="searchResults" class="hidden" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap"></div>
         </div>
@@ -86,47 +106,25 @@
 
 @push('scripts')
 <script>
-// ================================================================
-// CONFIGURATION
-// ================================================================
-const LIVE_URL  = "{{ route('admin.drivers.live') }}";
-const REFRESH_MS = 10000; // 10 secondes
+const LIVE_URL   = "{{ route('admin.drivers.live') }}";
+const REFRESH_MS = 10000;
 
-// ================================================================
-// INITIALISATION CARTE
-// ================================================================
 const map = L.map('map', { zoomControl: true }).setView([4.0, 15.0], 5);
-
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '© OpenStreetMap',
-    maxZoom: 19,
+    attribution: '© OpenStreetMap', maxZoom: 19,
 }).addTo(map);
 
-// ================================================================
-// ICÔNES PAR STATUT
-// ================================================================
 function makeIcon(status) {
-    const colors = { online: '#22c55e', pause: '#facc15', offline: '#9ca3af' };
-    const color  = colors[status] || '#9ca3af';
-    const svg = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="36" height="44" viewBox="0 0 36 44">
-            <ellipse cx="18" cy="42" rx="8" ry="3" fill="rgba(0,0,0,0.2)"/>
-            <path d="M18 0 C8 0 0 8 0 18 C0 30 18 44 18 44 C18 44 36 30 36 18 C36 8 28 0 18 0Z"
-                  fill="${color}" stroke="white" stroke-width="2"/>
-            <text x="18" y="23" text-anchor="middle" font-size="14" fill="white">🚗</text>
-        </svg>`;
+    const colors = { online:'#22C55E', pause:'#FACC15', offline:'#9CA3AF' };
+    const c = colors[status] || '#9CA3AF';
     return L.divIcon({
-        html: svg,
-        iconSize: [36, 44],
-        iconAnchor: [18, 44],
-        popupAnchor: [0, -44],
-        className: '',
+        html: `<div style="background:${c};border:3px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.25)">
+            <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="10" r="3"/><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 6.9 8 11.7z"/></svg>
+        </div>`,
+        iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -20], className: '',
     });
 }
 
-// ================================================================
-// GESTION DES MARQUEURS
-// ================================================================
 let markers = {};
 let allDrivers = [];
 
@@ -137,51 +135,35 @@ function updateMarkers(drivers) {
     drivers.forEach(d => {
         if (!d.lat || !d.lng) return;
         seen.add(d.id);
-
+        const sc = d.driver_status === 'online' ? '#22C55E' : d.driver_status === 'pause' ? '#F59E0B' : '#9CA3AF';
+        const sl = d.driver_status === 'online' ? 'En ligne' : d.driver_status === 'pause' ? 'En pause' : 'Hors ligne';
         const popup = `
-            <div style="min-width:200px; font-family: sans-serif;">
-                <div style="font-weight:bold; font-size:14px; margin-bottom:6px;">
-                    🚗 ${d.first_name} ${d.last_name}
-                </div>
-                <div style="font-size:12px; color:#555; line-height:1.8;">
-                    📱 ${d.phone ?? '—'}<br>
-                    🔢 <b>${d.vehicle_plate ?? '—'}</b><br>
-                    🎨 ${d.vehicle_color ?? '—'} · ${d.vehicle_brand ?? ''} ${d.vehicle_model ?? ''}<br>
-                    🏷️ ${d.vehicle_type ?? '—'}<br>
-                    📡 <span style="color:${d.driver_status === 'online' ? '#22c55e' : (d.driver_status === 'pause' ? '#f59e0b' : '#9ca3af')}; font-weight:bold;">
-                        ${d.driver_status === 'online' ? '● En ligne' : d.driver_status === 'pause' ? '● En pause' : '● Hors ligne'}
-                    </span><br>
-                    🕐 ${d.updated_at}
+            <div style="font-family:Inter,sans-serif;min-width:190px;font-size:13px">
+                <div style="font-weight:700;font-size:14px;margin-bottom:8px;color:#0F172A">${d.first_name} ${d.last_name}</div>
+                <div style="display:flex;flex-direction:column;gap:4px;color:#475569">
+                    <span>${d.phone ?? '—'}</span>
+                    <span><strong>${d.vehicle_plate ?? '—'}</strong></span>
+                    <span>${d.vehicle_color ?? '—'} · ${d.vehicle_brand ?? ''} ${d.vehicle_model ?? ''}</span>
+                    <span style="color:${sc};font-weight:600;margin-top:4px">● ${sl}</span>
                 </div>
             </div>`;
 
         if (markers[d.id]) {
-            markers[d.id].setLatLng([d.lat, d.lng])
-                         .setIcon(makeIcon(d.driver_status))
-                         .setPopupContent(popup);
+            markers[d.id].setLatLng([d.lat, d.lng]).setIcon(makeIcon(d.driver_status)).setPopupContent(popup);
         } else {
             markers[d.id] = L.marker([d.lat, d.lng], { icon: makeIcon(d.driver_status) })
-                             .addTo(map)
-                             .bindPopup(popup);
+                             .addTo(map).bindPopup(popup);
         }
     });
 
-    // Supprimer marqueurs disparus
     Object.keys(markers).forEach(id => {
-        if (!seen.has(parseInt(id))) {
-            map.removeLayer(markers[id]);
-            delete markers[id];
-        }
+        if (!seen.has(parseInt(id))) { map.removeLayer(markers[id]); delete markers[id]; }
     });
 
-    // Compteur en ligne
-    const onlineCount = drivers.filter(d => d.driver_status === 'online').length;
-    document.getElementById('onlineCount').textContent = `${onlineCount} en ligne · ${drivers.length} total`;
+    const n = drivers.filter(d => d.driver_status === 'online').length;
+    document.getElementById('onlineCount').textContent = `${n} en ligne · ${drivers.length} total`;
 }
 
-// ================================================================
-// RECHERCHE + ZOOM
-// ================================================================
 function getFilters() {
     return {
         chauffeur: document.getElementById('search_chauffeur').value.trim(),
@@ -191,100 +173,73 @@ function getFilters() {
     };
 }
 
-function searchAndZoom() {
-    const f = getFilters();
-    fetchDrivers(f, true);
+function fetchDrivers(filters = {}, zoom = false) {
+    const p = new URLSearchParams();
+    if (filters.chauffeur) p.append('chauffeur', filters.chauffeur);
+    if (filters.matricule) p.append('matricule', filters.matricule);
+    if (filters.couleur)   p.append('couleur', filters.couleur);
+    if (filters.status && filters.status !== 'all') p.append('status', filters.status);
+
+    fetch(`${LIVE_URL}?${p}`, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(r => r.json())
+        .then(data => {
+            updateMarkers(data.drivers);
+            if (zoom && data.drivers.length > 0) {
+                showSearchResults(data.drivers);
+                if (data.drivers.length === 1) {
+                    const d = data.drivers[0];
+                    map.setView([d.lat, d.lng], 17);
+                    if (markers[d.id]) markers[d.id].openPopup();
+                } else {
+                    map.fitBounds(L.latLngBounds(data.drivers.map(d => [d.lat, d.lng])), { padding: [50, 50], maxZoom: 15 });
+                }
+            } else if (zoom) showNoResult();
+        })
+        .catch(e => console.error(e));
 }
 
+function searchAndZoom() { fetchDrivers(getFilters(), true); }
+
 function resetSearch() {
-    document.getElementById('search_chauffeur').value = '';
-    document.getElementById('search_matricule').value = '';
-    document.getElementById('search_couleur').value   = '';
-    document.getElementById('search_status').value    = 'all';
+    ['search_chauffeur','search_matricule','search_couleur'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('search_status').value = 'all';
     document.getElementById('searchResults').classList.add('hidden');
-    document.getElementById('searchResults').innerHTML = '';
     fetchDrivers({}, false);
     map.setView([4.0, 15.0], 5);
 }
 
-function fetchDrivers(filters = {}, zoom = false) {
-    const params = new URLSearchParams();
-    if (filters.chauffeur) params.append('chauffeur', filters.chauffeur);
-    if (filters.matricule) params.append('matricule', filters.matricule);
-    if (filters.couleur)   params.append('couleur',   filters.couleur);
-    if (filters.status && filters.status !== 'all') params.append('status', filters.status);
-
-    fetch(`${LIVE_URL}?${params.toString()}`, {
-        headers: { 'Accept': 'application/json',
-                   'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(r => r.json())
-    .then(data => {
-        updateMarkers(data.drivers);
-
-        if (zoom && data.drivers.length > 0) {
-            showSearchResults(data.drivers);
-
-            if (data.drivers.length === 1) {
-                // Un seul résultat → zoom maximal + popup
-                const d = data.drivers[0];
-                map.setView([d.lat, d.lng], 17);
-                if (markers[d.id]) markers[d.id].openPopup();
-            } else {
-                // Plusieurs → ajuster la vue pour tout afficher
-                const bounds = L.latLngBounds(
-                    data.drivers.map(d => [d.lat, d.lng])
-                );
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-            }
-        } else if (zoom && data.drivers.length === 0) {
-            showNoResult();
-        }
-    })
-    .catch(err => console.error('Erreur fetch drivers:', err));
-}
-
 function showSearchResults(drivers) {
     const box = document.getElementById('searchResults');
-    box.innerHTML = drivers.map(d => `
-        <button onclick="zoomToDriver(${d.id})"
-            class="bg-white border border-gray-200 hover:border-blue-400 hover:bg-blue-50
-                   rounded-lg px-3 py-2 text-xs flex items-center gap-2 transition shadow-sm">
-            <span class="w-2 h-2 rounded-full ${d.driver_status === 'online' ? 'bg-green-500' : (d.driver_status === 'pause' ? 'bg-yellow-400' : 'bg-gray-400')}"></span>
-            <span class="font-medium">${d.first_name} ${d.last_name}</span>
-            <span class="text-gray-400">${d.vehicle_plate ?? '—'}</span>
-        </button>
-    `).join('');
+    box.innerHTML = drivers.map(d => {
+        const sc = d.driver_status === 'online' ? '#22C55E' : d.driver_status === 'pause' ? '#FACC15' : '#9CA3AF';
+        return `<button onclick="zoomToDriver(${d.id})"
+            style="background:#fff;border:1px solid #E2E8F0;padding:5px 12px;border-radius:7px;font-size:12px;
+                   display:flex;align-items:center;gap:6px;cursor:pointer;font-family:Inter,sans-serif">
+            <span style="width:7px;height:7px;border-radius:50%;background:${sc};display:inline-block"></span>
+            <strong>${d.first_name} ${d.last_name}</strong>
+            <span style="color:#94A3B8">${d.vehicle_plate ?? ''}</span>
+        </button>`;
+    }).join('');
     box.classList.remove('hidden');
 }
 
 function showNoResult() {
     const box = document.getElementById('searchResults');
-    box.innerHTML = `<span class="text-sm text-red-500">⚠️ Aucun chauffeur trouvé avec ces critères</span>`;
+    box.innerHTML = `<span style="font-size:13px;color:#EF4444">Aucun chauffeur trouvé avec ces critères</span>`;
     box.classList.remove('hidden');
 }
 
-function zoomToDriver(driverId) {
-    const d = allDrivers.find(x => x.id === driverId);
-    if (!d) return;
-    map.setView([d.lat, d.lng], 17);
-    if (markers[d.id]) markers[d.id].openPopup();
+function zoomToDriver(id) {
+    const d = allDrivers.find(x => x.id === id);
+    if (d) { map.setView([d.lat, d.lng], 17); if (markers[d.id]) markers[d.id].openPopup(); }
 }
 
-// ================================================================
-// LANCEMENT + REFRESH AUTO
-// ================================================================
-fetchDrivers(); // Chargement initial
+fetchDrivers();
+setInterval(() => fetchDrivers(getFilters()), REFRESH_MS);
 
-setInterval(() => {
-    fetchDrivers(getFilters()); // Refresh avec filtres actifs
-}, REFRESH_MS);
-
-// Recherche au Enter
-['search_chauffeur', 'search_matricule', 'search_couleur'].forEach(id => {
-    document.getElementById(id).addEventListener('keydown', e => {
-        if (e.key === 'Enter') searchAndZoom();
-    });
+['search_chauffeur','search_matricule','search_couleur'].forEach(id => {
+    document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') searchAndZoom(); });
 });
 </script>
 @endpush
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            

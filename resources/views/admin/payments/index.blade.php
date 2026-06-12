@@ -7,10 +7,10 @@
     {{-- Header --}}
     <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
         <div>
-            <h1 class="page-title">💳 Partenaires Payeurs</h1>
+            <h1 class="page-title">Partenaires Payeurs</h1>
             <p class="page-sub">Suivi en temps réel des paiements, retraits et wallets</p>
         </div>
-        <a href="{{ route('admin.payments.export') }}?period={{ $period }}" class="btn btn-success">📥 Exporter CSV</a>
+        <a href="{{ route('admin.payments.export') }}?period={{ $period }}" class="btn btn-success">Exporter CSV</a>
     </div>
 
     {{-- Période --}}
@@ -50,7 +50,7 @@
 
     {{-- ===== CARTES PARTENAIRES ===== --}}
     <div>
-        <h3 class="page-sub" style="margin-bottom:10px">📊 Par partenaire</h3>
+        <h3 class="page-sub" style="margin-bottom:10px">Par partenaire</h3>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px">
             @foreach($partnerStats as $key => $partner)
             @php
@@ -66,7 +66,7 @@
                 <div class="sub">{{ $partner['count'] }} paiements</div>
                 <div style="display:flex;gap:8px;margin-top:6px;font-size:11px">
                     <span style="color:#f97316">⏳ {{ $partner['pending'] }}</span>
-                    <span style="color:#ef4444">✗ {{ $partner['failed'] }}</span>
+                    <span style="color:#ef4444">{{ $partner['failed'] }}</span>
                 </div>
             </div>
             @endforeach
@@ -78,7 +78,7 @@
 
         {{-- Wallet App --}}
         <div class="stat-card" style="background:linear-gradient(135deg,#1DA1F2,#0d6eb5);color:#fff;border:none">
-            <div class="lbl" style="color:rgba(255,255,255,.8)">💼 Wallet Application</div>
+            <div class="lbl" style="color:rgba(255,255,255,.8)">Wallet Application</div>
             <div class="val" style="color:#fff;font-size:26px">{{ number_format($totalWalletBalance,0,',',' ') }}</div>
             <div class="sub" style="color:rgba(255,255,255,.7)">FCFA — {{ $totalWallets }} wallets actifs</div>
             <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px">
@@ -89,18 +89,18 @@
 
         {{-- Retraits --}}
         <div class="stat-card">
-            <div class="lbl">💸 Retraits Chauffeurs</div>
+            <div class="lbl">Retraits Chauffeurs</div>
             <div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">
                 <div style="display:flex;justify-content:space-between;align-items:center">
                     <span style="font-size:12px;color:#f97316;font-weight:600">⏳ En attente</span>
                     <span style="font-size:18px;font-weight:700;color:#f97316">{{ $withdrawalsPending }}</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-size:12px;color:#16a34a;font-weight:600">✓ Validés</span>
+                    <span style="font-size:12px;color:#16a34a;font-weight:600">Validés</span>
                     <span style="font-size:14px;font-weight:700;color:#16a34a">{{ number_format($withdrawalsSuccess,0,',',' ') }} FCFA</span>
                 </div>
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                    <span style="font-size:12px;color:#dc2626;font-weight:600">✗ Échoués</span>
+                    <span style="font-size:12px;color:#dc2626;font-weight:600">Échoués</span>
                     <span style="font-size:18px;font-weight:700;color:#dc2626">{{ $withdrawalsFailed }}</span>
                 </div>
             </div>
@@ -108,7 +108,7 @@
 
         {{-- Top Wallets --}}
         <div class="stat-card">
-            <div class="lbl">🏆 Top Wallets</div>
+            <div class="lbl">Top Wallets</div>
             <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
                 @forelse($topWallets as $wallet)
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
@@ -129,7 +129,7 @@
     {{-- ===== RETRAITS EN ATTENTE ===== --}}
     @if($withdrawals->where('status', 'pending')->count() > 0)
     <div class="bg-orange-50 border border-orange-200 rounded-xl p-4 mb-6">
-        <h3 class="text-sm font-bold text-orange-700 mb-3">⚠️ Retraits en attente d'approbation</h3>
+        <h3 class="text-sm font-bold text-orange-700 mb-3">Retraits en attente d'approbation</h3>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
                 <thead>
@@ -170,14 +170,14 @@
                                     @csrf
                                     <button class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg transition"
                                         onclick="return confirm('Approuver ce retrait de {{ number_format($w->amount, 0) }} XAF ?')">
-                                        ✓ Approuver
+                                        Approuver
                                     </button>
                                 </form>
                                 <form action="{{ route('admin.payments.reject-withdrawal', $w->id) }}" method="POST" class="inline">
                                     @csrf
                                     <button class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1 rounded-lg transition"
                                         onclick="return confirm('Rejeter ce retrait ?')">
-                                        ✗ Rejeter
+                                        Rejeter
                                     </button>
                                 </form>
                             </div>
@@ -206,7 +206,7 @@
             <label class="ttg-label">Statut</label>
             <select name="status" class="ttg-select">
                 <option value="">Tous</option>
-                @foreach(['pending'=>'⏳ En attente','success'=>'✓ Succès','failed'=>'✗ Échoué','cancelled'=>'Annulé','refunded'=>'Remboursé'] as $val=>$lbl)
+                @foreach(['pending'=>'⏳ En attente','success'=>'Succès','failed'=>'Échoué','cancelled'=>'Annulé','refunded'=>'Remboursé'] as $val=>$lbl)
                     <option value="{{ $val }}" {{ request('status')===$val ? 'selected' : '' }}>{{ $lbl }}</option>
                 @endforeach
             </select>
@@ -220,14 +220,14 @@
                 @endforeach
             </select>
         </div>
-        <button type="submit" class="btn btn-primary" style="align-self:flex-end">🔍 Filtrer</button>
-        <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary" style="align-self:flex-end">✕ Reset</a>
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end">Filtrer</button>
+        <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary" style="align-self:flex-end">Reset</a>
     </form>
 
     {{-- ===== TABLEAU PAIEMENTS ===== --}}
     <div class="panel" style="padding:0;overflow:hidden">
         <div class="panel-header" style="display:flex;justify-content:space-between;align-items:center">
-            <span>💳 Transactions récentes</span>
+            <span>Transactions récentes</span>
             <span style="font-size:12px;color:#94a3b8;font-weight:400">{{ $payments->total() }} transactions</span>
         </div>
         <div style="overflow-x:auto">
@@ -282,9 +282,9 @@
                                 @elseif($payment->status === 'failed') bg-red-100 text-red-700
                                 @elseif($payment->status === 'refunded') bg-purple-100 text-purple-700
                                 @else bg-gray-100 text-gray-600 @endif">
-                                @if($payment->status === 'success') ✓ Succès
+                                @if($payment->status === 'success') Succès
                                 @elseif($payment->status === 'pending') ⏳ Attente
-                                @elseif($payment->status === 'failed') ✗ Échoué
+                                @elseif($payment->status === 'failed') Échoué
                                 @elseif($payment->status === 'refunded') ↩ Remboursé
                                 @else {{ $payment->status }} @endif
                             </span>
@@ -308,7 +308,7 @@
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
 
         <div class="panel" style="padding:0;overflow:hidden">
-            <div class="panel-header">💼 Mouvements Wallet</div>
+            <div class="panel-header">Mouvements Wallet</div>
             <div>
                 @forelse($walletTransactions as $wt)
                 <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f8fafc">
@@ -334,7 +334,7 @@
         </div>
 
         <div class="panel" style="padding:0;overflow:hidden">
-            <div class="panel-header">💸 Derniers Retraits</div>
+            <div class="panel-header">Derniers Retraits</div>
             <div>
                 @forelse($withdrawals as $w)
                 <div style="padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #f8fafc">
@@ -351,9 +351,9 @@
                     <div style="text-align:right">
                         <div style="font-weight:700;color:#1e293b">{{ number_format($w->amount,0,',',' ') }} XAF</div>
                         <span class="badge {{ $w->status==='success' ? 'badge-success' : ($w->status==='pending' ? 'badge-warning' : 'badge-danger') }}" style="font-size:10px">
-                            @if($w->status==='success') ✓ Validé
+                            @if($w->status==='success') Validé
                             @elseif($w->status==='pending') ⏳ Attente
-                            @else ✗ Échoué @endif
+                            @else Échoué @endif
                         </span>
                     </div>
                 </div>
@@ -363,5 +363,5 @@
             </div>
         </div>
     </div>
-
-</div>{{-- /page wr
+</div>
+@endsection

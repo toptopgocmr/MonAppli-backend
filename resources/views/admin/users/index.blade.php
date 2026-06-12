@@ -6,7 +6,7 @@
 
 <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
-        <h1 class="page-title">👤 Gestion des Clients</h1>
+        <h1 class="page-title">Gestion des Clients</h1>
         <p class="page-sub">Liste de tous les utilisateurs inscrits</p>
     </div>
 </div>
@@ -33,8 +33,8 @@
         </div>
         <select name="status" class="ttg-select" style="min-width:150px">
             <option value="">Tous les statuts</option>
-            <option value="active"   {{ request('status')=='active'   ?'selected':'' }}>✅ Actifs</option>
-            <option value="inactive" {{ request('status')=='inactive' ?'selected':'' }}>🚫 Bloqués</option>
+            <option value="active"   {{ request('status')=='active'   ?'selected':'' }}>Actifs</option>
+            <option value="inactive" {{ request('status')=='inactive' ?'selected':'' }}>Bloqués</option>
         </select>
         <select name="country" class="ttg-select" style="min-width:150px">
             <option value="">Tous les pays</option>
@@ -82,27 +82,27 @@
                     </td>
                     <td>
                         @if($user->status=='active')
-                            <span class="badge badge-green">✅ Actif</span>
+                            <span class="badge badge-green">Actif</span>
                         @else
-                            <span class="badge badge-red">🚫 Bloqué</span>
+                            <span class="badge badge-red">Bloqué</span>
                         @endif
                     </td>
                     <td style="font-size:12px;color:#64748b">{{ $user->created_at->format('d/m/Y') }}</td>
                     <td>
                         <div style="display:flex;justify-content:center;gap:6px">
-                            <a href="{{ route('admin.users.show',$user->id) }}" class="btn btn-gray btn-sm">👁 Voir</a>
+                            <a href="{{ route('admin.users.show',$user->id) }}" class="btn btn-gray btn-sm">Voir</a>
                             @if($user->status=='active')
                                 <form method="POST" action="{{ route('admin.users.block',$user->id) }}">@csrf
-                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Bloquer ?')">🚫</button>
+                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Bloquer ?')"></button>
                                 </form>
                             @else
                                 <form method="POST" action="{{ route('admin.users.activate',$user->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm">✅</button>
+                                    <button class="btn btn-success btn-sm"></button>
                                 </form>
                             @endif
                             <form method="POST" action="{{ route('admin.users.destroy',$user->id) }}">
                                 @csrf @method('DELETE')
-                                <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer ?')">🗑</button>
+                                <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer ?')">Supprimer </button>
                             </form>
                         </div>
                     </td>

@@ -7,11 +7,11 @@
 {{-- Header --}}
 <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
-        <h1 class="page-title">💰 Revenus</h1>
+        <h1 class="page-title">Revenus</h1>
         <p class="page-sub">Analyse complète des revenus générés par la plateforme</p>
     </div>
     <a href="{{ route('admin.revenus.export', request()->query()) }}" class="btn btn-success">
-        📥 Exporter Excel
+        Exporter Excel
     </a>
 </div>
 
@@ -57,7 +57,7 @@
      FILTRES
 ═══════════════════════════════════════════════════════════ --}}
 <div class="bg-white rounded-xl shadow p-6 mb-6">
-    <p class="text-sm font-bold text-gray-700 mb-4">🔍 Filtres de recherche</p>
+    <p class="text-sm font-bold text-gray-700 mb-4">Filtres de recherche</p>
 
     <form method="GET" action="{{ route('admin.revenus.index') }}">
         <input type="hidden" name="period" value="{{ request('period', 'month') }}">
@@ -143,11 +143,11 @@
         <div class="flex gap-3 mt-5">
             <button type="submit"
                     class="bg-[#1DA1F2] hover:bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300">
-                ✅ Appliquer
+                Appliquer
             </button>
             <a href="{{ route('admin.revenus.index') }}"
                class="bg-gray-100 hover:bg-gray-200 text-gray-600 px-6 py-2 rounded-lg text-sm font-semibold transition-all duration-300">
-                🔄 Réinitialiser
+                Réinitialiser
             </a>
         </div>
 
@@ -160,7 +160,7 @@
 <div class="bg-white rounded-xl shadow overflow-hidden">
 
     <div class="flex items-center justify-between px-6 py-4 border-b">
-        <p class="font-bold text-gray-700">📋 Détail des transactions</p>
+        <p class="font-bold text-gray-700">Détail des transactions</p>
         <p class="text-sm text-gray-400">
             {{ $data->total() }} résultat(s) —
             Total filtré : <span class="font-bold text-green-600">{{ number_format($total_query, 0, ',', ' ') }} XAF</span>
@@ -232,6 +232,5 @@
     @endif
 
 </div>
-
-</div>{{-- /page wrapper --}}
+</div>
 @endsection

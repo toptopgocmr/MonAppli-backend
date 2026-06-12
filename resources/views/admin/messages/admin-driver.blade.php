@@ -5,7 +5,7 @@
 <div style="display:flex;flex-direction:column;gap:16px">
 
     <div>
-        <h1 class="page-title">🛡️ Support Admin ↔ Chauffeurs</h1>
+        <h1 class="page-title">Support Admin ↔ Chauffeurs</h1>
         <p class="page-sub">Écrivez à n'importe quel chauffeur depuis cette interface</p>
     </div>
 
@@ -31,7 +31,7 @@
                     placeholder="Rechercher par nom ou téléphone..." class="ttg-input">
             </div>
             <button type="submit" class="btn btn-primary">Rechercher</button>
-            <a href="{{ route('admin.support.drivers.index') }}" class="btn btn-gray">✕ Reset</a>
+            <a href="{{ route('admin.support.drivers.index') }}" class="btn btn-gray">Reset</a>
         </form>
     </div>
 
@@ -42,7 +42,7 @@
         <div class="w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-100 bg-gray-50">
                 <h2 class="font-semibold text-gray-700 text-sm">
-                    🚗 Tous les chauffeurs
+                    Tous les chauffeurs
                     <span class="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
                         {{ $drivers->total() }}
                     </span>
@@ -117,7 +117,7 @@
                     </a>
                 @empty
                     <div class="p-8 text-center text-gray-400">
-                        <div class="text-4xl mb-2">🚗</div>
+                        <div class="text-4xl mb-2"></div>
                         <p class="text-sm">Aucun chauffeur trouvé</p>
                     </div>
                 @endforelse
@@ -162,12 +162,12 @@
                     <div class="flex gap-2 text-xs">
                         @if($driver->phone)
                             <span class="bg-green-50 text-green-700 px-2 py-1 rounded">
-                                📱 {{ $driver->phone }}
+                                {{ $driver->phone }}
                             </span>
                         @endif
                         @if($driver->vehicle_plate)
                             <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                🚗 {{ $driver->vehicle_plate }}
+                                {{ $driver->vehicle_plate }}
                             </span>
                         @endif
                     </div>
@@ -185,7 +185,7 @@
                             <div class="flex justify-end items-end gap-2">
                                 <div class="max-w-xs lg:max-w-md">
                                     <div class="text-xs text-gray-400 mb-1 text-right">
-                                        🛡 {{ session('admin_name', 'Admin') }}
+                                        {{ session('admin_name', 'Admin') }}
                                     </div>
                                     <div class="px-4 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed bg-blue-600 text-white shadow-sm">
                                         {{ $message->content }}
@@ -193,9 +193,9 @@
                                     <div class="text-xs text-gray-400 mt-1 text-right">
                                         {{ $message->created_at->format('d/m H:i') }}
                                         @if($message->is_read)
-                                            <span class="text-blue-400 ml-1">✓✓ Lu</span>
+                                            <span class="text-blue-400 ml-1">Lu</span>
                                         @else
-                                            <span class="text-gray-300 ml-1">✓ Envoyé</span>
+                                            <span class="text-gray-300 ml-1">Envoyé</span>
                                         @endif
                                     </div>
                                 </div>
@@ -210,7 +210,7 @@
                                 </div>
                                 <div class="max-w-xs lg:max-w-md">
                                     <div class="text-xs text-gray-400 mb-1 text-left">
-                                        🚗 {{ $driver->first_name }} {{ $driver->last_name }}
+                                        {{ $driver->first_name }} {{ $driver->last_name }}
                                     </div>
                                     <div class="px-4 py-2.5 rounded-2xl rounded-tl-none text-sm leading-relaxed bg-white text-gray-800 shadow-sm border border-gray-200">
                                         {{ $message->content }}
@@ -218,7 +218,7 @@
                                     <div class="text-xs text-gray-400 mt-1 text-left">
                                         {{ $message->created_at->format('d/m H:i') }}
                                         @if($message->is_read)
-                                            <span class="text-green-400 ml-1">✓✓ Lu</span>
+                                            <span class="text-green-400 ml-1">Lu</span>
                                         @endif
                                     </div>
                                 </div>
@@ -226,7 +226,7 @@
                         @endif
                     @empty
                         <div class="text-center text-gray-400 py-10">
-                            <div class="text-4xl mb-3">✉️</div>
+                            <div class="text-4xl mb-3">️</div>
                             <p class="font-medium text-gray-500">Démarrez la conversation</p>
                             <p class="text-sm mt-1">
                                 Écrivez votre premier message à
@@ -254,15 +254,14 @@
                         </div>
                         <button type="submit"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition flex-shrink-0">
-                            Envoyer ➤
-                        </button>
+                            Envoyer </button>
                     </form>
                 </div>
 
             @else
                 <div class="flex-1 flex items-center justify-center text-gray-400">
                     <div class="text-center">
-                        <div class="text-6xl mb-4">🚗</div>
+                        <div class="text-6xl mb-4"></div>
                         <p class="text-lg font-medium text-gray-500">Sélectionnez un chauffeur</p>
                         <p class="text-sm mt-1">Cliquez sur n'importe quel chauffeur dans la liste pour lui écrire</p>
                     </div>
@@ -357,7 +356,7 @@ channel.bind('message.received', function(data) {
                 ${driverInitial}
             </div>
             <div class="max-w-xs lg:max-w-md">
-                <div class="text-xs text-gray-400 mb-1 text-left">🚗 ${driverName}</div>
+                <div class="text-xs text-gray-400 mb-1 text-left">${driverName}</div>
                 <div class="px-4 py-2.5 rounded-2xl rounded-tl-none text-sm leading-relaxed bg-white text-gray-800 shadow-sm border border-gray-200">
                     ${data.content}
                 </div>
@@ -383,7 +382,7 @@ channel.bind('message.received', function(data) {
 
     // Notification navigateur
     if (Notification.permission === 'granted') {
-        new Notification('🚖 Nouveau message de {{ $driver->first_name }}', {
+        new Notification('Nouveau message de {{ $driver->first_name }}', {
             body: data.content,
             icon: '/favicon.ico'
         });

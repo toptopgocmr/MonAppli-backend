@@ -4,8 +4,8 @@
 @section('content')
 <div style="display:flex;flex-direction:column;gap:16px">
 
-    <div>
-        <h1 class="page-title">🪪 Vérification KYC</h1>
+    <div class="page-header">
+        <h1 class="page-title">Vérification KYC</h1>
         <p class="page-sub">Vérifier les documents d'identité des chauffeurs</p>
     </div>
 
@@ -14,9 +14,9 @@
         <nav style="display:flex;border-bottom:1px solid #e2e8f0">
             @php
                 $tabs = [
-                    'pending'  => ['label' => '⏳ En attente', 'color' => '#f59e0b'],
-                    'approved' => ['label' => '✅ Approuvés',  'color' => '#22c55e'],
-                    'rejected' => ['label' => '❌ Rejetés',    'color' => '#ef4444'],
+                    'pending'  => ['label' => 'En attente',  'color' => '#F59E0B'],
+                    'approved' => ['label' => 'Approuvés',   'color' => '#10B981'],
+                    'rejected' => ['label' => 'Rejetés',     'color' => '#EF4444'],
                 ];
             @endphp
             @foreach($tabs as $key => $tab)
@@ -71,18 +71,18 @@
             <div style="padding:12px 20px;border-top:1px solid #f1f5f9">
                 @if($status === 'pending')
                     <a href="{{ route('admin.kyc.review', $driver) }}" class="btn btn-primary" style="display:block;text-align:center;text-decoration:none">
-                        🔍 Vérifier les documents
+                        Vérifier les documents
                     </a>
                 @elseif($status === 'rejected')
                     <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px;margin-bottom:10px;font-size:12px;color:#dc2626">
                         <strong>Raison:</strong> {{ $driver->kyc_rejection_reason ?? 'Non spécifiée' }}
                     </div>
                     <a href="{{ route('admin.kyc.review', $driver) }}" class="btn btn-secondary" style="display:block;text-align:center;text-decoration:none">
-                        🔁 Revoir
+                        Revoir
                     </a>
                 @else
                     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;font-size:12px;color:#16a34a;text-align:center">
-                        ✅ Approuvé le {{ $driver->kyc_reviewed_at ? $driver->kyc_reviewed_at->format('d/m/Y') : 'N/A' }}
+                        Approuvé le {{ $driver->kyc_reviewed_at ? $driver->kyc_reviewed_at->format('d/m/Y') : 'N/A' }}
                     </div>
                 @endif
             </div>
@@ -90,16 +90,22 @@
         @empty
         <div style="grid-column:1/-1">
             <div class="panel" style="text-align:center;padding:64px">
-                <div style="font-size:48px;margin-bottom:12px">🪪</div>
-                <p style="color:#64748b;font-weight:600">
-                    Aucune vérification {{ $status === 'pending' ? 'en attente' : ($status === 'approved' ? 'approuvée' : 'rejetée') }}
+                <div style="font-size:48px;margin-bottom:12px"></div>
+                                <p style="color:#64748b;font-weight:600">Aucun chauffeur</p>
+                <p style="font-size:13px;color:#94a3b8;margin-top:4px">
+                    Il n'y a aucun dossier dans cette catégorie.
                 </p>
             </div>
         </div>
         @endforelse
     </div>
 
-    <div>{{ $drivers->links() }}</div>
+    {{-- Pagination --}}
+    @if($drivers->hasPages())
+        <div style="margin-top:8px">
+            {{ $drivers->links() }}
+        </div>
+    @endif
 
 </div>
 @endsection

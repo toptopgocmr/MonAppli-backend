@@ -5,11 +5,11 @@
 <!-- MODAL ZOOM -->
 <div id="zoom-modal" class="fixed inset-0 bg-black bg-opacity-80 z-50 hidden flex items-center justify-center p-4">
     <div class="relative max-w-4xl w-full">
-        <button onclick="closeZoom()" class="absolute -top-10 right-0 text-white text-3xl font-bold hover:text-[#FFC107]">✕</button>
+        <button onclick="closeZoom()" class="absolute -top-10 right-0 text-white text-3xl font-bold hover:text-[#FFC107]">× </button>
         <img id="zoom-img" src="" class="w-full max-h-[85vh] object-contain rounded-xl shadow-2xl">
         <a id="zoom-download" href="" download
            class="mt-4 flex items-center justify-center gap-2 bg-[#1DA1F2] text-white py-2 px-6 rounded-xl font-semibold hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-            ⬇️ Télécharger
+            ⬇Télécharger
         </a>
     </div>
 </div>
@@ -33,7 +33,7 @@ $countriesVilles = [
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.drivers.show', $driver->id) }}" class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">✏️ Modifier le Chauffeur</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Modifier le Chauffeur</h1>
                 <p class="text-gray-500 text-sm mt-1">{{ $driver->first_name }} {{ $driver->last_name }}</p>
             </div>
         </div>
@@ -45,7 +45,7 @@ $countriesVilles = [
 
         <!-- INFORMATIONS PERSONNELLES -->
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
-            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">👤 Informations Personnelles</h2>
+            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">Informations Personnelles</h2>
             <div class="flex items-center gap-6 mb-6">
                 @if($driver->profile_photo)
                     <img src="{{ asset('storage/' . $driver->profile_photo) }}"
@@ -105,7 +105,7 @@ $countriesVilles = [
 
         <!-- PIÈCE D'IDENTITÉ -->
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
-            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">🪪 Pièce d'Identité</h2>
+            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">Pièce d'Identité</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Type de pièce</label>
@@ -141,7 +141,7 @@ $countriesVilles = [
 
         <!-- VÉHICULE -->
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
-            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">🚗 Véhicule</h2>
+            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">Véhicule</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Plaque d'immatriculation</label>
@@ -207,16 +207,16 @@ $countriesVilles = [
 
         <!-- DOCUMENTS KYC -->
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
-            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">📄 Documents KYC</h2>
+            <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">Documents KYC</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 @php
                 $docs = [
-                    ['label' => '🪪 CNI Recto',    'name' => 'id_card_front'],
-                    ['label' => '🪪 CNI Verso',     'name' => 'id_card_back'],
-                    ['label' => '📋 Permis Recto',  'name' => 'license_front'],
-                    ['label' => '📋 Permis Verso',  'name' => 'license_back'],
-                    ['label' => '🚗 Carte grise',   'name' => 'vehicle_registration'],
-                    ['label' => '🛡 Assurance',     'name' => 'insurance'],
+                    ['label' => 'CNI Recto',    'name' => 'id_card_front'],
+                    ['label' => 'CNI Verso',     'name' => 'id_card_back'],
+                    ['label' => 'Permis Recto',  'name' => 'license_front'],
+                    ['label' => 'Permis Verso',  'name' => 'license_back'],
+                    ['label' => 'Carte grise',   'name' => 'vehicle_registration'],
+                    ['label' => 'Assurance',     'name' => 'insurance'],
                 ];
                 @endphp
 

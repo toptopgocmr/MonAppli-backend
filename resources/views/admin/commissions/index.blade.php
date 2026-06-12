@@ -7,10 +7,10 @@
     {{-- Header --}}
     <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
         <div>
-            <h1 class="page-title">📈 Gestion des Commissions</h1>
+            <h1 class="page-title">Gestion des Commissions</h1>
             <p class="page-sub">Définissez les taux par pays, type de véhicule ou chauffeur</p>
         </div>
-        <a href="{{ route('admin.commission-rates.export') }}" class="btn btn-success">📥 Exporter CSV</a>
+        <a href="{{ route('admin.commission-rates.export') }}" class="btn btn-success">Exporter CSV</a>
     </div>
 
 <div>
@@ -20,7 +20,7 @@
         {{-- ===== COLONNE GAUCHE : Règles actives ===== --}}
         <div class="bg-white rounded-xl shadow overflow-hidden">
             <div class="px-5 py-4 border-b flex items-center gap-2">
-                <span class="font-bold text-gray-700">⚙️ Règles actives</span>
+                <span class="font-bold text-gray-700">Règles actives</span>
             </div>
 
             {{-- Priorité --}}
@@ -41,14 +41,14 @@
                 <div class="px-5 py-3 flex justify-between items-center">
                     <div class="flex flex-wrap items-center gap-2">
                         @if($rate->type === 'global')
-                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">🌍 Global</span>
+                            <span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded-full">Global</span>
                         @elseif($rate->type === 'country')
-                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">🚩 {{ $rate->country }}</span>
+                            <span class="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full">{{ $rate->country }}</span>
                         @elseif($rate->type === 'vehicle_type')
-                            <span class="bg-cyan-100 text-cyan-700 text-xs px-2 py-1 rounded-full">🚗 {{ $rate->vehicle_type }}</span>
+                            <span class="bg-cyan-100 text-cyan-700 text-xs px-2 py-1 rounded-full">{{ $rate->vehicle_type }}</span>
                         @elseif($rate->type === 'driver')
                             <span class="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full">
-                                👤 {{ optional($rate->driver)->first_name }} {{ optional($rate->driver)->last_name }}
+                                {{ optional($rate->driver)->first_name }} {{ optional($rate->driver)->last_name }}
                             </span>
                         @endif
 
@@ -59,9 +59,9 @@
                         @endif
 
                         @if($rate->is_active)
-                            <span class="bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded-full">✓ Actif</span>
+                            <span class="bg-green-100 text-green-600 text-xs px-2 py-0.5 rounded-full">Actif</span>
                         @else
-                            <span class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full">✗ Inactif</span>
+                            <span class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full">Inactif</span>
                         @endif
                     </div>
 
@@ -74,20 +74,20 @@
                             data-country="{{ $rate->country }}"
                             data-vehicle="{{ $rate->vehicle_type }}"
                             data-driver="{{ $rate->driver_id }}"
-                            title="Modifier">✏️</button>
+                            title="Modifier">Modifier ️</button>
 
                         @if($rate->type !== 'global')
                         <form action="{{ route('admin.commission-rates.destroy', $rate->id) }}" method="POST" class="inline">
                             @csrf @method('DELETE')
                             <button onclick="return confirm('Supprimer cette règle ?')"
-                                class="hover:bg-red-50 p-1.5 rounded-lg transition text-sm" title="Supprimer">🗑️</button>
+                                class="hover:bg-red-50 p-1.5 rounded-lg transition text-sm" title="Supprimer">Supprimer ️</button>
                         </form>
                         @endif
                     </div>
                 </div>
                 @empty
                 <div class="text-center text-gray-400 py-10">
-                    <p class="text-3xl mb-2">📭</p>
+                    <p class="text-3xl mb-2"></p>
                     <p>Aucune règle définie</p>
                 </div>
                 @endforelse
@@ -97,7 +97,7 @@
         {{-- ===== COLONNE DROITE : Formulaire ===== --}}
         <div class="bg-white rounded-xl shadow overflow-hidden">
             <div class="px-5 py-4 border-b">
-                <span class="font-bold text-gray-700" id="form-title">➕ Ajouter / Modifier une règle</span>
+                <span class="font-bold text-gray-700" id="form-title">Ajouter / Modifier une règle</span>
             </div>
             <div class="p-5">
                 <form action="{{ route('admin.commission-rates.store') }}" method="POST" id="commission-form">
@@ -114,7 +114,7 @@
                             <label class="rule-card flex items-start gap-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" for="type_global">
                                 <input type="radio" name="type" id="type_global" value="global" class="mt-0.5 accent-blue-600" checked onchange="switchType('global')">
                                 <div>
-                                    <p class="font-semibold text-sm">🌍 Global</p>
+                                    <p class="font-semibold text-sm">Global</p>
                                     <p class="text-xs text-gray-400">S'applique à tous</p>
                                 </div>
                             </label>
@@ -122,7 +122,7 @@
                             <label class="rule-card flex items-start gap-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" for="type_country">
                                 <input type="radio" name="type" id="type_country" value="country" class="mt-0.5 accent-blue-600" onchange="switchType('country')">
                                 <div>
-                                    <p class="font-semibold text-sm">🚩 Par pays</p>
+                                    <p class="font-semibold text-sm">Par pays</p>
                                     <p class="text-xs text-gray-400">Selon le pays</p>
                                 </div>
                             </label>
@@ -130,7 +130,7 @@
                             <label class="rule-card flex items-start gap-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" for="type_vehicle">
                                 <input type="radio" name="type" id="type_vehicle" value="vehicle_type" class="mt-0.5 accent-blue-600" onchange="switchType('vehicle_type')">
                                 <div>
-                                    <p class="font-semibold text-sm">🚗 Par véhicule</p>
+                                    <p class="font-semibold text-sm">Par véhicule</p>
                                     <p class="text-xs text-gray-400">Selon le type</p>
                                 </div>
                             </label>
@@ -138,7 +138,7 @@
                             <label class="rule-card flex items-start gap-2 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition" for="type_driver">
                                 <input type="radio" name="type" id="type_driver" value="driver" class="mt-0.5 accent-blue-600" onchange="switchType('driver')">
                                 <div>
-                                    <p class="font-semibold text-sm">👤 Par chauffeur</p>
+                                    <p class="font-semibold text-sm">Par chauffeur</p>
                                     <p class="text-xs text-gray-400">Contrat individuel</p>
                                 </div>
                             </label>
@@ -149,7 +149,7 @@
                     {{-- Dropdown Pays --}}
                     <div class="mb-4 hidden" id="field-country">
                         <label class="block text-sm font-semibold text-gray-700 mb-1">
-                            🚩 Pays <span class="text-red-500">*</span>
+                            Pays <span class="text-red-500">*</span>
                         </label>
                         <select name="country" id="select-country"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -164,7 +164,7 @@
                     {{-- Dropdown Véhicule --}}
                     <div class="mb-4 hidden" id="field-vehicle">
                         <label class="block text-sm font-semibold text-gray-700 mb-1">
-                            🚗 Type de véhicule <span class="text-red-500">*</span>
+                            Type de véhicule <span class="text-red-500">*</span>
                         </label>
                         <select name="vehicle_type" id="select-vehicle"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -179,7 +179,7 @@
                     {{-- Dropdown Chauffeur --}}
                     <div class="mb-4 hidden" id="field-driver">
                         <label class="block text-sm font-semibold text-gray-700 mb-1">
-                            👤 Chauffeur <span class="text-red-500">*</span>
+                            Chauffeur <span class="text-red-500">*</span>
                         </label>
                         <select name="driver_id" id="select-driver"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -230,11 +230,11 @@
                     <div class="flex gap-3">
                         <button type="submit"
                             class="flex-1 bg-[#1DA1F2] hover:bg-blue-700 text-white py-2 rounded-lg font-semibold text-sm transition">
-                            💾 <span id="btn-label">Enregistrer la règle</span>
+                            <span id="btn-label">Enregistrer la règle</span>
                         </button>
                         <button type="button" onclick="resetForm()"
                             class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                            ✕ Reset
+                            Reset
                         </button>
                     </div>
 
@@ -300,11 +300,11 @@
             <div class="flex gap-2 mt-3">
                 <button type="submit"
                     class="bg-[#1DA1F2] hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-semibold transition">
-                    🔍 Filtrer
+                    Filtrer
                 </button>
                 <a href="{{ route('admin.commission-rates.index') }}"
                     class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                    ✕ Reset
+                    Reset
                 </a>
             </div>
         </form>
@@ -414,7 +414,7 @@ document.querySelectorAll('.btn-edit-rule').forEach(btn => {
         const form = document.getElementById('commission-form');
         form.action = `/admin/commission-rates/${id}`;
         document.getElementById('form-method').value = 'PUT';
-        document.getElementById('form-title').textContent = '✏️ Modifier la règle';
+        document.getElementById('form-title').textContent = 'Modifier la règle';
         document.getElementById('btn-label').textContent  = 'Mettre à jour';
 
         const radioMap = {
@@ -442,7 +442,7 @@ function resetForm() {
     form.reset();
     form.action = "{{ route('admin.commission-rates.store') }}";
     document.getElementById('form-method').value  = 'POST';
-    document.getElementById('form-title').textContent = '➕ Ajouter / Modifier une règle';
+    document.getElementById('form-title').textContent = 'Ajouter / Modifier une règle';
     document.getElementById('btn-label').textContent  = 'Enregistrer la règle';
     switchType('global');
 }
@@ -450,5 +450,5 @@ function resetForm() {
 switchType('global');
 </script>
 @endpush
-
-</div>{{-- 
+</div>
+@endsection

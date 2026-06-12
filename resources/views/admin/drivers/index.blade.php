@@ -8,10 +8,10 @@
 {{-- Header --}}
 <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
-        <h1 class="page-title">🚗 Gestion des Chauffeurs</h1>
+        <h1 class="page-title">Gestion des Chauffeurs</h1>
         <p class="page-sub">Liste et gestion de tous les chauffeurs</p>
     </div>
-    <a href="{{ route('admin.drivers.create') }}" class="btn btn-primary">➕ Nouveau Chauffeur</a>
+    <a href="{{ route('admin.drivers.create') }}" class="btn btn-primary">Nouveau Chauffeur</a>
 </div>
 
 {{-- Stats --}}
@@ -44,9 +44,9 @@
         <select name="status" class="ttg-select" style="min-width:160px">
             <option value="">Tous les statuts</option>
             <option value="pending"   {{ request('status')=='pending'   ?'selected':'' }}>⏳ En attente</option>
-            <option value="approved"  {{ request('status')=='approved'  ?'selected':'' }}>✅ Approuvés</option>
-            <option value="rejected"  {{ request('status')=='rejected'  ?'selected':'' }}>❌ Rejetés</option>
-            <option value="suspended" {{ request('status')=='suspended' ?'selected':'' }}>🚫 Suspendus</option>
+            <option value="approved"  {{ request('status')=='approved'  ?'selected':'' }}>Approuvés</option>
+            <option value="rejected"  {{ request('status')=='rejected'  ?'selected':'' }}>Rejetés</option>
+            <option value="suspended" {{ request('status')=='suspended' ?'selected':'' }}>Suspendus</option>
         </select>
         <button type="submit" class="btn btn-primary">Filtrer</button>
         <a href="{{ route('admin.drivers.index') }}" class="btn btn-gray">Reset</a>
@@ -95,13 +95,13 @@
                     <td><span class="badge badge-gray">{{ $driver->vehicle_type ?? '—' }}</span></td>
                     <td>
                         @if($driver->status=='approved')
-                            <span class="badge badge-green">✅ Approuvé</span>
+                            <span class="badge badge-green">Approuvé</span>
                         @elseif($driver->status=='pending')
                             <span class="badge badge-yellow">⏳ En attente</span>
                         @elseif($driver->status=='rejected')
-                            <span class="badge badge-red">❌ Rejeté</span>
+                            <span class="badge badge-red">Rejeté</span>
                         @else
-                            <span class="badge badge-gray">🚫 Suspendu</span>
+                            <span class="badge badge-gray">Suspendu</span>
                         @endif
                     </td>
                     <td>
@@ -124,31 +124,31 @@
                     <td style="font-size:12px;color:#64748b">{{ $driver->created_at->format('d/m/Y') }}</td>
                     <td>
                         <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
-                            <a href="{{ route('admin.drivers.show',$driver->id) }}" class="btn btn-gray btn-sm">👁 Voir</a>
-                            <a href="{{ route('admin.drivers.edit',$driver->id) }}" class="btn btn-primary btn-sm">✏️</a>
+                            <a href="{{ route('admin.drivers.show',$driver->id) }}" class="btn btn-gray btn-sm">Voir</a>
+                            <a href="{{ route('admin.drivers.edit',$driver->id) }}" class="btn btn-primary btn-sm">Modifier ️</a>
                             @if($driver->status=='pending')
                                 <form method="POST" action="{{ route('admin.drivers.approve',$driver->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm">✅</button>
+                                    <button class="btn btn-success btn-sm"></button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.drivers.reject',$driver->id) }}">@csrf
-                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Rejeter ?')">❌</button>
+                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Rejeter ?')"></button>
                                 </form>
                             @elseif($driver->status=='approved')
                                 <form method="POST" action="{{ route('admin.drivers.suspend',$driver->id) }}">@csrf
-                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Suspendre ?')">🚫</button>
+                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Suspendre ?')"></button>
                                 </form>
                             @elseif($driver->status=='suspended')
                                 <form method="POST" action="{{ route('admin.drivers.activate',$driver->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm">♻️</button>
+                                    <button class="btn btn-success btn-sm">️</button>
                                 </form>
                             @elseif($driver->status=='rejected')
                                 <form method="POST" action="{{ route('admin.drivers.approve',$driver->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm">✅</button>
+                                    <button class="btn btn-success btn-sm"></button>
                                 </form>
                             @endif
                             <form method="POST" action="{{ route('admin.drivers.destroy',$driver->id) }}">
                                 @csrf @method('DELETE')
-                                <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer définitivement ?')">🗑</button>
+                                <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer définitivement ?')">Supprimer </button>
                             </form>
                         </div>
                     </td>

@@ -6,10 +6,10 @@
 
 <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
-        <h1 class="page-title">🧑‍💼 Profils Administrateurs</h1>
+        <h1 class="page-title">Profils Administrateurs</h1>
         <p class="page-sub">Gérez les administrateurs de la plateforme</p>
     </div>
-    <a href="{{ route('admin.profiles.create') }}" class="btn btn-primary">➕ Nouvel Admin</a>
+    <a href="{{ route('admin.profiles.create') }}" class="btn btn-primary">Nouvel Admin</a>
 </div>
 
 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px">
@@ -67,29 +67,29 @@
                     <td><span class="badge badge-yellow">{{ $admin->role->name ?? '—' }}</span></td>
                     <td>
                         @if($admin->status==='active')
-                            <span class="badge badge-green">✅ Actif</span>
+                            <span class="badge badge-green">Actif</span>
                         @else
-                            <span class="badge badge-red">🚫 Bloqué</span>
+                            <span class="badge badge-red">Bloqué</span>
                         @endif
                     </td>
                     <td style="font-size:12px;color:#64748b">{{ $admin->created_at->format('d/m/Y') }}</td>
                     <td>
                         <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
-                            <a href="{{ route('admin.profiles.show',$admin->id) }}" class="btn btn-gray btn-sm">👁 Voir</a>
-                            <a href="{{ route('admin.profiles.edit',$admin->id) }}" class="btn btn-primary btn-sm">✏️ Modifier</a>
+                            <a href="{{ route('admin.profiles.show',$admin->id) }}" class="btn btn-gray btn-sm">Voir</a>
+                            <a href="{{ route('admin.profiles.edit',$admin->id) }}" class="btn btn-primary btn-sm">Modifier</a>
                             @if($admin->id !== session('admin_id'))
                                 @if($admin->status==='active')
                                     <form method="POST" action="{{ route('admin.profiles.block',$admin->id) }}">@csrf
-                                        <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Bloquer ?')">🚫 Bloquer</button>
+                                        <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Bloquer ?')">Bloquer</button>
                                     </form>
                                 @else
                                     <form method="POST" action="{{ route('admin.profiles.activate',$admin->id) }}">@csrf
-                                        <button class="btn btn-success btn-sm">✅ Activer</button>
+                                        <button class="btn btn-success btn-sm">Activer</button>
                                     </form>
                                 @endif
                                 <form method="POST" action="{{ route('admin.profiles.destroy',$admin->id) }}">
                                     @csrf @method('DELETE')
-                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer ?')">🗑</button>
+                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Supprimer ?')">Supprimer </button>
                                 </form>
                             @endif
                         </div>

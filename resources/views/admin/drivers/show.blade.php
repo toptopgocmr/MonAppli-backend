@@ -9,13 +9,13 @@
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.drivers.index') }}" class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">👤 Profil Chauffeur</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Profil Chauffeur</h1>
                 <p class="text-gray-500 text-sm mt-1">{{ $driver->first_name }} {{ $driver->last_name }}</p>
             </div>
         </div>
         <a href="{{ route('admin.drivers.edit', $driver->id) }}"
            class="bg-[#1DA1F2] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-            ✏️ Modifier
+            Modifier
         </a>
     </div>
 
@@ -54,7 +54,7 @@
 
                     @if($driver->status == 'approved')
                         <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
-                            ✅ Approuvé
+                            Approuvé
                         </span>
 
                     @elseif($driver->status == 'pending')
@@ -64,12 +64,12 @@
 
                     @elseif($driver->status == 'rejected')
                         <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">
-                            ❌ Rejeté
+                            Rejeté
                         </span>
 
                     @else
                         <span class="bg-gray-100 text-gray-700 text-xs font-semibold px-3 py-1 rounded-full">
-                            🚫 Suspendu
+                            Suspendu
                         </span>
                     @endif
 
@@ -77,13 +77,13 @@
                     @if($driver->driver_status == 'online')
 
                         <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
-                            🟢 En ligne
+                            En ligne
                         </span>
 
                     @else
 
                         <span class="bg-gray-100 text-gray-500 text-xs font-semibold px-3 py-1 rounded-full">
-                            ⚫ Hors ligne
+                            Hors ligne
                         </span>
 
                     @endif
@@ -173,7 +173,7 @@
     <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
 
         <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">
-            📄 Documents KYC
+            Documents KYC
         </h2>
 
 
@@ -184,12 +184,12 @@
 
             $docs = [
 
-                ['label' => '🪪 CNI Recto','field' => 'id_card_front'],
-                ['label' => '🪪 CNI Verso','field' => 'id_card_back'],
-                ['label' => '📋 Permis Recto','field' => 'license_front'],
-                ['label' => '📋 Permis Verso','field' => 'license_back'],
-                ['label' => '🚗 Carte grise','field' => 'vehicle_registration'],
-                ['label' => '🛡 Assurance','field' => 'insurance'],
+                ['label' => 'CNI Recto','field' => 'id_card_front'],
+                ['label' => 'CNI Verso','field' => 'id_card_back'],
+                ['label' => 'Permis Recto','field' => 'license_front'],
+                ['label' => 'Permis Verso','field' => 'license_back'],
+                ['label' => 'Carte grise','field' => 'vehicle_registration'],
+                ['label' => 'Assurance','field' => 'insurance'],
 
             ];
 
@@ -236,7 +236,7 @@
                         <a href="{{ $fileUrl }}" target="_blank"
                            class="flex items-center gap-2 text-[#1DA1F2] hover:underline text-sm">
 
-                           📎 Voir le fichier
+                           Voir le fichier
 
                         </a>
 

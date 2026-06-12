@@ -13,7 +13,7 @@
         <form method="POST" action="{{ route('admin.sos.treat-all') }}"
               onsubmit="return confirm('Marquer toutes les alertes actives comme traitées ?')">
             @csrf
-            <button class="btn btn-success">✓ Tout marquer traité ({{ $totalActive }})</button>
+            <button class="btn btn-success">Tout marquer traité ({{ $totalActive }})</button>
         </form>
         @endif
     </div>
@@ -46,7 +46,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
         <div class="p-4 border-b border-gray-100 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <span class="text-lg">🗺️</span>
+                <span class="text-lg">️</span>
                 <div>
                     <h2 class="font-bold text-gray-800">Carte des alertes actives</h2>
                     <p class="text-xs text-gray-400">Mis à jour toutes les 10 secondes</p>
@@ -72,16 +72,16 @@
                 <label class="block text-xs font-medium text-gray-600 mb-1">Statut</label>
                 <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
                     <option value="all"     {{ request('status') === 'all'     ? 'selected' : '' }}>Tous</option>
-                    <option value="active"  {{ request('status') === 'active'  ? 'selected' : '' }}>🔴 Actives</option>
-                    <option value="treated" {{ request('status') === 'treated' ? 'selected' : '' }}>✅ Traitées</option>
+                    <option value="active"  {{ request('status') === 'active'  ? 'selected' : '' }}>Actives</option>
+                    <option value="treated" {{ request('status') === 'treated' ? 'selected' : '' }}>Traitées</option>
                 </select>
             </div>
             <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1">Type</label>
                 <select name="sender_type" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500">
                     <option value="">Tous</option>
-                    <option value="driver" {{ request('sender_type') === 'driver' ? 'selected' : '' }}>🚗 Chauffeurs</option>
-                    <option value="user"   {{ request('sender_type') === 'user'   ? 'selected' : '' }}>👤 Utilisateurs</option>
+                    <option value="driver" {{ request('sender_type') === 'driver' ? 'selected' : '' }}>Chauffeurs</option>
+                    <option value="user"   {{ request('sender_type') === 'user'   ? 'selected' : '' }}>Utilisateurs</option>
                 </select>
             </div>
             <div>
@@ -91,11 +91,11 @@
             </div>
             <button type="submit"
                 class="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition">
-                🔍 Filtrer
+                Filtrer
             </button>
             <a href="{{ route('admin.sos.index') }}"
                 class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm transition">
-                ✕ Reset
+                Reset
             </a>
         </form>
     </div>
@@ -104,7 +104,7 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="p-4 border-b border-gray-100">
             <h3 class="font-semibold text-gray-700">
-                📋 Liste des alertes
+                Liste des alertes
                 <span class="ml-2 bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">
                     {{ $alerts->total() }}
                 </span>
@@ -125,7 +125,7 @@
                         <div class="flex items-start gap-4 flex-1">
                             <div class="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold flex-shrink-0
                                 {{ $isDriver ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700' }}">
-                                {{ $isDriver ? '🚗' : '👤' }}
+                                {{ $isDriver ? '' : '' }}
                             </div>
 
                             <div class="flex-1">
@@ -137,7 +137,7 @@
                                     </span>
                                     <span class="text-xs px-2 py-0.5 rounded-full
                                         {{ $alert->status === 'active' ? 'bg-red-500 text-white animate-pulse' : 'bg-green-100 text-green-700' }}">
-                                        {{ $alert->status === 'active' ? '🆘 ACTIVE' : '✅ Traitée' }}
+                                        {{ $alert->status === 'active' ? '🆘 ACTIVE' : 'Traitée' }}
                                     </span>
                                 </div>
 
@@ -146,19 +146,19 @@
                                 @endif
 
                                 <div class="flex items-center gap-4 mt-2 text-xs text-gray-400 flex-wrap">
-                                    <span>🕐 {{ $alert->created_at->format('d/m/Y H:i') }}
+                                    <span>{{ $alert->created_at->format('d/m/Y H:i') }}
                                         ({{ $alert->created_at->diffForHumans() }})</span>
 
                                     @if($alert->trip_id)
-                                        <span>🚕 Course #{{ $alert->trip_id }}</span>
+                                        <span>Course #{{ $alert->trip_id }}</span>
                                     @endif
 
                                     @if($alert->lat && $alert->lng)
-                                        <span>📍 {{ number_format($alert->lat, 4) }}, {{ number_format($alert->lng, 4) }}</span>
+                                        <span>{{ number_format($alert->lat, 4) }}, {{ number_format($alert->lng, 4) }}</span>
                                     @endif
 
                                     @if($alert->status === 'treated' && $alert->treatedBy)
-                                        <span>✅ Traité par {{ $alert->treatedBy->name ?? '—' }}
+                                        <span>Traité par {{ $alert->treatedBy->name ?? '—' }}
                                             le {{ $alert->treated_at ? \Carbon\Carbon::parse($alert->treated_at)->format('d/m/Y H:i') : '—' }}
                                         </span>
                                     @endif
@@ -171,20 +171,20 @@
                             @if($alert->lat && $alert->lng)
                                 <button onclick="zoomSos({{ $alert->lat }}, {{ $alert->lng }})"
                                     class="bg-blue-50 hover:bg-blue-100 text-blue-700 px-3 py-1.5 rounded-lg text-xs transition">
-                                    📍 Localiser
+                                    Localiser
                                 </button>
                             @endif
 
                             <a href="{{ route('admin.sos.show', $alert->id) }}"
                                 class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs transition">
-                                👁 Détail
+                                Détail
                             </a>
 
                             @if($alert->status === 'active')
                                 <form method="POST" action="{{ route('admin.sos.treat', $alert->id) }}">
                                     @csrf
                                     <button class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg text-xs transition">
-                                        ✓ Traiter
+                                        Traiter
                                     </button>
                                 </form>
                             @endif
@@ -193,15 +193,14 @@
                                   onsubmit="return confirm('Supprimer cette alerte ?')">
                                 @csrf @method('DELETE')
                                 <button class="bg-red-50 hover:bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-xs transition">
-                                    🗑
-                                </button>
+                                    Supprimer </button>
                             </form>
                         </div>
                     </div>
                 </div>
             @empty
                 <div class="p-12 text-center text-gray-400">
-                    <div class="text-5xl mb-3">✅</div>
+                    <div class="text-5xl mb-3"></div>
                     <p class="font-medium text-gray-500">Aucune alerte SOS</p>
                     <p class="text-sm mt-1">Tout est calme pour le moment</p>
                 </div>
@@ -248,12 +247,12 @@ function updateSosMap(alerts) {
             <div style="min-width:210px; font-family:sans-serif;">
                 <div style="font-weight:bold; color:#ef4444; font-size:14px; margin-bottom:6px;">🆘 Alerte SOS</div>
                 <div style="font-size:12px; color:#555; line-height:2;">
-                    ${a.sender_type === 'driver' ? '🚗' : '👤'} <b>${a.sender_name}</b><br>
-                    ${a.phone ? '📞 ' + a.phone + '<br>' : ''}
-                    ${a.vehicle ? '🚘 ' + a.vehicle + '<br>' : ''}
-                    ${a.message ? '💬 ' + a.message + '<br>' : ''}
-                    🕐 ${a.created_at}<br>
-                    ${a.trip_id ? '🚕 Course #' + a.trip_id : ''}
+                    ${a.sender_type === 'driver' ? '' : ''} <b>${a.sender_name}</b><br>
+                    ${a.phone ? '' + a.phone + '<br>' : ''}
+                    ${a.vehicle ? '' + a.vehicle + '<br>' : ''}
+                    ${a.message ? '' + a.message + '<br>' : ''}
+                    ${a.created_at}<br>
+                    ${a.trip_id ? 'Course #' + a.trip_id : ''}
                 </div>
                 <a href="/admin/sos/${a.id}"
                    style="display:inline-block; margin-top:8px; background:#ef4444; color:white;

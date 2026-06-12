@@ -9,7 +9,7 @@
         <a href="{{ route('admin.drivers.index') }}"
            class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">🚗 Nouveau Chauffeur</h1>
+            <h1 class="text-3xl font-bold text-gray-800">Nouveau Chauffeur</h1>
             <p class="text-gray-500 text-sm mt-1">Ajouter un chauffeur manuellement</p>
         </div>
     </div>
@@ -28,7 +28,7 @@
         {{-- ===== 1. INFORMATIONS PERSONNELLES ===== --}}
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
             <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">
-                👤 Informations personnelles
+                Informations personnelles
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -102,7 +102,7 @@
         {{-- ===== 2. CARTE D'IDENTITÉ ===== --}}
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
             <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">
-                🪪 Carte d'identité
+                Carte d'identité
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -155,7 +155,7 @@
         {{-- ===== 3. PERMIS DE CONDUIRE ===== --}}
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
             <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">
-                📋 Permis de conduire
+                Permis de conduire
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -208,7 +208,7 @@
         {{-- ===== 4. VÉHICULE ===== --}}
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
             <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">
-                🚗 Informations du véhicule
+                Informations du véhicule
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -289,7 +289,7 @@
         {{-- ===== 5. STATUT ===== --}}
         <div class="bg-white rounded-2xl shadow-md p-8 mb-6">
             <h2 class="text-lg font-bold text-gray-700 mb-6 pb-3 border-b border-gray-100">
-                ⚙️ Statut du compte
+                Statut du compte
             </h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -299,9 +299,9 @@
                     <select name="status"
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1DA1F2] outline-none transition bg-white">
                         <option value="pending"   {{ old('status', 'pending') == 'pending'   ? 'selected' : '' }}>⏳ En attente</option>
-                        <option value="approved"  {{ old('status') == 'approved'  ? 'selected' : '' }}>✅ Approuvé</option>
-                        <option value="rejected"  {{ old('status') == 'rejected'  ? 'selected' : '' }}>❌ Rejeté</option>
-                        <option value="suspended" {{ old('status') == 'suspended' ? 'selected' : '' }}>🚫 Suspendu</option>
+                        <option value="approved"  {{ old('status') == 'approved'  ? 'selected' : '' }}>Approuvé</option>
+                        <option value="rejected"  {{ old('status') == 'rejected'  ? 'selected' : '' }}>Rejeté</option>
+                        <option value="suspended" {{ old('status') == 'suspended' ? 'selected' : '' }}>Suspendu</option>
                     </select>
                 </div>
 
@@ -309,9 +309,9 @@
                     <label class="block text-gray-700 text-sm font-medium mb-2">Statut de conduite</label>
                     <select name="driver_status"
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1DA1F2] outline-none transition bg-white">
-                        <option value="offline" {{ old('driver_status', 'offline') == 'offline' ? 'selected' : '' }}>⚫ Hors ligne</option>
-                        <option value="online"  {{ old('driver_status') == 'online'  ? 'selected' : '' }}>🟢 En ligne</option>
-                        <option value="pause"   {{ old('driver_status') == 'pause'   ? 'selected' : '' }}>🟡 En pause</option>
+                        <option value="offline" {{ old('driver_status', 'offline') == 'offline' ? 'selected' : '' }}>Hors ligne</option>
+                        <option value="online"  {{ old('driver_status') == 'online'  ? 'selected' : '' }}>En ligne</option>
+                        <option value="pause"   {{ old('driver_status') == 'pause'   ? 'selected' : '' }}>En pause</option>
                     </select>
                 </div>
 
@@ -323,7 +323,7 @@
             <button type="submit"
                     class="flex-1 bg-[#1DA1F2] text-white py-4 rounded-xl font-semibold text-lg
                            hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-                🚗 Créer le chauffeur
+                Créer le chauffeur
             </button>
             <a href="{{ route('admin.drivers.index') }}"
                class="flex-1 bg-gray-100 text-gray-700 py-4 rounded-xl font-semibold text-lg text-center

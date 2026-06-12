@@ -4,31 +4,46 @@
 @section('content')
 <div style="display:flex;flex-direction:column;gap:16px">
 
-    <div>
-        <h1 class="page-title">📋 Trajets & Courses</h1>
+    <div class="page-header">
+        <h1 class="page-title">Trajets & Courses</h1>
         <p class="page-sub">Tous les trajets créés par les chauffeurs</p>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:14px">
-        <div class="stat-card" style="border-left:4px solid #1DA1F2">
-            <div class="lbl">Total</div>
-            <div class="val" style="color:#1DA1F2">{{ $stats['total'] ?? 0 }}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px">
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EFF8FF">
+                <svg width="16" height="16" fill="none" stroke="#1DA1F2" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['total'] ?? 0 }}</div>
+            <div class="stat-lbl">Total</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #f59e0b">
-            <div class="lbl">En attente</div>
-            <div class="val" style="color:#d97706">{{ $stats['pending'] ?? 0 }}</div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#FFFBEB">
+                <svg width="16" height="16" fill="none" stroke="#F59E0B" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['pending'] ?? 0 }}</div>
+            <div class="stat-lbl">En attente</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #6366f1">
-            <div class="lbl">En cours</div>
-            <div class="val" style="color:#4f46e5">{{ $stats['in_progress'] ?? 0 }}</div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#EEF2FF">
+                <svg width="16" height="16" fill="none" stroke="#6366F1" stroke-width="2" viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['in_progress'] ?? 0 }}</div>
+            <div class="stat-lbl">En cours</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #22c55e">
-            <div class="lbl">Terminés</div>
-            <div class="val" style="color:#16a34a">{{ $stats['completed'] ?? 0 }}</div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#ECFDF5">
+                <svg width="16" height="16" fill="none" stroke="#10B981" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['completed'] ?? 0 }}</div>
+            <div class="stat-lbl">Terminés</div>
         </div>
-        <div class="stat-card" style="border-left:4px solid #ef4444">
-            <div class="lbl">Annulés</div>
-            <div class="val" style="color:#dc2626">{{ $stats['cancelled'] ?? 0 }}</div>
+        <div class="stat-card">
+            <div class="stat-icon" style="background:#FEF2F2">
+                <svg width="16" height="16" fill="none" stroke="#EF4444" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['cancelled'] ?? 0 }}</div>
+            <div class="stat-lbl">Annulés</div>
         </div>
     </div>
 
@@ -57,15 +72,15 @@
             <label class="ttg-label">Au</label>
             <input type="date" name="to" value="{{ request('to') }}" class="ttg-input">
         </div>
-        <button type="submit" class="btn btn-primary" style="align-self:flex-end">🔍 Filtrer</button>
+        <button type="submit" class="btn btn-primary" style="align-self:flex-end">Filtrer</button>
         @if(request()->anyFilled(['search','status','from','to']))
-        <a href="{{ request()->url() }}" class="btn btn-secondary" style="align-self:flex-end">✕ Reset</a>
+        <a href="{{ request()->url() }}" class="btn btn-secondary" style="align-self:flex-end">Reset</a>
         @endif
     </form>
 
     <div class="panel">
         <div class="panel-header">
-            📋 Liste des trajets
+            Liste des trajets
             <span style="margin-left:8px;background:#f1f5f9;color:#64748b;font-size:11px;padding:2px 8px;border-radius:20px">
                 {{ $trips->total() }} résultats
             </span>
@@ -110,8 +125,8 @@
                                 <div style="color:#94a3b8;font-size:11px">{{ $driver?->phone ?? '—' }}</div>
                             </td>
                             <td>
-                                <div style="font-weight:600;font-size:12px">📍 {{ $trip->departure ?? $trip->pickup_address ?? '—' }}</div>
-                                <div style="color:#64748b;font-size:12px">🏁 {{ $trip->destination ?? $trip->dropoff_address ?? '—' }}</div>
+                                <div style="font-weight:600;font-size:12px">{{ $trip->departure ?? $trip->pickup_address ?? '—' }}</div>
+                                <div style="color:#64748b;font-size:12px">{{ $trip->destination ?? $trip->dropoff_address ?? '—' }}</div>
                             </td>
                             <td style="font-size:12px">
                                 {{ $trip->departure_date ?? '—' }}
@@ -126,14 +141,14 @@
                             <td><span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span></td>
                             <td>
                                 <button onclick="openTripModal({{ $trip->id }})" class="btn btn-primary" style="font-size:12px;padding:4px 12px">
-                                    👁 Voir
+                                    Voir
                                 </button>
                             </td>
                         </tr>
                     @empty
                         <tr>
                             <td colspan="8" style="text-align:center;padding:48px;color:#94a3b8">
-                                <div style="font-size:40px;margin-bottom:8px">🚗</div>
+                                <div style="font-size:40px;margin-bottom:8px"></div>
                                 <div style="font-weight:600">Aucun trajet trouvé</div>
                                 @if(request()->anyFilled(['search','status','from','to']))
                                     <a href="{{ request()->url() }}" style="color:#1DA1F2;font-size:13px">Réinitialiser les filtres</a>
@@ -159,9 +174,9 @@
     <div class="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
 
         <div class="flex justify-between items-center mb-6">
-            <h2 class="font-bold text-gray-800 text-lg">📋 Détail du trajet</h2>
+            <h2 class="font-bold text-gray-800 text-lg">Détail du trajet</h2>
             <button onclick="closeTripModal()"
-                    class="text-gray-400 hover:text-gray-600 text-xl font-bold transition">✕</button>
+                    class="text-gray-400 hover:text-gray-600 text-xl font-bold transition">× </button>
         </div>
 
         <div id="modal-content" class="text-gray-500 text-sm">
@@ -204,16 +219,16 @@ function openTripModal(id) {
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
                     <div class="bg-gray-50 rounded-xl p-4 space-y-2">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">🗺️ Itinéraire</h3>
+                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">Itinéraire</h3>
                         <div class="flex items-start gap-2">
-                            <span class="text-blue-500 mt-0.5">📍</span>
+                            <span class="text-blue-500 mt-0.5"></span>
                             <div>
                                 <p class="text-xs text-gray-400">Départ</p>
                                 <p class="font-semibold text-gray-800">${trip.departure ?? trip.pickup_address ?? '—'}</p>
                             </div>
                         </div>
                         <div class="flex items-start gap-2">
-                            <span class="text-orange-500 mt-0.5">🏁</span>
+                            <span class="text-orange-500 mt-0.5"></span>
                             <div>
                                 <p class="text-xs text-gray-400">Destination</p>
                                 <p class="font-semibold text-gray-800">${trip.destination ?? trip.dropoff_address ?? '—'}</p>
@@ -222,7 +237,7 @@ function openTripModal(id) {
                     </div>
 
                     <div class="bg-gray-50 rounded-xl p-4 space-y-2">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">📅 Horaire & Prix</h3>
+                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">Horaire & Prix</h3>
                         <p class="text-sm"><span class="text-gray-400">Date :</span>
                             <span class="font-semibold">${trip.departure_date ?? '—'}</span></p>
                         <p class="text-sm"><span class="text-gray-400">Heure :</span>
@@ -234,42 +249,11 @@ function openTripModal(id) {
                     </div>
 
                     <div class="bg-gray-50 rounded-xl p-4 space-y-2">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">👤 Chauffeur</h3>
+                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">Chauffeur</h3>
                         ${driver ? `
                         <p class="text-sm font-semibold text-gray-800">
                             ${driver.first_name ?? ''} ${driver.last_name ?? ''}
                         </p>
-                        <p class="text-xs text-gray-400">${driver.phone ?? '—'}</p>
-                        <p class="text-xs text-gray-400">${driver.email ?? ''}</p>
-                        ` : '<p class="text-sm text-gray-400">Chauffeur non trouvé</p>'}
-                    </div>
-
-                    <div class="bg-gray-50 rounded-xl p-4">
-                        <h3 class="font-bold text-gray-700 text-xs uppercase mb-3">📊 Statut</h3>
-                        <span class="text-xs font-bold px-3 py-1.5 rounded-lg ${color}">
-                            ${trip.status ?? '—'}
-                        </span>
-                        ${trip.distance_km ? `
-                        <p class="text-sm mt-3"><span class="text-gray-400">Distance :</span>
-                            <span class="font-semibold">${trip.distance_km} km</span></p>` : ''}
-                    </div>
-
-                </div>`;
-        })
-        .catch(() => {
-            document.getElementById('modal-content').innerHTML =
-                '<p class="text-red-500 text-center py-8">❌ Erreur lors du chargement.</p>';
-        });
-}
-
-function closeTripModal() {
-    document.getElementById('trip-modal').classList.add('hidden');
-}
-
-function closeTripModalOutside(e) {
-    if (e.target === document.getElementById('trip-modal')) {
-        closeTripModal();
-    }
-}
+                        <p class="text-xs text-gray-400">${driver.pho
 </script>
 @endpush

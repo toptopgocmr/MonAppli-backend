@@ -5,7 +5,7 @@
 <div style="display:flex;flex-direction:column;gap:16px">
 
     <div>
-        <h1 class="page-title">🛡 Support Admin ↔ Utilisateurs</h1>
+        <h1 class="page-title">Support Admin ↔ Utilisateurs</h1>
         <p class="page-sub">Écrivez à n'importe quel utilisateur depuis cette interface</p>
     </div>
 
@@ -27,10 +27,10 @@
     <div class="filter-bar">
         <form method="GET" action="{{ route('admin.support.users.index') }}" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
             <input type="text" name="search" value="{{ request('search') }}"
-                placeholder="🔍 Rechercher par nom, téléphone ou email..."
+                placeholder="Rechercher par nom, téléphone ou email..."
                 class="ttg-input" style="flex:1;min-width:220px">
             <button type="submit" class="btn btn-primary">Rechercher</button>
-            <a href="{{ route('admin.support.users.index') }}" class="btn btn-secondary">✕ Reset</a>
+            <a href="{{ route('admin.support.users.index') }}" class="btn btn-secondary">Reset</a>
         </form>
     </div>
 
@@ -41,7 +41,7 @@
         <div class="w-1/3 bg-white rounded-xl shadow-sm border border-gray-100 flex flex-col overflow-hidden">
             <div class="p-4 border-b border-gray-100 bg-gray-50">
                 <h2 class="font-semibold text-gray-700 text-sm">
-                    👤 Tous les utilisateurs
+                    Tous les utilisateurs
                     <span class="ml-2 bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full">
                         {{ $users->total() }}
                     </span>
@@ -108,7 +108,7 @@
                     </a>
                 @empty
                     <div class="p-8 text-center text-gray-400">
-                        <div class="text-4xl mb-2">👤</div>
+                        <div class="text-4xl mb-2"></div>
                         <p class="text-sm">Aucun utilisateur trouvé</p>
                     </div>
                 @endforelse
@@ -145,12 +145,12 @@
                     <div class="flex gap-2 text-xs">
                         @if($user->phone)
                             <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
-                                📱 {{ $user->phone }}
+                                {{ $user->phone }}
                             </span>
                         @endif
                         @if($user->email)
                             <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                ✉️ {{ $user->email }}
+                                {{ $user->email }}
                             </span>
                         @endif
                     </div>
@@ -162,7 +162,7 @@
                         <div class="flex justify-end items-end gap-2">
                             <div class="max-w-xs lg:max-w-md">
                                 <div class="text-xs text-gray-400 mb-1 text-right">
-                                    🛡 {{ $message->admin->name ?? session('admin_name', 'Admin') }}
+                                    {{ $message->admin->name ?? session('admin_name', 'Admin') }}
                                 </div>
                                 <div class="px-4 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed bg-blue-600 text-white shadow-sm">
                                     {{ $message->content }}
@@ -170,9 +170,9 @@
                                 <div class="text-xs text-gray-400 mt-1 text-right">
                                     {{ $message->created_at->format('d/m H:i') }}
                                     @if($message->is_read)
-                                        <span class="text-blue-400 ml-1">✓✓ Lu</span>
+                                        <span class="text-blue-400 ml-1">Lu</span>
                                     @else
-                                        <span class="text-gray-300 ml-1">✓ Envoyé</span>
+                                        <span class="text-gray-300 ml-1">Envoyé</span>
                                     @endif
                                 </div>
                             </div>
@@ -182,7 +182,7 @@
                         </div>
                     @empty
                         <div class="text-center text-gray-400 py-10">
-                            <div class="text-4xl mb-3">✉️</div>
+                            <div class="text-4xl mb-3">️</div>
                             <p class="font-medium text-gray-500">Démarrez la conversation</p>
                             <p class="text-sm mt-1">
                                 Écrivez votre premier message à
@@ -210,8 +210,7 @@
                         </div>
                         <button type="submit"
                             class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition flex-shrink-0">
-                            Envoyer ➤
-                        </button>
+                            Envoyer </button>
                     </form>
                 </div>
 
@@ -219,7 +218,7 @@
                 {{-- Aucune conversation sélectionnée --}}
                 <div class="flex-1 flex items-center justify-center text-gray-400">
                     <div class="text-center">
-                        <div class="text-6xl mb-4">🛡</div>
+                        <div class="text-6xl mb-4"></div>
                         <p class="text-lg font-medium text-gray-500">Sélectionnez un utilisateur</p>
                         <p class="text-sm mt-1">Cliquez sur n'importe quel utilisateur dans la liste pour lui écrire</p>
                     </div>

@@ -9,7 +9,7 @@
         <div class="flex items-center gap-4">
             <a href="{{ route('admin.users.index') }}" class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
             <div>
-                <h1 class="text-3xl font-bold text-gray-800">👤 Profil Client</h1>
+                <h1 class="text-3xl font-bold text-gray-800">Profil Client</h1>
                 <p class="text-gray-500 text-sm mt-1">{{ $user->first_name }} {{ $user->last_name }}</p>
             </div>
         </div>
@@ -31,9 +31,9 @@
                 <h2 class="text-2xl font-bold text-gray-800">{{ $user->first_name }} {{ $user->last_name }}</h2>
                 <p class="text-gray-500">{{ $user->phone }}</p>
                 @if($user->status == 'active')
-                    <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full mt-2 inline-block">✅ Actif</span>
+                    <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full mt-2 inline-block">Actif</span>
                 @else
-                    <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full mt-2 inline-block">🚫 Bloqué</span>
+                    <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full mt-2 inline-block">Bloqué</span>
                 @endif
             </div>
         </div>
@@ -82,7 +82,7 @@
                 @csrf
                 <button type="submit" onclick="return confirm('Bloquer {{ $user->first_name }} ?')"
                         class="w-full bg-orange-100 text-orange-700 py-3 rounded-xl font-semibold hover:bg-orange-200 transition">
-                    🚫 Bloquer le compte
+                    Bloquer le compte
                 </button>
             </form>
         @else
@@ -90,7 +90,7 @@
                 @csrf
                 <button type="submit"
                         class="w-full bg-green-100 text-green-700 py-3 rounded-xl font-semibold hover:bg-green-200 transition">
-                    ✅ Activer le compte
+                    Activer le compte
                 </button>
             </form>
         @endif
@@ -100,7 +100,7 @@
             @method('DELETE')
             <button type="submit" onclick="return confirm('Supprimer définitivement {{ $user->first_name }} ?')"
                     class="w-full bg-red-100 text-red-700 py-3 rounded-xl font-semibold hover:bg-red-200 transition">
-                🗑 Supprimer
+                Supprimer
             </button>
         </form>
 

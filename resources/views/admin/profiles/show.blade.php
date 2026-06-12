@@ -9,7 +9,7 @@
         <a href="{{ route('admin.profiles.index') }}"
            class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">👤 Détail du profil</h1>
+            <h1 class="text-3xl font-bold text-gray-800">Détail du profil</h1>
             <p class="text-gray-500 text-sm mt-1">Informations complètes de l'administrateur</p>
         </div>
     </div>
@@ -37,11 +37,11 @@
                     <!-- Badge statut -->
                     @if($admin->status === 'active')
                         <span class="bg-green-100 text-green-700 text-xs font-semibold px-3 py-1 rounded-full">
-                            ✅ Actif
+                            Actif
                         </span>
                     @else
                         <span class="bg-red-100 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">
-                            🚫 Bloqué
+                            Bloqué
                         </span>
                     @endif
                 </div>
@@ -102,7 +102,7 @@
         <a href="{{ route('admin.profiles.edit', $admin->id) }}"
            class="flex-1 bg-[#1DA1F2] text-white py-3 rounded-xl font-semibold text-center
                   hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-            ✏️ Modifier
+            Modifier
         </a>
 
         @if($admin->id !== session('admin_id'))
@@ -113,7 +113,7 @@
                             onclick="return confirm('Bloquer {{ $admin->first_name }} ?')"
                             class="w-full bg-orange-100 text-orange-700 py-3 rounded-xl font-semibold
                                    hover:bg-orange-200 transition">
-                        🚫 Bloquer
+                        Bloquer
                     </button>
                 </form>
             @else
@@ -122,7 +122,7 @@
                     <button type="submit"
                             class="w-full bg-green-100 text-green-700 py-3 rounded-xl font-semibold
                                    hover:bg-green-200 transition">
-                        ✅ Activer
+                        Activer
                     </button>
                 </form>
             @endif
@@ -134,7 +134,7 @@
                         onclick="return confirm('Supprimer définitivement {{ $admin->first_name }} ?')"
                         class="w-full bg-red-100 text-red-700 py-3 rounded-xl font-semibold
                                hover:bg-red-200 transition">
-                    🗑 Supprimer
+                    Supprimer
                 </button>
             </form>
         @endif

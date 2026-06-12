@@ -15,7 +15,7 @@
         </div>
         <span class="ml-auto text-sm px-3 py-1.5 rounded-full font-medium
             {{ $alert->status === 'active' ? 'bg-red-500 text-white animate-pulse' : 'bg-green-100 text-green-700' }}">
-            {{ $alert->status === 'active' ? '🆘 ACTIVE' : '✅ Traitée' }}
+            {{ $alert->status === 'active' ? '🆘 ACTIVE' : 'Traitée' }}
         </span>
     </div>
 
@@ -24,7 +24,7 @@
         {{-- Infos expéditeur --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
             <h3 class="font-semibold text-gray-700 mb-4">
-                {{ str_contains($alert->sender_type, 'Driver') ? '🚗 Chauffeur' : '👤 Utilisateur' }}
+                {{ str_contains($alert->sender_type, 'Driver') ? 'Chauffeur' : 'Utilisateur' }}
             </h3>
             @if($alert->sender)
                 <div class="space-y-2 text-sm">
@@ -57,7 +57,7 @@
 
         {{-- Infos alerte --}}
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <h3 class="font-semibold text-gray-700 mb-4">📋 Détails de l'alerte</h3>
+            <h3 class="font-semibold text-gray-700 mb-4">Détails de l'alerte</h3>
             <div class="space-y-2 text-sm">
                 @if($alert->message)
                     <div>
@@ -94,7 +94,7 @@
         @if($alert->lat && $alert->lng)
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden md:col-span-2">
             <div class="p-4 border-b border-gray-100">
-                <h3 class="font-semibold text-gray-700">📍 Position de l'alerte</h3>
+                <h3 class="font-semibold text-gray-700">Position de l'alerte</h3>
             </div>
             <div id="alertMap" style="height:300px; z-index:1;"></div>
         </div>
@@ -106,7 +106,7 @@
                 <form method="POST" action="{{ route('admin.sos.treat', $alert->id) }}">
                     @csrf
                     <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition">
-                        ✓ Marquer comme traitée
+                        Marquer comme traitée
                     </button>
                 </form>
             @endif
@@ -114,7 +114,7 @@
                   onsubmit="return confirm('Supprimer cette alerte définitivement ?')">
                 @csrf @method('DELETE')
                 <button class="bg-red-100 hover:bg-red-200 text-red-700 px-6 py-2.5 rounded-lg text-sm font-medium transition">
-                    🗑 Supprimer
+                    Supprimer
                 </button>
             </form>
         </div>

@@ -9,7 +9,7 @@
         <a href="{{ route('admin.profiles.index') }}"
            class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">✏️ Modifier l'administrateur</h1>
+            <h1 class="text-3xl font-bold text-gray-800">Modifier l'administrateur</h1>
             <p class="text-gray-500 text-sm mt-1">
                 {{ $admin->first_name }} {{ $admin->last_name }}
             </p>
@@ -100,7 +100,7 @@
             <div class="mt-6 p-4 rounded-xl {{ $admin->status === 'active' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }}">
                 <p class="text-sm font-medium {{ $admin->status === 'active' ? 'text-green-700' : 'text-red-700' }}">
                     Statut actuel :
-                    {{ $admin->status === 'active' ? '✅ Actif' : '🚫 Bloqué' }}
+                    {{ $admin->status === 'active' ? 'Actif' : 'Bloqué' }}
                 </p>
             </div>
 
@@ -109,7 +109,7 @@
                 <button type="submit"
                         class="flex-1 bg-[#1DA1F2] text-white py-3 rounded-xl font-semibold
                                hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-                    💾 Enregistrer les modifications
+                    Enregistrer les modifications
                 </button>
                 <a href="{{ route('admin.profiles.index') }}"
                    class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-center

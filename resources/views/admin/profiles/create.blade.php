@@ -9,7 +9,7 @@
         <a href="{{ route('admin.profiles.index') }}"
            class="text-gray-400 hover:text-gray-700 transition text-2xl">←</a>
         <div>
-            <h1 class="text-3xl font-bold text-gray-800">➕ Nouvel Administrateur</h1>
+            <h1 class="text-3xl font-bold text-gray-800">Nouvel Administrateur</h1>
             <p class="text-gray-500 text-sm mt-1">Créer un nouveau compte administrateur</p>
         </div>
     </div>
@@ -99,7 +99,7 @@
                 <button type="submit"
                         class="flex-1 bg-[#1DA1F2] text-white py-3 rounded-xl font-semibold
                                hover:bg-[#FFC107] hover:text-black transition-all duration-300">
-                    ✅ Enregistrer
+                    Enregistrer
                 </button>
                 <a href="{{ route('admin.profiles.index') }}"
                    class="flex-1 bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold text-center
