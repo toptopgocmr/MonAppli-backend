@@ -28,12 +28,14 @@ use App\Http\Controllers\Driver\DriverStatusController;
 use App\Http\Controllers\Driver\DriverWalletController;
 use App\Http\Controllers\Driver\DriverWithdrawalController;
 use App\Http\Controllers\Driver\DriverSosController;
-use App\Http\Controllers\Driver\DriverMessageController;   // 🔄 MODIFIÉ (modération)
-use App\Http\Controllers\Driver\DriverCallController;      // ✅ NOUVEAU
+use App\Http\Controllers\Driver\DriverMessageController;
+use App\Http\Controllers\Driver\DriverCallController;
 use App\Http\Controllers\Driver\DriverSupportController;
 use App\Http\Controllers\Driver\DriverDocumentController;
 use App\Http\Controllers\Driver\DriverPasswordController;
 use App\Http\Controllers\Driver\DriverProfileController;
+use App\Http\Controllers\Driver\DriverRatingController;        // ✅ NOUVEAU
+use App\Http\Controllers\Driver\DriverPreferencesController;   // ✅ NOUVEAU
 
 // ── User (Client) Controllers
 use App\Http\Controllers\User\UserProfileController;
@@ -171,13 +173,25 @@ Route::prefix('driver')->name('api.driver.')->middleware(['auth:sanctum'])->grou
 
     // ── Trajets ───────────────────────────────────────────────────
     Route::apiResource('trips', DriverTripController::class)->names('trips');
-    Route::post('trips/{id}/start', [DriverTripController::class, 'start'])->name('trips.start');
-    Route::post('trips/{id}/end',   [DriverTripController::class, 'end'])->name('trips.end');
+    Route::post('trips/{id}/start',   [DriverTripController::class, 'start'])->name('trips.start');
+    Route::post('trips/{id}/end',     [DriverTripController::class, 'end'])->name('trips.end');
+    Route::post('trips/{id}/cancel',  [DriverTripController::class, 'cancel'])->name('trips.cancel');   // ✅ NOUVEAU
+    Route::get('trips/{id}/summary',  [DriverTripController::class, 'summary'])->name('trips.summary'); // ✅ NOUVEAU
 
     // ── Réservations ──────────────────────────────────────────────
     Route::get('bookings',               [DriverTripController::class, 'bookings'])->name('bookings.index');
     Route::post('bookings/{id}/confirm', [DriverTripController::class, 'confirmBooking'])->name('bookings.confirm');
     Route::post('bookings/{id}/reject',  [DriverTripController::class, 'rejectBooking'])->name('bookings.reject');
+    Route::post('bookings/{id}/board',   [DriverTripController::class, 'boardPassenger'])->name('bookings.board'); // ✅ NOUVEAU
+
+    // ── Notations ────────────────────────────────────────────────
+    Route::get('ratings',                    [DriverRatingController::class, 'received'])->name('ratings.received'); // ✅ NOUVEAU
+    Route::get('ratings/pending',            [DriverRatingController::class, 'pending'])->name('ratings.pending');   // ✅ NOUVEAU
+    Route::post('ratings/{bookingId}',       [DriverRatingController::class, 'store'])->name('ratings.store');       // ✅ NOUVEAU
+
+    // ── Préférences de voyage ─────────────────────────────────────
+    Route::get('preferences',  [DriverPreferencesController::class, 'show'])->name('preferences.show');     // ✅ NOUVEAU
+    Route::put('preferences',  [DriverPreferencesController::class, 'update'])->name('preferences.update'); // ✅ NOUVEAU
 
     // ── Wallet & Retraits ─────────────────────────────────────────
     Route::get('wallet',           [DriverWalletController::class, 'show'])->name('wallet.show');

@@ -162,6 +162,75 @@ class DriverTripController extends Controller
         ]);
     }
 
+    // ── Annuler un trajet ─────────────────────────────────────────────────
+    public function cancel(Request $request, $id)
+    {
+        $trip = Trip::where('driver_id', Auth::id())->find($id);
+        if (!$trip) return response()->json(['success' => false, 'message' => 'Introuvable'], 404);
+        if (in_array($trip->status, ['completed', 'cancelled'])) {
+            return response()->json(['success' => false, 'message' => 'Ce trajet ne peut pas être annulé.'], 422);
+        }
+        $trip->update([
+            'status'              => 'cancelled',
+            'cancelled_at'        => now(),
+            'cancellation_reason' => $request->reason ?? '',
+        ]);
+        Booking::where('trip_id', $trip->id)
+            ->whereNotIn('status', ['cancelled', 'completed'])
+            ->update([
+                'status'              => 'cancelled',
+                'cancelled_at'        => now(),
+                'cancellation_reason' => 'Trajet annulé par le chauffeur',
+            ]);
+        return response()->json(['success' => true, 'message' => 'Trajet annulé.', 'data' => $this->fmt($trip->fresh())]);
+    }
+
+    // ── Récapitulatif de fin de trajet ────────────────────────────────────
+    public function summary($id)
+    {
+        $trip = Trip::where('driver_id', Auth::id())->find($id);
+        if (!$trip) return response()->json(['success' => false, 'message' => 'Introuvable'], 404);
+        $bookings = Booking::where('trip_id', $trip->id)
+            ->whereIn('status', ['confirmed', 'paid', 'completed'])
+            ->with('user')->get();
+        $totalSeats   = $bookings->sum(fn($b) => (int) ($b->seats ?? $b->passengers ?? 1));
+        $totalRevenue = $bookings->sum(fn($b) => (float) ($b->amount ?? 0));
+        $commission   = $totalRevenue * 0.15;
+        return response()->json(['success' => true, 'data' => [
+            'trip'             => $this->fmt($trip),
+            'total_passengers' => $totalSeats,
+            'total_revenue'    => round($totalRevenue, 2),
+            'commission'       => round($commission, 2),
+            'net_revenue'      => round($totalRevenue - $commission, 2),
+            'duration_min'     => $trip->started_at && $trip->completed_at
+                ? (int) \Carbon\Carbon::parse($trip->started_at)->diffInMinutes(\Carbon\Carbon::parse($trip->completed_at))
+                : null,
+            'passengers' => $bookings->map(fn($b) => [
+                'booking_id' => $b->id,
+                'seats'      => (int) ($b->seats ?? $b->passengers ?? 1),
+                'amount'     => (float) ($b->amount ?? 0),
+                'passenger'  => $b->user ? [
+                    'id'       => $b->user->id,
+                    'name'     => trim(($b->user->first_name ?? '') . ' ' . ($b->user->last_name ?? '')),
+                    'photo'    => $b->user->profile_photo ?? null,
+                    'initials' => strtoupper(substr($b->user->first_name ?? 'P', 0, 1) . substr($b->user->last_name ?? '', 0, 1)),
+                ] : null,
+            ])->values(),
+        ]]);
+    }
+
+    // ── Confirmer embarquement passager ───────────────────────────────────
+    public function boardPassenger($id)
+    {
+        $booking = Booking::whereHas('trip', fn($q) => $q->where('driver_id', Auth::id()))->find($id);
+        if (!$booking) return response()->json(['success' => false, 'message' => 'Introuvable'], 404);
+        if (!in_array($booking->status, ['confirmed', 'paid'])) {
+            return response()->json(['success' => false, 'message' => 'Statut invalide.'], 422);
+        }
+        $booking->update(['boarded_at' => now()]);
+        return response()->json(['success' => true, 'message' => '✅ Passager embarqué.', 'data' => $this->fmtBooking($booking->fresh()->load('trip', 'user'))]);
+    }
+
     // ── Réservations du chauffeur ─────────────────────────────────────────
     public function bookings(Request $request)
     {
