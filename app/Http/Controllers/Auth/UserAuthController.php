@@ -170,7 +170,8 @@ class UserAuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Code de réinitialisation envoyé.',
+            'message' => 'Code de réinitialisation généré.',
+            'otp'     => $code,   // affiché directement sur l'application cliente
         ]);
     }
 
