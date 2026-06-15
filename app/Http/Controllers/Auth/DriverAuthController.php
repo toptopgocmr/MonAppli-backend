@@ -98,10 +98,18 @@ class DriverAuthController extends Controller
         ]);
 
         $driver = null;
-        if ($request->filled('phone')) {
-            $driver = Driver::where('phone', $request->phone)->first();
-        } elseif ($request->filled('email')) {
+        if ($request->filled('email')) {
             $driver = Driver::where('email', $request->email)->first();
+        } elseif ($request->filled('phone')) {
+            $phone  = $request->phone;
+            $driver = Driver::where('phone', $phone)->first();
+            if (!$driver) {
+                $driver = Driver::where('phone', ltrim($phone, '+'))->first();
+            }
+            if (!$driver && strlen($phone) > 9) {
+                $local  = substr(preg_replace('/\D/', '', $phone), -9);
+                $driver = Driver::whereRaw("RIGHT(REPLACE(REPLACE(phone, '+', ''), ' ', ''), 9) = ?", [$local])->first();
+            }
         }
 
         // On retourne toujours succès pour ne pas exposer si le compte existe
@@ -139,10 +147,18 @@ class DriverAuthController extends Controller
         ]);
 
         $driver = null;
-        if ($request->filled('phone')) {
-            $driver = Driver::where('phone', $request->phone)->first();
-        } elseif ($request->filled('email')) {
+        if ($request->filled('email')) {
             $driver = Driver::where('email', $request->email)->first();
+        } elseif ($request->filled('phone')) {
+            $phone  = $request->phone;
+            $driver = Driver::where('phone', $phone)->first();
+            if (!$driver) {
+                $driver = Driver::where('phone', ltrim($phone, '+'))->first();
+            }
+            if (!$driver && strlen($phone) > 9) {
+                $local  = substr(preg_replace('/\D/', '', $phone), -9);
+                $driver = Driver::whereRaw("RIGHT(REPLACE(REPLACE(phone, '+', ''), ' ', ''), 9) = ?", [$local])->first();
+            }
         }
 
         if (!$driver || !$driver->otp || !Hash::check($request->code, $driver->otp)) {

@@ -26,7 +26,7 @@ class Driver extends Authenticatable
         'license_issue_date', 'license_expiry_date', 'license_issue_city', 'license_issue_country',
         'vehicle_plate', 'vehicle_brand', 'vehicle_model', 'vehicle_type', 'vehicle_color',
         'vehicle_country', 'vehicle_city', 'vehicle_lat', 'vehicle_lng', 'status', 'driver_status',
-        'password', 'company_id',
+        'password', 'company_id', 'otp', 'otp_expires_at',
     ];
 
     protected $hidden = ['password'];
