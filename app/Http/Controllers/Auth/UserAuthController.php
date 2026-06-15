@@ -146,8 +146,10 @@ class UserAuthController extends Controller
         }
 
         // Générer un code à 6 chiffres
-        $code       = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $identifier = $user->email ?? $user->phone;
+        $code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        // Stocker l'identifiant tel qu'envoyé par le client (pas le format DB)
+        // pour que resetPassword() retrouve le bon enregistrement avec le même identifiant
+        $identifier = $request->email ?? $request->phone;
 
         // Sauvegarder dans password_reset_tokens
         DB::table('password_reset_tokens')->updateOrInsert(
@@ -226,9 +228,21 @@ class UserAuthController extends Controller
             ], 422);
         }
 
-        $user = User::where('email', $identifier)
-            ->orWhere('phone', $identifier)
-            ->first();
+        // Chercher l'utilisateur — recherche flexible pour les numéros de téléphone
+        $user = null;
+        if ($request->filled('email')) {
+            $user = User::where('email', $identifier)->first();
+        } else {
+            $phone = $request->phone;
+            $user  = User::where('phone', $phone)->first();
+            if (!$user) {
+                $user = User::where('phone', ltrim($phone, '+'))->first();
+            }
+            if (!$user && strlen($phone) > 9) {
+                $local = substr(preg_replace('/\D/', '', $phone), -9);
+                $user  = User::whereRaw("RIGHT(REPLACE(REPLACE(phone, '+', ''), ' ', ''), 9) = ?", [$local])->first();
+            }
+        }
 
         if (!$user) {
             return response()->json([
