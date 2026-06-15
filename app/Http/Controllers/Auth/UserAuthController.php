@@ -121,7 +121,20 @@ class UserAuthController extends Controller
             $request->validate(['email' => 'email']);
             $user = User::where('email', $request->email)->first();
         } else {
-            $user = User::where('phone', $request->phone)->first();
+            $phone = $request->phone;
+            // Recherche flexible : exact → sans '+' → local (sans indicatif pays)
+            $user = User::where('phone', $phone)->first();
+            if (!$user) {
+                // Essai sans le '+' initial : "+24206..." → "24206..."
+                $stripped = ltrim($phone, '+');
+                $user = User::where('phone', $stripped)->first();
+            }
+            if (!$user && strlen($phone) > 9) {
+                // Essai en gardant les 9 derniers chiffres (numéro local)
+                $local = preg_replace('/\D/', '', $phone);
+                $local = substr($local, -9);
+                $user = User::whereRaw("RIGHT(REPLACE(REPLACE(phone, '+', ''), ' ', ''), 9) = ?", [$local])->first();
+            }
         }
 
         // Réponse neutre — ne révèle pas si le compte existe

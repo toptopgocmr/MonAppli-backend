@@ -70,12 +70,24 @@ class DriverRatingController extends Controller
                 ] : null,
             ]);
 
+        // Calculer la moyenne dynamiquement depuis les enregistrements réels
+        $allDriverRatings = Rating::where('driver_id', Auth::id())
+            ->whereNotNull('driver_rating')
+            ->pluck('driver_rating');
+
+        $count = $allDriverRatings->count();
+        $avg   = $count > 0 ? round($allDriverRatings->average(), 2) : 0;
+
+        // Mettre à jour le cache sur le Driver si différent
         $driver = Driver::find(Auth::id());
+        if ($driver && ((float)$driver->rating_avg !== (float)$avg || (int)$driver->rating_count !== $count)) {
+            $driver->update(['rating_avg' => $avg, 'rating_count' => $count]);
+        }
 
         return response()->json([
             'success'      => true,
-            'rating_avg'   => round((float) ($driver->rating_avg ?? 0), 2),
-            'rating_count' => (int) ($driver->rating_count ?? 0),
+            'rating_avg'   => $avg,
+            'rating_count' => $count,
             'data'         => $ratings,
         ]);
     }

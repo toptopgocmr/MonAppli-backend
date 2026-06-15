@@ -7,6 +7,7 @@ use App\Http\Controllers\Company\VehicleController;
 use App\Http\Controllers\Company\ReservationController;
 use App\Http\Controllers\Company\RevenueController;
 use App\Http\Controllers\Company\ItineraryController;
+use App\Http\Controllers\Company\CompanyMessageController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('company')->name('company.')->group(function () {
@@ -58,6 +59,11 @@ Route::prefix('company')->name('company.')->group(function () {
 
         // Revenus
         Route::get('/revenus', [RevenueController::class, 'index'])->name('revenus.index');
+
+        // Messages
+        Route::get('/messages',         [CompanyMessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/support', [CompanyMessageController::class, 'support'])->name('messages.support');
+        Route::get('/messages/{trip}',  [CompanyMessageController::class, 'show'])->name('messages.show');
 
     });
 });

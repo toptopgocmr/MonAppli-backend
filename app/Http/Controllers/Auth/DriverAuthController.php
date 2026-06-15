@@ -124,9 +124,8 @@ class DriverAuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Si ce compte existe, un SMS/email de réinitialisation a été envoyé.',
-            // En dev seulement — retirer en production :
-            '_dev_code' => config('app.debug') ? $code : null,
+            'message' => 'Code de réinitialisation généré.',
+            'otp'     => $code,   // affiché directement sur l'application conducteur
         ]);
     }
 
