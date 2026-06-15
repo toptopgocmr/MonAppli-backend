@@ -21,7 +21,7 @@ class UserTripController extends Controller
     {
         // ✅ FIX : on charge tout le driver sans spécifier les colonnes
         // pour éviter "Unknown column 'rating'" si la colonne n'existe pas
-        $query = Trip::with(['driver'])
+        $query = Trip::with(['driver', 'driver.company'])
             ->whereIn('status', ['pending', 'accepted'])
             ->where('available_seats', '>=', 1);
 
@@ -169,6 +169,13 @@ class UserTripController extends Controller
                 'rating'       => $rating,
                 'rating_count' => $ratingCount,
                 'photo'        => $photo,
+                'company_id'   => $driver->company_id ?? null,
+                'company_name' => $driver->company?->name ?? null,
+                'company_logo' => $driver->company?->logo
+                    ? (str_starts_with($driver->company->logo, 'http')
+                        ? $driver->company->logo
+                        : url('storage/' . $driver->company->logo))
+                    : null,
             ] : null,
         ];
     }
