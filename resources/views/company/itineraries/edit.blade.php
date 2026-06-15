@@ -28,9 +28,10 @@
         <div class="aws-panel-header"><span class="aws-panel-title">Point de départ</span></div>
         <div class="aws-panel-body">
             <div class="aws-grid-2">
-                <div class="aws-field">
+                <div class="aws-field" style="position:relative">
                     <label class="aws-label">Ville de départ</label>
-                    <input type="text" name="departure" value="{{ old('departure', $itinerary->departure) }}" required class="aws-input">
+                    <input type="text" id="departure" name="departure" value="{{ old('departure', $itinerary->departure) }}" required class="aws-input" autocomplete="off">
+                    <div class="city-dropdown" id="departure-dropdown"></div>
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Heure de départ</label>
@@ -49,9 +50,10 @@
         <div class="aws-panel-header"><span class="aws-panel-title">Point d'arrivée</span></div>
         <div class="aws-panel-body">
             <div class="aws-grid-2">
-                <div class="aws-field">
+                <div class="aws-field" style="position:relative">
                     <label class="aws-label">Ville de destination</label>
-                    <input type="text" name="destination" value="{{ old('destination', $itinerary->destination) }}" required class="aws-input">
+                    <input type="text" id="destination" name="destination" value="{{ old('destination', $itinerary->destination) }}" required class="aws-input" autocomplete="off">
+                    <div class="city-dropdown" id="destination-dropdown"></div>
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Heure d'arrivée estimée</label>
@@ -114,7 +116,97 @@
 </div>
 
 @push('scripts')
+<style>
+.city-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--aws-border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    z-index: 999;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.city-dropdown.open { display: block; }
+.city-item {
+    padding: 9px 14px; cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    display: flex; align-items: center; gap: 10px;
+}
+.city-item:last-child { border-bottom: none; }
+.city-item:hover { background: #f0f6ff; }
+.city-item .city-name { font-size: 13px; font-weight: 600; color: var(--aws-header); }
+.city-item .city-country { font-size: 11px; color: var(--aws-sub); }
+.city-loading { padding: 10px 14px; font-size: 12px; color: var(--aws-sub); }
+</style>
 <script>
+// ── Autocomplétion villes ──────────────────────────────────────────
+(function () {
+    function initCityAutocomplete(inputId, dropdownId) {
+        const input    = document.getElementById(inputId);
+        const dropdown = document.getElementById(dropdownId);
+        let timer = null;
+
+        input.addEventListener('input', function () {
+            const q = this.value.trim();
+            clearTimeout(timer);
+            if (q.length < 2) { dropdown.className = 'city-dropdown'; return; }
+            dropdown.className = 'city-dropdown open';
+            dropdown.innerHTML = '<div class="city-loading">Recherche…</div>';
+            timer = setTimeout(() => search(q), 350);
+        });
+
+        document.addEventListener('click', function (e) {
+            if (!input.contains(e.target) && !dropdown.contains(e.target)) {
+                dropdown.className = 'city-dropdown';
+            }
+        });
+
+        async function search(q) {
+            try {
+                const url  = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=8&addressdetails=1&accept-language=fr`;
+                const res  = await fetch(url, { headers: { 'User-Agent': 'TopTopGo/1.0 toptopgoinfo@gmail.com' } });
+                const data = await res.json();
+                const seen = new Set(); const items = [];
+                for (const item of data) {
+                    const addr = item.address || {};
+                    const city = addr.city || addr.town || addr.village || addr.county || addr.municipality || item.name || '';
+                    const country = addr.country || '';
+                    const key = city + '|' + country;
+                    if (city && !seen.has(key)) { seen.add(key); items.push({ city, country }); }
+                }
+                if (!items.length) { dropdown.innerHTML = '<div class="city-loading">Aucun résultat</div>'; return; }
+                dropdown.innerHTML = items.map(m => `
+                    <div class="city-item" data-city="${m.city}">
+                        <svg width="12" height="14" viewBox="0 0 12 16" fill="none" style="flex-shrink:0">
+                            <path d="M6 0C3.24 0 1 2.24 1 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5C5.17 6.5 4.5 5.83 4.5 5S5.17 3.5 6 3.5 7.5 4.17 7.5 5 6.83 6.5 6 6.5z" fill="#ec7211"/>
+                        </svg>
+                        <div>
+                            <div class="city-name">${m.city}</div>
+                            <div class="city-country">${m.country}</div>
+                        </div>
+                    </div>`).join('');
+                dropdown.querySelectorAll('.city-item').forEach(el => {
+                    el.addEventListener('click', function () {
+                        input.value = this.dataset.city;
+                        dropdown.className = 'city-dropdown';
+                        input.dispatchEvent(new Event('blur'));
+                    });
+                });
+            } catch (e) {
+                dropdown.innerHTML = '<div class="city-loading">Erreur de connexion</div>';
+            }
+        }
+    }
+
+    initCityAutocomplete('departure',   'departure-dropdown');
+    initCityAutocomplete('destination', 'destination-dropdown');
+})();
+
+// ── Calcul de route ──────────────────────────────────────────────
 (function () {
     const fDep    = document.querySelector('input[name="departure"]');
     const fDest   = document.querySelector('input[name="destination"]');
