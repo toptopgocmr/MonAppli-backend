@@ -10,15 +10,21 @@ class Booking extends Model
     protected $fillable = [
         'user_id',
         'trip_id',
+        'seats',
         'passengers',
         'amount',
         'status',
         'booked_at',
+        'cancellation_reason',
+        'cancelled_at',
+        'boarded_at',
     ];
 
     protected $casts = [
-        'booked_at' => 'datetime',
-        'amount'    => 'float',
+        'booked_at'    => 'datetime',
+        'cancelled_at' => 'datetime',
+        'boarded_at'   => 'datetime',
+        'amount'       => 'float',
     ];
 
     const STATUS_PENDING   = 'pending';

@@ -56,5 +56,21 @@ class Handler extends ExceptionHandler
                 ], 404);
             }
         });
+
+        // Filet de sécurité : toute exception imprévue sur l'API doit renvoyer
+        // un JSON cohérent {success, message} au lieu du HTML/format par défaut
+        // de Laravel (qui produisait "Server Error" sans contexte côté front).
+        $this->renderable(function (Throwable $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                report($e);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => config('app.debug')
+                        ? $e->getMessage()
+                        : 'Une erreur est survenue. Veuillez réessayer.',
+                ], 500);
+            }
+        });
     }
 }

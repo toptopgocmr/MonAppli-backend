@@ -88,7 +88,7 @@ class UserBookingController extends Controller
     }
 
     // ── Annuler ──────────────────────────────────────────────────────
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
         $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
 
@@ -99,7 +99,11 @@ class UserBookingController extends Controller
             ], 422);
         }
 
-        $booking->update(['status' => 'cancelled']);
+        $booking->update([
+            'status'              => 'cancelled',
+            'cancellation_reason' => $request->input('reason', 'Annulée par le client'),
+            'cancelled_at'        => now(),
+        ]);
 
         // ✅ Remettre les places
         Trip::where('id', $booking->trip_id)
@@ -121,7 +125,11 @@ class UserBookingController extends Controller
     public function reject($id)
     {
         $booking = Booking::where('user_id', Auth::id())->findOrFail($id);
-        $booking->update(['status' => 'rejected']);
+        $booking->update([
+            'status'              => 'rejected',
+            'cancellation_reason' => 'Refusée par le client',
+            'cancelled_at'        => now(),
+        ]);
         Trip::where('id', $booking->trip_id)
             ->increment('available_seats', (int) ($booking->seats ?? $booking->passengers ?? 1));
         return response()->json(['success' => true]);

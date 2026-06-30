@@ -264,9 +264,13 @@ class DriverTripController extends Controller
     {
         $booking = Booking::whereHas('trip', fn($q) => $q->where('driver_id', Auth::id()))->find($id);
         if (!$booking) return response()->json(['success' => false, 'message' => 'Introuvable'], 404);
+        // ✅ Fix : 'rejection_reason' n'existe pas en base, ce qui faisait
+        // échouer silencieusement l'enregistrement du motif (colonne réelle
+        // = 'cancellation_reason').
         $booking->update([
-            'status'           => 'rejected',
-            'rejection_reason' => $request->reason ?? '',
+            'status'              => 'rejected',
+            'cancellation_reason' => $request->reason ?: 'Refusée par le chauffeur',
+            'cancelled_at'        => now(),
         ]);
         Trip::where('id', $booking->trip_id)
             ->increment('available_seats', (int) ($booking->seats ?? $booking->passengers ?? 1));

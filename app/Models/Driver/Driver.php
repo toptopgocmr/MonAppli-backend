@@ -13,6 +13,7 @@ use App\Models\Wallet;
 use App\Models\Trip;
 use App\Models\DriverLocation;
 use App\Models\SupportMessage;
+use App\Models\Company;
 
 class Driver extends Authenticatable
 {
@@ -122,5 +123,13 @@ class Driver extends Authenticatable
     public function supportMessages()
     {
         return $this->morphMany(SupportMessage::class, 'recipient');
+    }
+
+    // ✅ Relation inverse manquante : provoquait un crash ("Server Error")
+    // sur toute requête eager-loadant driver.company (ex: GET /user/trips)
+    // car Eloquent appelle cette méthode pour résoudre la relation.
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

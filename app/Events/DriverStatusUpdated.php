@@ -27,7 +27,7 @@ class DriverStatusUpdated implements ShouldBroadcast
     {
         return [
             'driver_id'  => $this->driver->id,
-            'status'     => $this->driver->status,
+            'status'     => $this->driver->driver_status,
             'first_name' => $this->driver->first_name,
             'last_name'  => $this->driver->last_name,
         ];
