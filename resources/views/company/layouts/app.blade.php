@@ -157,6 +157,8 @@
     .aws-stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 16px; }
     .aws-stat-card { background: var(--aws-white); border: 1px solid var(--aws-border); border-radius: 4px; padding: 16px 20px; transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; cursor: default; }
     .aws-stat-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(0,0,0,.10); border-color: #cbd5e1; }
+    .aws-stat-card-link { display: block; text-decoration: none; color: inherit; cursor: pointer; }
+    .aws-stat-card-link:hover { text-decoration: none; color: inherit; }
     .aws-stat-label { font-size: 12px; font-weight: 700; color: var(--aws-sub); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
     .aws-stat-value { font-size: 28px; font-weight: 700; color: var(--aws-header); }
     .aws-stat-sub { font-size: 12px; color: var(--aws-sub); margin-top: 4px; }

@@ -12,32 +12,32 @@
 <!-- KPI Cards -->
 <div class="aws-stat-grid" style="grid-template-columns:repeat(4,1fr)">
 
-    <div class="aws-stat-card" style="border-top:3px solid #0073bb">
+    <a href="{{ route('company.drivers.index') }}" class="aws-stat-card aws-stat-card-link" style="border-top:3px solid #0073bb">
         <div class="aws-stat-label">Chauffeurs total</div>
         <div class="aws-stat-value">{{ $totalDrivers }}</div>
         <div class="aws-stat-sub" style="color:#1d8102">{{ $approvedDrivers }} approuvés</div>
-    </div>
+    </a>
 
-    <div class="aws-stat-card" style="border-top:3px solid #1d8102">
+    <a href="{{ route('company.drivers.index', ['driver_status' => 'online']) }}" class="aws-stat-card aws-stat-card-link" style="border-top:3px solid #1d8102">
         <div class="aws-stat-label">En ligne maintenant</div>
         <div class="aws-stat-value" style="display:flex;align-items:center;gap:8px">
             {{ $activeDrivers }}
             <span style="width:10px;height:10px;background:#1d8102;border-radius:50%;display:inline-block"></span>
         </div>
         <div class="aws-stat-sub">chauffeurs actifs</div>
-    </div>
+    </a>
 
-    <div class="aws-stat-card" style="border-top:3px solid var(--aws-orange)">
+    <a href="{{ route('company.reservations.index', ['period' => 'month']) }}" class="aws-stat-card aws-stat-card-link" style="border-top:3px solid var(--aws-orange)">
         <div class="aws-stat-label">Courses ce mois</div>
         <div class="aws-stat-value">{{ $tripsThisMonth }}</div>
         <div class="aws-stat-sub">{{ $totalTrips }} au total</div>
-    </div>
+    </a>
 
-    <div class="aws-stat-card" style="border-top:3px solid #8a6116">
+    <a href="{{ route('company.revenus.index') }}" class="aws-stat-card aws-stat-card-link" style="border-top:3px solid #8a6116">
         <div class="aws-stat-label">Revenus ce mois</div>
         <div class="aws-stat-value" style="font-size:20px">{{ number_format($revenueThisMonth, 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
         <div class="aws-stat-sub">commission {{ $company->commission_rate }}% déduite</div>
-    </div>
+    </a>
 
 </div>
 

@@ -26,6 +26,11 @@ class ReservationController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->get('period') === 'month') {
+            $query->whereMonth('created_at', now()->month)
+                  ->whereYear('created_at', now()->year);
+        }
+
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
                 $q->where('departure',   'like', '%' . $request->search . '%')

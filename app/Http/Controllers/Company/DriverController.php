@@ -31,6 +31,10 @@ class DriverController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('driver_status')) {
+            $query->where('driver_status', $request->driver_status);
+        }
+
         $drivers = $query->paginate(15);
         return view('company.drivers.index', compact('drivers'));
     }
