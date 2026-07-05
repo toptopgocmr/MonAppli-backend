@@ -46,14 +46,16 @@ class PaymentPartnerController extends Controller
             ];
         }
 
-        // ── Stats par passerelle (provider réel : peex, flutterwave, stripe) ──
+        // ── Stats par passerelle (provider réel : peex, flutterwave) ──
         // Contrairement à $partnerStats (par opérateur mobile money), ce
         // regroupement se base sur la colonne `provider`, qui est toujours
         // renseignée correctement — c'est la vue fiable pour suivre Peex.
+        // Stripe retiré de l'affichage : Peex couvre aussi la collecte
+        // bancaire (Bank Payment Request), Stripe n'est plus une passerelle
+        // active en pratique.
         $gateways = [
             'peex'        => ['label' => 'Peex',        'color' => '#16a34a', 'icon' => '🟢'],
             'flutterwave' => ['label' => 'Flutterwave',  'color' => '#f97316', 'icon' => '🟠'],
-            'stripe'      => ['label' => 'Stripe',       'color' => '#6366f1', 'icon' => '💳'],
         ];
 
         $gatewayStats = [];
