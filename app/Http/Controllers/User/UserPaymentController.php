@@ -70,8 +70,8 @@ class UserPaymentController extends Controller
         $user = Auth::user();
 
         // ── Choix de la passerelle ────────────────────────────────────
-        // Peex ne couvre aujourd'hui que les pays confirmés par sa doc
-        // officielle (Cameroun pour le moment). Ailleurs on garde Flutterwave.
+        // Peex couvre les pays listés dans config('payments.peex.collect_countries')
+        // (CM, CG par défaut). Ailleurs on garde Flutterwave.
         $usePeex = $this->peex->supportsCollectFor($countryCode);
         $gateway = $usePeex ? 'peex' : 'flutterwave';
 
@@ -262,20 +262,42 @@ class UserPaymentController extends Controller
      * Map the network string sent by the app (or the legacy 'provider' field)
      * to [enum method value stored in DB, operator code used by gateways].
      *
-     * `payments.method` is a strict DB enum:
-     * ['mtn','orange','airtel','moov','visa','mastercard'] — an unrecognized
-     * value would fail the insert, so we always normalize to a safe fallback.
+     * `payments.method` is a DB enum (widened in
+     * 2026_07_05_000011_widen_payments_method_enum.php to cover every
+     * operator actually offered by the mobile client's payment screen:
+     * mtn, orange, airtel, moov, visa, mastercard, wave, free, mobicash,
+     * vodafone, mpesa, zamtel, tnm, halopesa, airteltigo, tigo) — an
+     * unrecognized value still falls back safely to 'mtn'.
+     *
+     * The operator code (2nd element) is passed through as-is (uppercased)
+     * instead of being collapsed into one of a handful of buckets: Peex and
+     * Flutterwave need the exact network the mobile app sent (e.g. MPESA,
+     * WAVE, AIRTELTIGO), otherwise the charge is routed to the wrong network.
      */
     protected function mapNetwork(string $network): array
     {
         $normalized = strtoupper(trim($network));
 
-        return match (true) {
-            str_contains($normalized, 'MTN')    => ['mtn', 'MTN'],
-            str_contains($normalized, 'ORANGE') => ['orange', 'ORANGE'],
-            str_contains($normalized, 'AIRTEL') => ['airtel', 'AIRTEL'],
-            str_contains($normalized, 'MOOV') || str_contains($normalized, 'TMONEY') => ['moov', 'MOOV'],
-            default => ['mtn', 'MTN'],
+        $method = match (true) {
+            str_contains($normalized, 'MTN')        => 'mtn',
+            str_contains($normalized, 'ORANGE')     => 'orange',
+            str_contains($normalized, 'AIRTELTIGO') => 'airteltigo',
+            str_contains($normalized, 'AIRTEL')     => 'airtel',
+            str_contains($normalized, 'MOOV') || str_contains($normalized, 'TMONEY') => 'moov',
+            str_contains($normalized, 'WAVE')       => 'wave',
+            str_contains($normalized, 'FREE')       => 'free',
+            str_contains($normalized, 'MOBICASH')   => 'mobicash',
+            str_contains($normalized, 'VODAFONE') || str_contains($normalized, 'TELECEL') => 'vodafone',
+            str_contains($normalized, 'MPESA')      => 'mpesa',
+            str_contains($normalized, 'ZAMTEL')     => 'zamtel',
+            str_contains($normalized, 'TNM')        => 'tnm',
+            str_contains($normalized, 'HALOPESA')   => 'halopesa',
+            str_contains($normalized, 'TIGO')       => 'tigo',
+            default => 'mtn',
         };
+
+        $operator = $normalized !== '' ? $normalized : 'MTN';
+
+        return [$method, $operator];
     }
 }

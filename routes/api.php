@@ -80,6 +80,7 @@ Route::prefix('webhooks')->name('webhooks.')->group(function () {
     Route::post('flutterwave',  [WebhookController::class, 'handleFlutterwave'])->name('flutterwave');
     Route::post('peex/collect', [WebhookController::class, 'handlePeexCollect'])->name('peex.collect');
     Route::post('peex/payout',  [WebhookController::class, 'handlePeexPayout'])->name('peex.payout');
+    Route::post('peex/bank-payout', [WebhookController::class, 'handlePeexBankPayout'])->name('peex.bank-payout');
     Route::post('mtn-momo',     [WebhookController::class, 'handleMtnMomo'])->name('mtn-momo');
     Route::post('airtel-money', [WebhookController::class, 'handleAirtelMoney'])->name('airtel-money');
     Route::post('stripe',       [WebhookController::class, 'handleStripe'])->name('stripe');

@@ -29,7 +29,7 @@ class PaymentPartnerController extends Controller
         // ── Stats par partenaire ──────────────────────────────────
         // Visa/Mastercard retirés : Stripe n'est plus une passerelle active,
         // Peex couvre aussi la collecte bancaire.
-        $partners = ['mtn', 'orange', 'airtel', 'moov'];
+        $partners = ['mtn', 'orange', 'airtel', 'moov', 'wave', 'free', 'mobicash', 'vodafone', 'mpesa', 'zamtel', 'tnm', 'halopesa', 'airteltigo', 'tigo'];
 
         $partnerStats = [];
         foreach ($partners as $partner) {
@@ -435,6 +435,16 @@ class PaymentPartnerController extends Controller
             'moov'       => 'Moov Money',
             'visa'       => 'Visa / Stripe',
             'mastercard' => 'Mastercard',
+            'wave'       => 'Wave',
+            'free'       => 'Free Money',
+            'mobicash'   => 'Mobicash',
+            'vodafone'   => 'Telecel (Vodafone)',
+            'mpesa'      => 'M-Pesa',
+            'zamtel'     => 'Zamtel',
+            'tnm'        => 'TNM Mpamba',
+            'halopesa'   => 'Halopesa',
+            'airteltigo' => 'AirtelTigo',
+            'tigo'       => 'Tigo Pesa',
             default      => strtoupper($method),
         };
     }
@@ -448,6 +458,16 @@ class PaymentPartnerController extends Controller
             'moov'       => '🔵',
             'visa'       => '💳',
             'mastercard' => '💳',
+            'wave'       => '🌊',
+            'free'       => '🟢',
+            'mobicash'   => '🟡',
+            'vodafone'   => '🔴',
+            'mpesa'      => '🟢',
+            'zamtel'     => '🟢',
+            'tnm'        => '🔵',
+            'halopesa'   => '🩵',
+            'airteltigo' => '🔵',
+            'tigo'       => '🔵',
             default      => '💰',
         };
     }
@@ -461,6 +481,16 @@ class PaymentPartnerController extends Controller
             'moov'       => 'blue',
             'visa'       => 'indigo',
             'mastercard' => 'purple',
+            'wave'       => 'cyan',
+            'free'       => 'green',
+            'mobicash'   => 'yellow',
+            'vodafone'   => 'red',
+            'mpesa'      => 'green',
+            'zamtel'     => 'green',
+            'tnm'        => 'blue',
+            'halopesa'   => 'cyan',
+            'airteltigo' => 'blue',
+            'tigo'       => 'blue',
             default      => 'gray',
         };
     }
