@@ -40,6 +40,7 @@ use App\Http\Controllers\Driver\DriverPreferencesController;   // ✅ NOUVEAU
 // ── User (Client) Controllers
 use App\Http\Controllers\User\UserProfileController;
 use App\Http\Controllers\User\UserTripController;
+use App\Http\Controllers\User\UserCompanyTripController;
 use App\Http\Controllers\User\UserBookingController;
 use App\Http\Controllers\User\UserPaymentController;
 use App\Http\Controllers\User\UserSupportController;
@@ -241,6 +242,9 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     // ── Trajets disponibles ───────────────────────────────────────
     Route::get('trips',      [UserTripController::class, 'index'])->name('trips.index');
     Route::get('trips/{id}', [UserTripController::class, 'show'])->name('trips.show');
+
+    // ── Trajets sociétés (itinéraires publiés, contact direct société) ──
+    Route::get('company-trips', [UserCompanyTripController::class, 'index'])->name('company-trips.index');
 
     // ── Réservations ──────────────────────────────────────────────
     Route::get('bookings',              [UserBookingController::class, 'index'])->name('bookings.index');

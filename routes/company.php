@@ -10,6 +10,7 @@ use App\Http\Controllers\Company\ItineraryController;
 use App\Http\Controllers\Company\CompanyMessageController;
 use App\Http\Controllers\Company\ScheduleController;
 use App\Http\Controllers\Company\PricingGridController;
+use App\Http\Controllers\Company\WithdrawalController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('company')->name('company.')->group(function () {
@@ -80,6 +81,11 @@ Route::prefix('company')->name('company.')->group(function () {
 
         // Revenus
         Route::get('/revenus', [RevenueController::class, 'index'])->name('revenus.index');
+
+        // Retraits (mensuels)
+        Route::get('/withdrawals',            [WithdrawalController::class, 'index'])->name('withdrawals.index');
+        Route::post('/withdrawals',            [WithdrawalController::class, 'store'])->name('withdrawals.store');
+        Route::post('/withdrawals/bank-info',  [WithdrawalController::class, 'updateBankInfo'])->name('withdrawals.bank-info');
 
         // Messages
         Route::get('/messages',         [CompanyMessageController::class, 'index'])->name('messages.index');

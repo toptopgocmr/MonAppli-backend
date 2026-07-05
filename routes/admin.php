@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\AdminDriverSupportController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\CommissionRateController;
 use App\Http\Controllers\Admin\PaymentPartnerController;
+use App\Http\Controllers\Admin\CompanyWithdrawalController;
 use App\Http\Controllers\Admin\SosAlertController;
 use App\Http\Controllers\Admin\MapController;
 use App\Http\Controllers\Admin\TripController;
@@ -230,6 +231,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('payments/withdrawals/export', [PaymentPartnerController::class, 'exportWithdrawals'])->name('payments.withdrawals.export');
         Route::post('payments/withdrawals/{withdrawal}/approve', [PaymentPartnerController::class, 'approveWithdrawal'])->name('payments.approve-withdrawal');
         Route::post('payments/withdrawals/{withdrawal}/reject',  [PaymentPartnerController::class, 'rejectWithdrawal'])->name('payments.reject-withdrawal');
+
+        Route::get('company-withdrawals', [CompanyWithdrawalController::class, 'index'])->name('company-withdrawals.index');
+        Route::post('company-withdrawals/{withdrawal}/approve', [CompanyWithdrawalController::class, 'approve'])->name('company-withdrawals.approve');
+        Route::post('company-withdrawals/{withdrawal}/reject',  [CompanyWithdrawalController::class, 'reject'])->name('company-withdrawals.reject');
 
     });
 

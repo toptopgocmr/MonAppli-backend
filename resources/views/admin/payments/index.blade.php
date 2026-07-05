@@ -12,6 +12,7 @@
         </div>
         <div style="display:flex;gap:8px">
             <a href="{{ route('admin.payments.withdrawals') }}" class="btn btn-secondary">Retraits chauffeurs</a>
+            <a href="{{ route('admin.company-withdrawals.index') }}" class="btn btn-secondary">Retraits sociétés</a>
             <a href="{{ route('admin.payments.export') }}?period={{ $period }}" class="btn btn-success">Exporter CSV</a>
         </div>
     </div>

@@ -274,6 +274,14 @@
 
             <div class="aws-nav-section">Finances</div>
 
+            <a href="{{ route('company.withdrawals.index') }}"
+               class="aws-nav-item {{ request()->routeIs('company.withdrawals.*') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m8-8V5a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m8-2h-2a2 2 0 00-2 2v2m4-4a2 2 0 012 2v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-2"/>
+                </svg>
+                Retraits
+            </a>
+
             <a href="{{ route('company.revenus.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.revenus.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
