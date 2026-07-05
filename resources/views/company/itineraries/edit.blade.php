@@ -71,6 +71,20 @@
     <div class="aws-panel">
         <div class="aws-panel-header"><span class="aws-panel-title">Détails</span></div>
         <div class="aws-panel-body">
+            <div class="aws-field">
+                <label class="aws-label">Grille tarifaire <span class="aws-label-opt">— facultatif</span></label>
+                <select name="pricing_grid_id" id="pricing_grid_id" class="aws-input" style="max-width:320px">
+                    <option value="">— Aucune / tarif libre —</option>
+                    @foreach($pricingGrids as $g)
+                        <option value="{{ $g->id }}" {{ old('pricing_grid_id', $itinerary->pricing_grid_id) == $g->id ? 'selected' : '' }}>{{ $g->name }}</option>
+                    @endforeach
+                </select>
+                <p class="aws-hint">
+                    Sélectionnez une grille pour afficher ses tarifs de référence ci-dessous — le champ "Tarif" reste à remplir manuellement.
+                    <a href="{{ route('company.pricing-grids.index') }}" style="color:var(--aws-blue)">Gérer les grilles →</a>
+                </p>
+                <div id="grid-rates-ref" style="display:none;margin-top:8px;padding:10px 14px;background:#fafafa;border:1px solid var(--aws-border);border-radius:6px"></div>
+            </div>
             <div class="aws-grid-3">
                 <div class="aws-field">
                     <label class="aws-label">Tarif (FCFA)</label>
@@ -116,6 +130,38 @@
 </div>
 
 @push('scripts')
+<script>
+// ── Référence tarifs de la grille sélectionnée (remplissage manuel du prix) ──
+(function () {
+    const grids = @json($pricingGrids->map(fn($g) => [
+        'id' => $g->id,
+        'rates' => $g->rates->map(fn($r) => [
+            'label' => $r->label,
+            'vehicle_type' => $r->vehicle_type,
+            'price' => (float) $r->price,
+        ]),
+    ]));
+
+    const select = document.getElementById('pricing_grid_id');
+    const box    = document.getElementById('grid-rates-ref');
+
+    function render() {
+        const grid = grids.find(g => String(g.id) === select.value);
+        if (!grid || !grid.rates.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+
+        box.innerHTML = '<div style="font-size:12px;font-weight:700;color:var(--aws-header);margin-bottom:6px">Tarifs de référence de cette grille :</div>' +
+            grid.rates.map(r => `
+                <div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0;border-bottom:1px solid #eee">
+                    <span style="color:var(--aws-sub)">${r.label}${r.vehicle_type ? ' — ' + r.vehicle_type : ''}</span>
+                    <span style="font-weight:700;color:var(--aws-header)">${new Intl.NumberFormat('fr-FR').format(r.price)} FCFA</span>
+                </div>`).join('');
+        box.style.display = 'block';
+    }
+
+    select.addEventListener('change', render);
+    render();
+})();
+</script>
 <style>
 .city-dropdown {
     display: none;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\CompanyItinerary;
+use App\Models\PricingGrid;
 use Illuminate\Http\Request;
 
 class ItineraryController extends Controller
@@ -35,11 +36,18 @@ class ItineraryController extends Controller
 
     public function create()
     {
-        return view('company.itineraries.create');
+        $pricingGrids = PricingGrid::where('company_id', $this->company()->id)
+                                   ->where('is_active', true)
+                                   ->with('rates')
+                                   ->get();
+
+        return view('company.itineraries.create', compact('pricingGrids'));
     }
 
     public function store(Request $request)
     {
+        $company = $this->company();
+
         $request->validate([
             'departure'       => 'required|string|max:200',
             'departure_point' => 'nullable|string|max:300',
@@ -47,6 +55,7 @@ class ItineraryController extends Controller
             'destination'     => 'required|string|max:200',
             'arrival_point'   => 'nullable|string|max:300',
             'arrival_time'    => 'nullable|date_format:H:i',
+            'pricing_grid_id' => 'nullable|exists:pricing_grids,id',
             'price'           => 'nullable|numeric|min:0',
             'distance_km'     => 'nullable|numeric|min:0',
             'duration_min'    => 'nullable|integer|min:0',
@@ -54,8 +63,14 @@ class ItineraryController extends Controller
             'notes'           => 'nullable|string|max:500',
         ]);
 
+        // Sécurité : la grille doit appartenir à la société
+        $gridId = $request->pricing_grid_id
+            ? PricingGrid::where('company_id', $company->id)->where('id', $request->pricing_grid_id)->value('id')
+            : null;
+
         CompanyItinerary::create([
-            'company_id'      => $this->company()->id,
+            'company_id'      => $company->id,
+            'pricing_grid_id' => $gridId,
             'departure'       => $request->departure,
             'departure_point' => $request->departure_point,
             'departure_time'  => $request->departure_time,
@@ -76,13 +91,20 @@ class ItineraryController extends Controller
 
     public function edit($id)
     {
-        $itinerary = CompanyItinerary::where('company_id', $this->company()->id)->findOrFail($id);
-        return view('company.itineraries.edit', compact('itinerary'));
+        $company = $this->company();
+        $itinerary = CompanyItinerary::where('company_id', $company->id)->findOrFail($id);
+        $pricingGrids = PricingGrid::where('company_id', $company->id)
+                                   ->where('is_active', true)
+                                   ->with('rates')
+                                   ->get();
+
+        return view('company.itineraries.edit', compact('itinerary', 'pricingGrids'));
     }
 
     public function update(Request $request, $id)
     {
-        $itinerary = CompanyItinerary::where('company_id', $this->company()->id)->findOrFail($id);
+        $company = $this->company();
+        $itinerary = CompanyItinerary::where('company_id', $company->id)->findOrFail($id);
 
         $request->validate([
             'departure'       => 'required|string|max:200',
@@ -91,6 +113,7 @@ class ItineraryController extends Controller
             'destination'     => 'required|string|max:200',
             'arrival_point'   => 'nullable|string|max:300',
             'arrival_time'    => 'nullable|date_format:H:i',
+            'pricing_grid_id' => 'nullable|exists:pricing_grids,id',
             'price'           => 'nullable|numeric|min:0',
             'distance_km'     => 'nullable|numeric|min:0',
             'duration_min'    => 'nullable|integer|min:0',
@@ -98,11 +121,18 @@ class ItineraryController extends Controller
             'notes'           => 'nullable|string|max:500',
         ]);
 
-        $itinerary->update($request->only([
-            'departure','departure_point','departure_time',
-            'destination','arrival_point','arrival_time',
-            'price','distance_km','duration_min','vehicle_type','notes',
-        ]));
+        $gridId = $request->pricing_grid_id
+            ? PricingGrid::where('company_id', $company->id)->where('id', $request->pricing_grid_id)->value('id')
+            : null;
+
+        $itinerary->update(array_merge(
+            $request->only([
+                'departure','departure_point','departure_time',
+                'destination','arrival_point','arrival_time',
+                'price','distance_km','duration_min','vehicle_type','notes',
+            ]),
+            ['pricing_grid_id' => $gridId]
+        ));
 
         return redirect()->route('company.itineraries.index')
                          ->with('success', 'Itinéraire mis à jour.');

@@ -9,6 +9,7 @@ use App\Http\Controllers\Company\RevenueController;
 use App\Http\Controllers\Company\ItineraryController;
 use App\Http\Controllers\Company\CompanyMessageController;
 use App\Http\Controllers\Company\ScheduleController;
+use App\Http\Controllers\Company\PricingGridController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('company')->name('company.')->group(function () {
@@ -56,6 +57,17 @@ Route::prefix('company')->name('company.')->group(function () {
         // Réservations / courses
         Route::get('/reservations',       [ReservationController::class, 'index'])->name('reservations.index');
         Route::get('/reservations/{id}',  [ReservationController::class, 'show'])->name('reservations.show');
+
+        // Grilles tarifaires
+        Route::get('/pricing-grids',            [PricingGridController::class, 'index'])->name('pricing-grids.index');
+        Route::get('/pricing-grids/create',     [PricingGridController::class, 'create'])->name('pricing-grids.create');
+        Route::post('/pricing-grids',           [PricingGridController::class, 'store'])->name('pricing-grids.store');
+        Route::get('/pricing-grids/{id}',       [PricingGridController::class, 'show'])->name('pricing-grids.show');
+        Route::get('/pricing-grids/{id}/edit',  [PricingGridController::class, 'edit'])->name('pricing-grids.edit');
+        Route::put('/pricing-grids/{id}',       [PricingGridController::class, 'update'])->name('pricing-grids.update');
+        Route::delete('/pricing-grids/{id}',    [PricingGridController::class, 'destroy'])->name('pricing-grids.destroy');
+        Route::post('/pricing-grids/{id}/rates',              [PricingGridController::class, 'storeRate'])->name('pricing-grids.rates.store');
+        Route::delete('/pricing-grids/{id}/rates/{rateId}',   [PricingGridController::class, 'destroyRate'])->name('pricing-grids.rates.destroy');
 
         // Itinéraires
         Route::get('/itineraries',            [ItineraryController::class, 'index'])->name('itineraries.index');

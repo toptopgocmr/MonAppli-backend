@@ -39,6 +39,11 @@ class Company extends Authenticatable
         return $this->hasMany(Vehicle::class);
     }
 
+    public function pricingGrids()
+    {
+        return $this->hasMany(PricingGrid::class);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────
     public function getLogoUrlAttribute(): ?string
     {

@@ -13,6 +13,7 @@ class CompanyItinerary extends Model
 
     protected $fillable = [
         'company_id',
+        'pricing_grid_id',
         'departure',
         'departure_point',
         'departure_time',
@@ -36,5 +37,10 @@ class CompanyItinerary extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function pricingGrid()
+    {
+        return $this->belongsTo(PricingGrid::class, 'pricing_grid_id');
     }
 }
