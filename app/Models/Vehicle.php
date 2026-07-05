@@ -10,6 +10,14 @@ class Vehicle extends Model
 {
     use HasFactory;
 
+    // Types de véhicule disponibles dans la flotte société.
+    // Standard/Confort/Van/PMR existaient déjà (synchronisés vers l'enum
+    // drivers.vehicle_type) ; les autres sont proposés en complément pour
+    // couvrir les besoins des sociétés de transport (minibus, bus, etc.).
+    public const TYPES = [
+        'Standard', 'Confort', 'Van', 'PMR', 'Minibus', 'Bus', 'Pickup', 'SUV', 'Moto', 'Utilitaire',
+    ];
+
     protected $fillable = [
         'company_id', 'plate', 'brand', 'model',
         'type', 'color', 'country', 'city',

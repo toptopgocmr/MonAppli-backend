@@ -46,18 +46,29 @@
                     <label class="aws-label">Type de véhicule</label>
                     <select name="type" class="aws-input">
                         <option value="">— Sélectionner —</option>
-                        @foreach(['Standard','Confort','Van','PMR'] as $type)
+                        @foreach(\App\Models\Vehicle::TYPES as $type)
                             <option value="{{ $type }}" {{ old('type', $vehicle->type) === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="aws-field">
-                    <label class="aws-label">Ville d'opération</label>
-                    <input type="text" name="city" value="{{ old('city', $vehicle->city) }}" class="aws-input" placeholder="Yaoundé, Douala...">
+                    <label class="aws-label">Pays</label>
+                    <select name="country" id="country" class="aws-input">
+                        <option value="">— Choisir —</option>
+                        @foreach($countries as $c)
+                            <option value="{{ $c['name'] }}" {{ old('country', $vehicle->country) === $c['name'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="aws-field">
-                    <label class="aws-label">Pays</label>
-                    <input type="text" name="country" value="{{ old('country', $vehicle->country) }}" class="aws-input">
+                    <label class="aws-label">Ville d'opération</label>
+                    <select name="city" id="city" class="aws-input">
+                        @if($vehicle->city)
+                            <option value="{{ $vehicle->city }}" selected>{{ $vehicle->city }}</option>
+                        @else
+                            <option value="">— Choisir un pays d'abord —</option>
+                        @endif
+                    </select>
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Statut</label>
@@ -84,4 +95,26 @@
 
     </form>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const citiesByCountry = @json(collect($countries)->mapWithKeys(fn($c) => [$c['name'] => $c['cities']]));
+    const currentCity = @json(old('city', $vehicle->city));
+
+    const countrySelect = document.getElementById('country');
+    const citySelect     = document.getElementById('city');
+
+    function populateCities(selectedCity) {
+        const cities = citiesByCountry[countrySelect.value] || [];
+        citySelect.innerHTML = cities.length
+            ? cities.map(c => `<option value="${c}" ${c === selectedCity ? 'selected' : ''}>${c}</option>`).join('')
+            : '<option value="">— Aucune ville pour ce pays —</option>';
+    }
+
+    countrySelect.addEventListener('change', () => populateCities(null));
+    if (countrySelect.value) populateCities(currentCity);
+})();
+</script>
+@endpush
 @endsection

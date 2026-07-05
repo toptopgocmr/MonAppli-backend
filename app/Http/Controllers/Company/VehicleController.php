@@ -47,7 +47,8 @@ class VehicleController extends Controller
 
     public function create()
     {
-        return view('company.vehicles.create');
+        $countries = config('geo.countries', []);
+        return view('company.vehicles.create', compact('countries'));
     }
 
     public function store(Request $request)
@@ -107,7 +108,8 @@ class VehicleController extends Controller
     {
         $company = $this->company();
         $vehicle = Vehicle::where('company_id', $company->id)->findOrFail($id);
-        return view('company.vehicles.edit', compact('vehicle'));
+        $countries = config('geo.countries', []);
+        return view('company.vehicles.edit', compact('vehicle', 'countries'));
     }
 
     public function update(Request $request, $id)
@@ -212,16 +214,14 @@ class VehicleController extends Controller
 
     private function syncVehicleToDriver(Vehicle $vehicle, Driver $driver): void
     {
-        // vehicle_type sur drivers est un enum fermé (Standard/Confort/Van/PMR) :
+        // vehicle_type sur drivers reste un enum fermé (élargi à Vehicle::TYPES) :
         // on ne recopie que si la valeur du véhicule y correspond, sinon on laisse tel quel.
-        $allowedTypes = ['Standard', 'Confort', 'Van', 'PMR'];
-
         $driver->update([
             'vehicle_plate' => $vehicle->plate,
             'vehicle_brand' => $vehicle->brand,
             'vehicle_model' => $vehicle->model,
             'vehicle_color' => $vehicle->color,
-            'vehicle_type'  => in_array($vehicle->type, $allowedTypes, true) ? $vehicle->type : $driver->vehicle_type,
+            'vehicle_type'  => in_array($vehicle->type, Vehicle::TYPES, true) ? $vehicle->type : $driver->vehicle_type,
             'vehicle_city'  => $vehicle->city ?? $driver->vehicle_city,
             'vehicle_country' => $vehicle->country ?? $driver->vehicle_country,
         ]);

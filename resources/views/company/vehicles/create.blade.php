@@ -50,18 +50,25 @@
                     <label class="aws-label">Type</label>
                     <select name="type" class="aws-input">
                         <option value="">— Choisir —</option>
-                        @foreach(['Standard','Confort','Van','PMR'] as $type)
+                        @foreach(\App\Models\Vehicle::TYPES as $type)
                             <option value="{{ $type }}" {{ old('type') === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="aws-field">
-                    <label class="aws-label">Ville d'opération</label>
-                    <input type="text" name="city" value="{{ old('city') }}" class="aws-input" placeholder="Yaoundé">
+                    <label class="aws-label">Pays</label>
+                    <select name="country" id="country" class="aws-input">
+                        <option value="">— Choisir —</option>
+                        @foreach($countries as $c)
+                            <option value="{{ $c['name'] }}" {{ old('country') === $c['name'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
+                        @endforeach
+                    </select>
                 </div>
                 <div class="aws-field">
-                    <label class="aws-label">Pays</label>
-                    <input type="text" name="country" value="{{ old('country') }}" class="aws-input" placeholder="Cameroun">
+                    <label class="aws-label">Ville d'opération</label>
+                    <select name="city" id="city" class="aws-input">
+                        <option value="">— Choisir un pays d'abord —</option>
+                    </select>
                 </div>
             </div>
 
@@ -80,4 +87,26 @@
 
     </form>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const citiesByCountry = @json(collect($countries)->mapWithKeys(fn($c) => [$c['name'] => $c['cities']]));
+    const oldCity = @json(old('city'));
+
+    const countrySelect = document.getElementById('country');
+    const citySelect     = document.getElementById('city');
+
+    function populateCities(selectedCity) {
+        const cities = citiesByCountry[countrySelect.value] || [];
+        citySelect.innerHTML = cities.length
+            ? cities.map(c => `<option value="${c}" ${c === selectedCity ? 'selected' : ''}>${c}</option>`).join('')
+            : '<option value="">— Aucune ville pour ce pays —</option>';
+    }
+
+    countrySelect.addEventListener('change', () => populateCities(null));
+    if (countrySelect.value) populateCities(oldCity);
+})();
+</script>
+@endpush
 @endsection
