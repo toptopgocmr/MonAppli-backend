@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driver\Driver;
+use App\Models\VehicleType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
@@ -35,7 +36,8 @@ class DriverController extends Controller
 
     public function create()
     {
-        return view('admin.drivers.create');
+        $vehicleTypes = VehicleType::activeNames();
+        return view('admin.drivers.create', compact('vehicleTypes'));
     }
 
     public function store(Request $request)
@@ -62,9 +64,16 @@ class DriverController extends Controller
             'password', 'password_confirmation',
             'profile_photo', 'id_card_front', 'id_card_back',
             'license_front', 'license_back', 'vehicle_registration', 'insurance',
+            'new_vehicle_type',
         ]);
 
         $data['password'] = Hash::make($request->password);
+
+        // ── Nouveau type de véhicule saisi librement par l'admin ────
+        if ($request->vehicle_type === '__other__' && filled($request->new_vehicle_type)) {
+            $type = VehicleType::addIfMissing($request->new_vehicle_type, 'admin', session('admin_id'));
+            $data['vehicle_type'] = $type?->name ?? $request->new_vehicle_type;
+        }
 
         // ── Upload fichiers → Railway Volume (disk public) ───────
         foreach ($this->fileFields() as $field) {
@@ -99,7 +108,8 @@ class DriverController extends Controller
     public function edit($id)
     {
         $driver = Driver::findOrFail($id);
-        return view('admin.drivers.edit', compact('driver'));
+        $vehicleTypes = VehicleType::activeNames();
+        return view('admin.drivers.edit', compact('driver', 'vehicleTypes'));
     }
 
     public function update(Request $request, $id)
@@ -125,10 +135,17 @@ class DriverController extends Controller
             'password', 'password_confirmation',
             'profile_photo', 'id_card_front', 'id_card_back',
             'license_front', 'license_back', 'vehicle_registration', 'insurance',
+            'new_vehicle_type',
         ]);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
+        }
+
+        // ── Nouveau type de véhicule saisi librement par l'admin ────
+        if ($request->vehicle_type === '__other__' && filled($request->new_vehicle_type)) {
+            $type = VehicleType::addIfMissing($request->new_vehicle_type, 'admin', session('admin_id'));
+            $data['vehicle_type'] = $type?->name ?? $request->new_vehicle_type;
         }
 
         // ── Upload fichiers → Railway Volume (disk public) ───────

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\CommissionRate;
 use App\Models\Trip;
 use App\Models\Driver\Driver;
+use App\Models\VehicleType;
 use Carbon\Carbon;
 
 class CommissionRateController extends Controller
@@ -115,9 +116,10 @@ class CommissionRateController extends Controller
             ->paginate(15);
 
         // ── Données filtres ───────────────────────────────────────
-        $drivers   = Driver::orderBy('first_name')->get();
-        $countries = Driver::distinct()->pluck('vehicle_country')->filter()->sort()->values();
-        $cities    = Driver::distinct()->pluck('vehicle_city')->filter()->sort()->values();
+        $drivers      = Driver::orderBy('first_name')->get();
+        $countries    = Driver::distinct()->pluck('vehicle_country')->filter()->sort()->values();
+        $cities       = Driver::distinct()->pluck('vehicle_city')->filter()->sort()->values();
+        $vehicleTypes = VehicleType::activeNames();
 
         return view('admin.commissions.index', compact(
             'globalRate',
@@ -139,7 +141,8 @@ class CommissionRateController extends Controller
             'trips',
             'drivers',
             'countries',
-            'cities'
+            'cities',
+            'vehicleTypes'
         ));
     }
 
@@ -153,7 +156,7 @@ class CommissionRateController extends Controller
             'type'         => 'required|in:global,country,vehicle_type,driver',
             'rate'         => 'required|numeric|min:0|max:100',
             'country'      => 'required_if:type,country|nullable|string',
-            'vehicle_type' => 'required_if:type,vehicle_type|nullable|in:Standard,Confort,Van,PMR',
+            'vehicle_type' => 'required_if:type,vehicle_type|nullable|string|max:50',
             'driver_id'    => 'required_if:type,driver|nullable|exists:drivers,id',
             'description'  => 'nullable|string|max:255',
         ]);

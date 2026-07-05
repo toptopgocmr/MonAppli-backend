@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Driver\Driver;
 use App\Models\Vehicle;
 use App\Models\VehicleDriverShift;
+use App\Models\VehicleType;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
@@ -48,7 +49,8 @@ class VehicleController extends Controller
     public function create()
     {
         $countries = config('geo.countries', []);
-        return view('company.vehicles.create', compact('countries'));
+        $vehicleTypes = VehicleType::activeNames();
+        return view('company.vehicles.create', compact('countries', 'vehicleTypes'));
     }
 
     public function store(Request $request)
@@ -61,10 +63,13 @@ class VehicleController extends Controller
             'model' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:30',
             'type'  => 'nullable|string|max:30',
+            'new_type' => 'nullable|string|max:50',
             'city'  => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
             'notes' => 'nullable|string|max:500',
         ]);
+
+        $type = $this->resolveType($request, $company->id);
 
         $vehicle = Vehicle::create([
             'company_id' => $company->id,
@@ -72,7 +77,7 @@ class VehicleController extends Controller
             'brand'      => $request->brand,
             'model'      => $request->model,
             'color'      => $request->color,
-            'type'       => $request->type,
+            'type'       => $type,
             'city'       => $request->city,
             'country'    => $request->country,
             'notes'      => $request->notes,
@@ -109,7 +114,8 @@ class VehicleController extends Controller
         $company = $this->company();
         $vehicle = Vehicle::where('company_id', $company->id)->findOrFail($id);
         $countries = config('geo.countries', []);
-        return view('company.vehicles.edit', compact('vehicle', 'countries'));
+        $vehicleTypes = VehicleType::activeNames();
+        return view('company.vehicles.edit', compact('vehicle', 'countries', 'vehicleTypes'));
     }
 
     public function update(Request $request, $id)
@@ -123,15 +129,19 @@ class VehicleController extends Controller
             'model' => 'nullable|string|max:50',
             'color' => 'nullable|string|max:30',
             'type'  => 'nullable|string|max:30',
+            'new_type' => 'nullable|string|max:50',
             'city'  => 'nullable|string|max:100',
             'country' => 'nullable|string|max:100',
             'status'  => 'nullable|in:active,maintenance,inactive',
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $vehicle->update($request->only([
-            'plate', 'brand', 'model', 'color', 'type', 'city', 'country', 'status', 'notes',
-        ]));
+        $type = $this->resolveType($request, $company->id);
+
+        $vehicle->update(array_merge(
+            $request->only(['plate', 'brand', 'model', 'color', 'city', 'country', 'status', 'notes']),
+            ['type' => $type]
+        ));
 
         // Répercuter les nouvelles infos sur les chauffeurs actuellement assignés
         $this->syncVehicleToDrivers($vehicle);
@@ -210,18 +220,30 @@ class VehicleController extends Controller
         return back()->with('success', 'Créneau retiré.');
     }
 
+    // Résout le type de véhicule choisi : gère l'option "+ Autre (nouveau type)"
+    // en enregistrant le nouveau nom dans la liste partagée vehicle_types.
+    private function resolveType(Request $request, $companyId): ?string
+    {
+        if ($request->type === '__other__' && filled($request->new_type)) {
+            $vt = VehicleType::addIfMissing($request->new_type, 'company', $companyId);
+            return $vt?->name ?? trim($request->new_type);
+        }
+
+        return $request->type ?: null;
+    }
+
     // ── Sync infos véhicule → chauffeur (compat Trip::vehicle(), admin, KYC) ──
 
     private function syncVehicleToDriver(Vehicle $vehicle, Driver $driver): void
     {
-        // vehicle_type sur drivers reste un enum fermé (élargi à Vehicle::TYPES) :
-        // on ne recopie que si la valeur du véhicule y correspond, sinon on laisse tel quel.
+        // drivers.vehicle_type est une simple chaîne (plus un enum fermé) : on
+        // recopie directement le type du véhicule, quelle que soit sa valeur.
         $driver->update([
             'vehicle_plate' => $vehicle->plate,
             'vehicle_brand' => $vehicle->brand,
             'vehicle_model' => $vehicle->model,
             'vehicle_color' => $vehicle->color,
-            'vehicle_type'  => in_array($vehicle->type, Vehicle::TYPES, true) ? $vehicle->type : $driver->vehicle_type,
+            'vehicle_type'  => $vehicle->type ?: $driver->vehicle_type,
             'vehicle_city'  => $vehicle->city ?? $driver->vehicle_city,
             'vehicle_country' => $vehicle->country ?? $driver->vehicle_country,
         ]);

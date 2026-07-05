@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use App\Models\Driver\Driver;
+use App\Models\VehicleType;
 use App\Models\Wallet;
 
 class DriverAuthController extends Controller
@@ -21,6 +22,13 @@ class DriverAuthController extends Controller
             'country_birth'=> 'required|string',
             'phone'        => 'required|string|unique:drivers,phone',
             'password'     => 'required|string|min:6',
+            'vehicle_brand'   => 'sometimes|string|max:100',
+            'vehicle_model'   => 'sometimes|string|max:100',
+            'vehicle_plate'   => 'sometimes|string|max:20',
+            'vehicle_type'    => 'sometimes|string|max:50',
+            'vehicle_color'   => 'sometimes|string|max:50',
+            'vehicle_country' => 'sometimes|string|max:100',
+            'vehicle_city'    => 'sometimes|string|max:100',
         ]);
 
         $driver = Driver::create([
@@ -32,7 +40,20 @@ class DriverAuthController extends Controller
             'phone'         => $request->phone,
             'password'      => Hash::make($request->password),
             'status'        => 'pending',
+            'vehicle_brand'   => $request->vehicle_brand,
+            'vehicle_model'   => $request->vehicle_model,
+            'vehicle_plate'   => $request->vehicle_plate,
+            'vehicle_type'    => $request->vehicle_type,
+            'vehicle_color'   => $request->vehicle_color,
+            'vehicle_country' => $request->vehicle_country,
+            'vehicle_city'    => $request->vehicle_city,
         ]);
+
+        // Nouveau type de véhicule saisi à l'inscription : ajouté à la liste
+        // partagée (visible ensuite pour les sociétés, l'admin et les autres chauffeurs).
+        if ($request->filled('vehicle_type')) {
+            VehicleType::addIfMissing($request->vehicle_type, 'driver', $driver->id);
+        }
 
         Wallet::create(['driver_id' => $driver->id, 'balance' => 0, 'currency' => 'XAF']);
 

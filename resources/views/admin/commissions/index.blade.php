@@ -169,7 +169,7 @@
                         <select name="vehicle_type" id="select-vehicle"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">-- Sélectionner un type --</option>
-                            @foreach(['Standard', 'Confort', 'Van', 'PMR'] as $vType)
+                            @foreach($vehicleTypes ?? [] as $vType)
                                 <option value="{{ $vType }}">{{ $vType }}</option>
                             @endforeach
                         </select>
@@ -290,7 +290,7 @@
                     <label class="block text-xs font-semibold text-gray-500 mb-1">Type véhicule</label>
                     <select name="vehicle_type" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Tous</option>
-                        @foreach(['Standard', 'Confort', 'Van', 'PMR'] as $vType)
+                        @foreach($vehicleTypes ?? [] as $vType)
                             <option value="{{ $vType }}" {{ request('vehicle_type') === $vType ? 'selected' : '' }}>{{ $vType }}</option>
                         @endforeach
                     </select>

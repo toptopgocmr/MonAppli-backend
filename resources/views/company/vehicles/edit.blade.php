@@ -44,12 +44,16 @@
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Type de véhicule</label>
-                    <select name="type" class="aws-input">
+                    <select name="type" id="type_select" class="aws-input">
                         <option value="">— Sélectionner —</option>
-                        @foreach(\App\Models\Vehicle::TYPES as $type)
+                        @foreach($vehicleTypes ?? [] as $type)
                             <option value="{{ $type }}" {{ old('type', $vehicle->type) === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
+                        <option value="__other__" {{ old('type') === '__other__' ? 'selected' : '' }}>+ Autre (nouveau type)…</option>
                     </select>
+                    <input type="text" name="new_type" id="new_type_input" value="{{ old('new_type') }}"
+                        class="aws-input" style="margin-top:6px;{{ old('type') === '__other__' ? '' : 'display:none' }}"
+                        placeholder="Nom du nouveau type de véhicule">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Pays</label>
@@ -114,6 +118,15 @@
 
     countrySelect.addEventListener('change', () => populateCities(null));
     if (countrySelect.value) populateCities(currentCity);
+})();
+
+(function () {
+    const sel = document.getElementById('type_select');
+    const inp = document.getElementById('new_type_input');
+    if (!sel || !inp) return;
+    sel.addEventListener('change', () => {
+        inp.style.display = sel.value === '__other__' ? '' : 'none';
+    });
 })();
 </script>
 @endpush

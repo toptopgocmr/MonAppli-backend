@@ -84,12 +84,16 @@
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Type</label>
-                    <select name="vehicle_type" class="aws-input">
+                    <select name="vehicle_type" id="vehicle_type_select" class="aws-input">
                         <option value="">— Choisir —</option>
-                        @foreach(['Berline','SUV','Monospace','Pickup','Minibus','Moto'] as $type)
+                        @foreach($vehicleTypes ?? [] as $type)
                             <option value="{{ $type }}" {{ old('vehicle_type', $driver->getRawOriginal('vehicle_type')) === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
+                        <option value="__other__" {{ old('vehicle_type') === '__other__' ? 'selected' : '' }}>+ Autre (nouveau type)…</option>
                     </select>
+                    <input type="text" name="new_vehicle_type" id="new_vehicle_type_input" value="{{ old('new_vehicle_type') }}"
+                        class="aws-input" style="margin-top:6px;{{ old('vehicle_type') === '__other__' ? '' : 'display:none' }}"
+                        placeholder="Nom du nouveau type de véhicule">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Ville d'opération</label>
@@ -106,4 +110,17 @@
 
     </form>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const sel = document.getElementById('vehicle_type_select');
+    const inp = document.getElementById('new_vehicle_type_input');
+    if (!sel || !inp) return;
+    sel.addEventListener('change', () => {
+        inp.style.display = sel.value === '__other__' ? '' : 'none';
+    });
+})();
+</script>
+@endpush
 @endsection

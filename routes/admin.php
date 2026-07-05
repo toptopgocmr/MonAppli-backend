@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\SosAlertController;
 use App\Http\Controllers\Admin\MapController;
 use App\Http\Controllers\Admin\TripController;
 use App\Http\Controllers\Admin\KycController;
+use App\Http\Controllers\Admin\VehicleTypeController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -235,6 +236,13 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('company-withdrawals', [CompanyWithdrawalController::class, 'index'])->name('company-withdrawals.index');
         Route::post('company-withdrawals/{withdrawal}/approve', [CompanyWithdrawalController::class, 'approve'])->name('company-withdrawals.approve');
         Route::post('company-withdrawals/{withdrawal}/reject',  [CompanyWithdrawalController::class, 'reject'])->name('company-withdrawals.reject');
+
+        Route::prefix('vehicle-types')->name('vehicle-types.')->group(function () {
+            Route::get('/',                  [VehicleTypeController::class, 'index'])->name('index');
+            Route::post('/',                 [VehicleTypeController::class, 'store'])->name('store');
+            Route::post('/{vehicleType}/toggle', [VehicleTypeController::class, 'toggle'])->name('toggle');
+            Route::delete('/{vehicleType}',  [VehicleTypeController::class, 'destroy'])->name('destroy');
+        });
 
     });
 

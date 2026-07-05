@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
 use App\Models\Driver\Driver;
+use App\Models\VehicleType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -41,7 +42,8 @@ class DriverController extends Controller
 
     public function create()
     {
-        return view('company.drivers.create');
+        $vehicleTypes = VehicleType::activeNames();
+        return view('company.drivers.create', compact('vehicleTypes'));
     }
 
     public function store(Request $request)
@@ -58,6 +60,7 @@ class DriverController extends Controller
             'vehicle_plate'=> 'nullable|string|max:20',
             'vehicle_color'=> 'nullable|string|max:30',
             'vehicle_type' => 'nullable|string|max:30',
+            'new_vehicle_type' => 'nullable|string|max:50',
             'vehicle_city' => 'nullable|string|max:100',
         ]);
 
@@ -74,7 +77,7 @@ class DriverController extends Controller
             'vehicle_model' => $request->vehicle_model,
             'vehicle_plate' => $request->vehicle_plate,
             'vehicle_color' => $request->vehicle_color,
-            'vehicle_type'  => $request->vehicle_type,
+            'vehicle_type'  => $this->resolveType($request, $company->id),
             'vehicle_city'  => $request->vehicle_city,
             'company_id'    => $company->id,
             'status'        => 'pending',
@@ -94,7 +97,8 @@ class DriverController extends Controller
     public function edit($id)
     {
         $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
-        return view('company.drivers.edit', compact('driver'));
+        $vehicleTypes = VehicleType::activeNames();
+        return view('company.drivers.edit', compact('driver', 'vehicleTypes'));
     }
 
     public function update(Request $request, $id)
@@ -113,14 +117,16 @@ class DriverController extends Controller
             'vehicle_plate'=> 'nullable|string|max:20',
             'vehicle_color'=> 'nullable|string|max:30',
             'vehicle_type' => 'nullable|string|max:30',
+            'new_vehicle_type' => 'nullable|string|max:50',
             'vehicle_city' => 'nullable|string|max:100',
         ]);
 
         $data = $request->only([
             'first_name','last_name','phone','birth_date','birth_place',
             'vehicle_brand','vehicle_model','vehicle_plate',
-            'vehicle_color','vehicle_type','vehicle_city',
+            'vehicle_color','vehicle_city',
         ]);
+        $data['vehicle_type'] = $this->resolveType($request, $this->company()->id);
 
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
@@ -130,6 +136,18 @@ class DriverController extends Controller
 
         return redirect()->route('company.drivers.show', $driver->id)
                          ->with('success', 'Profil chauffeur mis à jour.');
+    }
+
+    // Résout le type de véhicule choisi : gère l'option "+ Autre (nouveau type)"
+    // en enregistrant le nouveau nom dans la liste partagée vehicle_types.
+    private function resolveType(Request $request, $companyId): ?string
+    {
+        if ($request->vehicle_type === '__other__' && filled($request->new_vehicle_type)) {
+            $vt = VehicleType::addIfMissing($request->new_vehicle_type, 'company', $companyId);
+            return $vt?->name ?? trim($request->new_vehicle_type);
+        }
+
+        return $request->vehicle_type ?: null;
     }
 
     public function activate($id)

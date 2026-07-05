@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyItinerary;
 use App\Models\PricingGrid;
+use App\Models\VehicleType;
 use Illuminate\Http\Request;
 
 class ItineraryController extends Controller
@@ -40,8 +41,9 @@ class ItineraryController extends Controller
                                    ->where('is_active', true)
                                    ->with('rates')
                                    ->get();
+        $vehicleTypes = VehicleType::activeNames();
 
-        return view('company.itineraries.create', compact('pricingGrids'));
+        return view('company.itineraries.create', compact('pricingGrids', 'vehicleTypes'));
     }
 
     public function store(Request $request)
@@ -60,6 +62,7 @@ class ItineraryController extends Controller
             'distance_km'     => 'nullable|numeric|min:0',
             'duration_min'    => 'nullable|integer|min:0',
             'vehicle_type'    => 'nullable|string|max:50',
+            'new_vehicle_type'=> 'nullable|string|max:50',
             'notes'           => 'nullable|string|max:500',
         ]);
 
@@ -80,7 +83,7 @@ class ItineraryController extends Controller
             'price'           => $request->price,
             'distance_km'     => $request->distance_km,
             'duration_min'    => $request->duration_min,
-            'vehicle_type'    => $request->vehicle_type,
+            'vehicle_type'    => $this->resolveVehicleType($request, $company->id),
             'is_active'       => true,
             'notes'           => $request->notes,
         ]);
@@ -97,8 +100,9 @@ class ItineraryController extends Controller
                                    ->where('is_active', true)
                                    ->with('rates')
                                    ->get();
+        $vehicleTypes = VehicleType::activeNames();
 
-        return view('company.itineraries.edit', compact('itinerary', 'pricingGrids'));
+        return view('company.itineraries.edit', compact('itinerary', 'pricingGrids', 'vehicleTypes'));
     }
 
     public function update(Request $request, $id)
@@ -118,6 +122,7 @@ class ItineraryController extends Controller
             'distance_km'     => 'nullable|numeric|min:0',
             'duration_min'    => 'nullable|integer|min:0',
             'vehicle_type'    => 'nullable|string|max:50',
+            'new_vehicle_type'=> 'nullable|string|max:50',
             'notes'           => 'nullable|string|max:500',
         ]);
 
@@ -129,13 +134,28 @@ class ItineraryController extends Controller
             $request->only([
                 'departure','departure_point','departure_time',
                 'destination','arrival_point','arrival_time',
-                'price','distance_km','duration_min','vehicle_type','notes',
+                'price','distance_km','duration_min','notes',
             ]),
-            ['pricing_grid_id' => $gridId]
+            [
+                'pricing_grid_id' => $gridId,
+                'vehicle_type'    => $this->resolveVehicleType($request, $company->id),
+            ]
         ));
 
         return redirect()->route('company.itineraries.index')
                          ->with('success', 'Itinéraire mis à jour.');
+    }
+
+    // Résout le type de véhicule choisi : gère l'option "+ Autre (nouveau type)"
+    // en enregistrant le nouveau nom dans la liste partagée vehicle_types.
+    private function resolveVehicleType(Request $request, $companyId): ?string
+    {
+        if ($request->vehicle_type === '__other__' && filled($request->new_vehicle_type)) {
+            $vt = VehicleType::addIfMissing($request->new_vehicle_type, 'company', $companyId);
+            return $vt?->name ?? trim($request->new_vehicle_type);
+        }
+
+        return $request->vehicle_type ?: null;
     }
 
     public function toggle($id)

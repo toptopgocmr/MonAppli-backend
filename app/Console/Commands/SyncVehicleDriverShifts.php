@@ -105,7 +105,7 @@ class SyncVehicleDriverShifts extends Command
             'vehicle_brand' => $vehicle->brand,
             'vehicle_model' => $vehicle->model,
             'vehicle_color' => $vehicle->color,
-            'vehicle_type'  => in_array($vehicle->type, self::ALLOWED_TYPES, true) ? $vehicle->type : $driver->vehicle_type,
+            'vehicle_type'  => $vehicle->type ?: $driver->vehicle_type,
             'vehicle_city'  => $vehicle->city ?? $driver->vehicle_city,
             'vehicle_country' => $vehicle->country ?? $driver->vehicle_country,
         ]);

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Company;
 use App\Http\Controllers\Controller;
 use App\Models\PricingGrid;
 use App\Models\PricingGridRate;
+use App\Models\VehicleType;
 use Illuminate\Http\Request;
 
 class PricingGridController extends Controller
@@ -58,7 +59,9 @@ class PricingGridController extends Controller
                            ->with(['rates' => fn ($q) => $q->orderBy('label')])
                            ->findOrFail($id);
 
-        return view('company.pricing-grids.show', compact('grid'));
+        $vehicleTypes = VehicleType::activeNames();
+
+        return view('company.pricing-grids.show', compact('grid', 'vehicleTypes'));
     }
 
     public function edit($id)
@@ -108,13 +111,20 @@ class PricingGridController extends Controller
         $request->validate([
             'label'        => 'required|string|max:100',
             'vehicle_type' => 'nullable|string|max:50',
+            'new_vehicle_type' => 'nullable|string|max:50',
             'price'        => 'required|numeric|min:0',
         ]);
+
+        $vehicleType = $request->vehicle_type;
+        if ($vehicleType === '__other__' && filled($request->new_vehicle_type)) {
+            $vt = VehicleType::addIfMissing($request->new_vehicle_type, 'company', $company->id);
+            $vehicleType = $vt?->name ?? trim($request->new_vehicle_type);
+        }
 
         PricingGridRate::create([
             'pricing_grid_id' => $grid->id,
             'label'           => $request->label,
-            'vehicle_type'    => $request->vehicle_type ?: null,
+            'vehicle_type'    => $vehicleType ?: null,
             'price'           => $request->price,
         ]);
 

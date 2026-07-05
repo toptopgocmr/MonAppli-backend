@@ -238,14 +238,18 @@
 
                 <div>
                     <label class="block text-gray-700 text-sm font-medium mb-2">Type de véhicule</label>
-                    <select name="vehicle_type"
+                    <select name="vehicle_type" id="vehicle_type_select"
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1DA1F2] outline-none transition bg-white">
                         <option value="">-- Sélectionner --</option>
-                        <option value="Standard"  {{ old('vehicle_type') == 'Standard'  ? 'selected' : '' }}>Standard</option>
-                        <option value="Confort"   {{ old('vehicle_type') == 'Confort'   ? 'selected' : '' }}>Confort</option>
-                        <option value="Van"       {{ old('vehicle_type') == 'Van'       ? 'selected' : '' }}>Van</option>
-                        <option value="PMR"       {{ old('vehicle_type') == 'PMR'       ? 'selected' : '' }}>PMR</option>
+                        @foreach($vehicleTypes ?? [] as $vt)
+                            <option value="{{ $vt }}" {{ old('vehicle_type') == $vt ? 'selected' : '' }}>{{ $vt }}</option>
+                        @endforeach
+                        <option value="__other__" {{ old('vehicle_type') == '__other__' ? 'selected' : '' }}>+ Autre (nouveau type)…</option>
                     </select>
+                    <input type="text" name="new_vehicle_type" id="new_vehicle_type_input" value="{{ old('new_vehicle_type') }}"
+                           placeholder="Nom du nouveau type de véhicule"
+                           class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#1DA1F2] outline-none transition mt-2"
+                           style="{{ old('vehicle_type') === '__other__' ? '' : 'display:none' }}">
                 </div>
 
                 <div>
@@ -337,4 +341,16 @@
     </form>
 </div>
 
+@push('scripts')
+<script>
+(function () {
+    const sel = document.getElementById('vehicle_type_select');
+    const inp = document.getElementById('new_vehicle_type_input');
+    if (!sel || !inp) return;
+    sel.addEventListener('change', () => {
+        inp.style.display = sel.value === '__other__' ? '' : 'none';
+    });
+})();
+</script>
+@endpush
 @endsection

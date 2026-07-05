@@ -174,12 +174,17 @@ $countriesVilles = [
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Type</label>
-                    <select name="vehicle_type" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]">
+                    <select name="vehicle_type" id="vehicle_type_select" class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2]">
                         <option value="">-- Choisir --</option>
-                        @foreach(['Berline', 'SUV', 'Van', 'Moto', 'Tricycle', 'Autre'] as $type)
+                        @foreach($vehicleTypes ?? [] as $type)
                             <option value="{{ $type }}" {{ old('vehicle_type', $driver->vehicle_type) == $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
+                        <option value="__other__" {{ old('vehicle_type') == '__other__' ? 'selected' : '' }}>+ Autre (nouveau type)…</option>
                     </select>
+                    <input type="text" name="new_vehicle_type" id="new_vehicle_type_input" value="{{ old('new_vehicle_type') }}"
+                           placeholder="Nom du nouveau type de véhicule"
+                           class="w-full border border-gray-300 rounded-xl px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#1DA1F2] mt-2"
+                           style="{{ old('vehicle_type') === '__other__' ? '' : 'display:none' }}">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-600 mb-1">Couleur</label>
@@ -312,6 +317,15 @@ function removePreview(id){
     const img = document.getElementById('preview_' + id);
     if(img) img.src = '';
 }
+
+(function () {
+    const sel = document.getElementById('vehicle_type_select');
+    const inp = document.getElementById('new_vehicle_type_input');
+    if (!sel || !inp) return;
+    sel.addEventListener('change', () => {
+        inp.style.display = sel.value === '__other__' ? '' : 'none';
+    });
+})();
 </script>
 
 @endsection

@@ -8,6 +8,7 @@ use App\Http\Resources\Driver\DriverResource;
 use App\Services\FileUploadService;
 use Illuminate\Http\Request;
 use App\Models\Review;
+use App\Models\VehicleType;
 use Illuminate\Support\Facades\Storage;
 
 class DriverProfileController extends Controller
@@ -84,6 +85,13 @@ class DriverProfileController extends Controller
             'vehicle_city'    => 'sometimes|string|max:100',
         ]);
 
+        // Si le chauffeur saisit un type de véhicule inédit, on l'ajoute à la
+        // liste partagée (visible ensuite pour les sociétés, l'admin et les
+        // autres chauffeurs).
+        if ($request->filled('vehicle_type')) {
+            VehicleType::addIfMissing($request->vehicle_type, 'driver', $request->user()->id);
+        }
+
         $request->user()->update($request->only([
             'first_name',
             'last_name',
@@ -98,6 +106,17 @@ class DriverProfileController extends Controller
         ]));
 
         return new DriverResource($request->user()->fresh());
+    }
+
+    // Liste des types de véhicule disponibles (partagée avec les sociétés et
+    // l'admin) — permet au chauffeur de choisir un type existant ou d'en
+    // proposer un nouveau depuis l'app.
+    public function vehicleTypes()
+    {
+        return response()->json([
+            'success' => true,
+            'data'    => VehicleType::activeNames(),
+        ]);
     }
 
     public function updateDocuments(UpdateDocumentsRequest $request)

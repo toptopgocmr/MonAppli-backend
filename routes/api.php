@@ -102,6 +102,10 @@ Route::prefix('driver/auth')->group(function () {
     });
 });
 
+// Liste des types de véhicule (accessible sans authentification : utilisée
+// à l'inscription du chauffeur, avant qu'il ait un token).
+Route::get('driver/vehicle-types', [DriverProfileController::class, 'vehicleTypes']);
+
 Route::prefix('user/auth')->group(function () {
     Route::post('register',        [UserAuthController::class, 'register']);
     Route::post('login',           [UserAuthController::class, 'login']);

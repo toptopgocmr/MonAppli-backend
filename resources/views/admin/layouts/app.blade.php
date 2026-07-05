@@ -322,6 +322,11 @@
                 <span class="nav-label">Géolocalisation</span>
             </a>
 
+            <a href="{{ route('admin.vehicle-types.index') }}" class="nav-item {{ request()->routeIs('admin.vehicle-types.*') ? 'active' : '' }}">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 17h14M5 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0zm14 0a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM5 17V9l2-5h10l2 5v8"/></svg>
+                <span class="nav-label">Types de véhicules</span>
+            </a>
+
         </nav>
 
         <div class="sb-footer">

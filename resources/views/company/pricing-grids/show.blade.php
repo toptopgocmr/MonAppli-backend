@@ -67,12 +67,16 @@
             </div>
             <div class="aws-field">
                 <label class="aws-label">Type de véhicule <span class="aws-label-opt">— facultatif</span></label>
-                <select name="vehicle_type" class="aws-input">
+                <select name="vehicle_type" id="vehicle_type_select" class="aws-input">
                     <option value="">— Tous types —</option>
-                    @foreach(['Berline','SUV','Monospace','Pickup','Minibus','Moto'] as $type)
+                    @foreach($vehicleTypes ?? [] as $type)
                         <option value="{{ $type }}">{{ $type }}</option>
                     @endforeach
+                    <option value="__other__">+ Autre (nouveau type)…</option>
                 </select>
+                <input type="text" name="new_vehicle_type" id="new_vehicle_type_input"
+                    class="aws-input" style="margin-top:6px;display:none"
+                    placeholder="Nom du nouveau type de véhicule">
             </div>
             <div class="aws-field">
                 <label class="aws-label">Prix (FCFA)</label>
@@ -84,4 +88,17 @@
     </div>
 
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const sel = document.getElementById('vehicle_type_select');
+    const inp = document.getElementById('new_vehicle_type_input');
+    if (!sel || !inp) return;
+    sel.addEventListener('change', () => {
+        inp.style.display = sel.value === '__other__' ? '' : 'none';
+    });
+})();
+</script>
+@endpush
 @endsection
