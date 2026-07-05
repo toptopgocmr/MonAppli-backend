@@ -7,6 +7,8 @@ use App\Models\CompanyItinerary;
 use App\Models\PricingGrid;
 use App\Models\VehicleType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class ItineraryController extends Controller
 {
@@ -71,6 +73,13 @@ class ItineraryController extends Controller
             ? PricingGrid::where('company_id', $company->id)->where('id', $request->pricing_grid_id)->value('id')
             : null;
 
+        // Distance/durée calculées automatiquement côté serveur si non fournies
+        // par le calcul JS (fiabilité : ne dépend plus uniquement du navigateur).
+        [$distanceKm, $durationMin] = $this->resolveRoute(
+            $request->departure, $request->destination,
+            $request->distance_km, $request->duration_min
+        );
+
         CompanyItinerary::create([
             'company_id'      => $company->id,
             'pricing_grid_id' => $gridId,
@@ -81,8 +90,8 @@ class ItineraryController extends Controller
             'arrival_point'   => $request->arrival_point,
             'arrival_time'    => $request->arrival_time,
             'price'           => $request->price,
-            'distance_km'     => $request->distance_km,
-            'duration_min'    => $request->duration_min,
+            'distance_km'     => $distanceKm,
+            'duration_min'    => $durationMin,
             'vehicle_type'    => $this->resolveVehicleType($request, $company->id),
             'is_active'       => true,
             'notes'           => $request->notes,
@@ -130,20 +139,101 @@ class ItineraryController extends Controller
             ? PricingGrid::where('company_id', $company->id)->where('id', $request->pricing_grid_id)->value('id')
             : null;
 
+        // Si le départ ou la destination a changé, on ignore l'ancienne distance/durée
+        // pour forcer un recalcul automatique.
+        $routeChanged = $request->departure !== $itinerary->departure
+            || $request->destination !== $itinerary->destination;
+
+        [$distanceKm, $durationMin] = $this->resolveRoute(
+            $request->departure, $request->destination,
+            $routeChanged ? null : $request->distance_km,
+            $routeChanged ? null : $request->duration_min
+        );
+
         $itinerary->update(array_merge(
             $request->only([
                 'departure','departure_point','departure_time',
                 'destination','arrival_point','arrival_time',
-                'price','distance_km','duration_min','notes',
+                'price','notes',
             ]),
             [
                 'pricing_grid_id' => $gridId,
+                'distance_km'     => $distanceKm,
+                'duration_min'    => $durationMin,
                 'vehicle_type'    => $this->resolveVehicleType($request, $company->id),
             ]
         ));
 
         return redirect()->route('company.itineraries.index')
                          ->with('success', 'Itinéraire mis à jour.');
+    }
+
+    // Calcule automatiquement la distance (km) et la durée (min) du trajet à
+    // partir des noms de ville, si elles ne sont pas déjà fournies (ex: par le
+    // calcul JS côté formulaire). Sert de filet de sécurité fiable côté serveur
+    // — géocodage (Nominatim) + calcul d'itinéraire routier (OSRM).
+    private function resolveRoute(?string $departure, ?string $destination, $distanceKm, $durationMin): array
+    {
+        if (filled($distanceKm) && filled($durationMin)) {
+            return [(float) $distanceKm, (int) $durationMin];
+        }
+
+        if (blank($departure) || blank($destination)) {
+            return [$distanceKm !== null ? (float) $distanceKm : null, $durationMin !== null ? (int) $durationMin : null];
+        }
+
+        try {
+            $from = $this->geocodeCity($departure);
+            $to   = $this->geocodeCity($destination);
+
+            if (!$from || !$to) {
+                return [$distanceKm !== null ? (float) $distanceKm : null, $durationMin !== null ? (int) $durationMin : null];
+            }
+
+            $response = Http::timeout(8)->get(
+                "https://router.project-osrm.org/route/v1/driving/{$from['lon']},{$from['lat']};{$to['lon']},{$to['lat']}",
+                ['overview' => 'false']
+            );
+
+            if (!$response->ok() || ($response->json('code') !== 'Ok')) {
+                return [$distanceKm !== null ? (float) $distanceKm : null, $durationMin !== null ? (int) $durationMin : null];
+            }
+
+            $route = $response->json('routes.0');
+            if (!$route) {
+                return [$distanceKm !== null ? (float) $distanceKm : null, $durationMin !== null ? (int) $durationMin : null];
+            }
+
+            return [
+                round($route['distance'] / 1000, 1),
+                (int) round($route['duration'] / 60),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Calcul automatique distance/durée itinéraire échoué', [
+                'departure' => $departure, 'destination' => $destination, 'error' => $e->getMessage(),
+            ]);
+            return [$distanceKm !== null ? (float) $distanceKm : null, $durationMin !== null ? (int) $durationMin : null];
+        }
+    }
+
+    private function geocodeCity(string $city): ?array
+    {
+        $response = Http::withHeaders(['User-Agent' => 'TopTopGo/1.0 (toptopgoinfo@gmail.com)'])
+            ->timeout(8)
+            ->get('https://nominatim.openstreetmap.org/search', [
+                'q' => $city, 'format' => 'json', 'limit' => 1, 'accept-language' => 'fr',
+            ]);
+
+        if (!$response->ok()) {
+            return null;
+        }
+
+        $first = $response->json(0);
+        if (!$first) {
+            return null;
+        }
+
+        return ['lat' => (float) $first['lat'], 'lon' => (float) $first['lon']];
     }
 
     // Résout le type de véhicule choisi : gère l'option "+ Autre (nouveau type)"

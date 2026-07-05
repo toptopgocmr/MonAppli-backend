@@ -185,6 +185,11 @@
         </a>
         <div class="aws-topbar-divider"></div>
         <span class="aws-topbar-company">{{ auth('company')->user()->name }}</span>
+        @if(\App\Support\CompanyContext::isAgent())
+        <span class="aws-badge aws-badge-blue" style="background:rgba(255,255,255,.12);color:#fff;border-color:transparent">
+            {{ \App\Support\CompanyContext::agent()->name }} — {{ \App\Support\CompanyContext::agent()->role_label }}
+        </span>
+        @endif
         <div class="aws-topbar-right">
             <span class="aws-topbar-email" style="color:rgba(255,255,255,.6)">{{ auth('company')->user()->email }}</span>
             <div class="aws-topbar-avatar">
@@ -213,8 +218,13 @@
                 Dashboard
             </a>
 
-            <div class="aws-nav-section">Gestion</div>
+            @php $ctx = \App\Support\CompanyContext::class; @endphp
 
+            @if($ctx::can('drivers') || $ctx::can('vehicles') || $ctx::can('schedule') || $ctx::can('pricing_grids') || $ctx::can('reservations') || $ctx::can('itineraries') || $ctx::can('messages'))
+            <div class="aws-nav-section">Gestion</div>
+            @endif
+
+            @if($ctx::can('drivers'))
             <a href="{{ route('company.drivers.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.drivers.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -222,7 +232,9 @@
                 </svg>
                 Chauffeurs
             </a>
+            @endif
 
+            @if($ctx::can('vehicles'))
             <a href="{{ route('company.vehicles.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.vehicles.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -231,7 +243,9 @@
                 </svg>
                 Flotte Véhicules
             </a>
+            @endif
 
+            @if($ctx::can('schedule'))
             <a href="{{ route('company.schedule.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.schedule.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -239,7 +253,9 @@
                 </svg>
                 Planning chauffeurs
             </a>
+            @endif
 
+            @if($ctx::can('pricing_grids'))
             <a href="{{ route('company.pricing-grids.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.pricing-grids.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -247,7 +263,9 @@
                 </svg>
                 Grilles tarifaires
             </a>
+            @endif
 
+            @if($ctx::can('reservations'))
             <a href="{{ route('company.reservations.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.reservations.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -255,7 +273,9 @@
                 </svg>
                 Réservations
             </a>
+            @endif
 
+            @if($ctx::can('itineraries'))
             <a href="{{ route('company.itineraries.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.itineraries.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +283,9 @@
                 </svg>
                 Itinéraires
             </a>
+            @endif
 
+            @if($ctx::can('messages'))
             <a href="{{ route('company.messages.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.messages.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -271,9 +293,13 @@
                 </svg>
                 Messages
             </a>
+            @endif
 
+            @if($ctx::can('withdrawals') || $ctx::can('revenus'))
             <div class="aws-nav-section">Finances</div>
+            @endif
 
+            @if($ctx::can('withdrawals'))
             <a href="{{ route('company.withdrawals.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.withdrawals.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,7 +307,9 @@
                 </svg>
                 Retraits
             </a>
+            @endif
 
+            @if($ctx::can('revenus'))
             <a href="{{ route('company.revenus.index') }}"
                class="aws-nav-item {{ request()->routeIs('company.revenus.*') ? 'active' : '' }}">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -289,6 +317,18 @@
                 </svg>
                 Revenus
             </a>
+            @endif
+
+            @if($ctx::can('agents'))
+            <div class="aws-nav-section">Équipe</div>
+            <a href="{{ route('company.agents.index') }}"
+               class="aws-nav-item {{ request()->routeIs('company.agents.*') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M9 20H4v-2a3 3 0 015.356-1.857M9 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M13 7a3 3 0 11-6 0 3 3 0 016 0zM21 10a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                </svg>
+                Agents
+            </a>
+            @endif
 
             <div class="aws-sidebar-footer">
                 <form method="POST" action="{{ route('company.logout') }}">

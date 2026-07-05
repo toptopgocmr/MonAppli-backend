@@ -31,9 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // Alias middleware custom
         $middleware->alias([
-            'role.permission' => \App\Http\Middleware\RolePermissionMiddleware::class,
-            'admin.session'   => \App\Http\Middleware\AdminSessionMiddleware::class,
-            'company'         => \App\Http\Middleware\CompanyMiddleware::class,
+            'role.permission'   => \App\Http\Middleware\RolePermissionMiddleware::class,
+            'admin.session'     => \App\Http\Middleware\AdminSessionMiddleware::class,
+            'company'           => \App\Http\Middleware\CompanyMiddleware::class,
+            'company.permission'=> \App\Http\Middleware\CompanyPermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

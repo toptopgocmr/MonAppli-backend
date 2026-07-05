@@ -20,6 +20,10 @@ return [
             'driver'   => 'session',
             'provider' => 'companies',
         ],
+        'company_agent' => [
+            'driver'   => 'session',
+            'provider' => 'company_agents',
+        ],
         'sanctum' => [
             'driver'   => 'sanctum',
             'provider' => null,
@@ -42,6 +46,10 @@ return [
         'companies' => [
             'driver' => 'eloquent',
             'model'  => App\Models\Company::class,
+        ],
+        'company_agents' => [
+            'driver' => 'eloquent',
+            'model'  => App\Models\CompanyAgent::class,
         ],
     ],
 
