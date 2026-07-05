@@ -56,8 +56,18 @@ class PaymentPartnerController extends Controller
         // bancaire (Bank Payment Request), Stripe n'est plus une passerelle
         // active en pratique.
         $gateways = [
-            'peex'        => ['label' => 'Peex',        'color' => '#16a34a', 'icon' => '🟢'],
-            'flutterwave' => ['label' => 'Flutterwave',  'color' => '#f97316', 'icon' => '🟠'],
+            'peex'        => [
+                'label' => 'Peex',
+                'color' => '#16a34a',
+                'icon'  => '🟢',
+                'logo'  => 'https://peex-api-docs.peexit.com/_next/image?url=%2Fimages%2Flogo_peex.png&w=384&q=75',
+            ],
+            'flutterwave' => [
+                'label' => 'Flutterwave',
+                'color' => '#f97316',
+                'icon'  => '🟠',
+                'logo'  => 'https://cdn.worldvectorlogo.com/logos/flutterwave-1.svg',
+            ],
         ];
 
         $gatewayStats = [];

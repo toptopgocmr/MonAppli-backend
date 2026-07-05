@@ -68,8 +68,16 @@
                 <tbody>
                     @foreach($gatewayStats as $key => $g)
                     <tr>
-                        <td style="display:flex;align-items:center;gap:8px;font-weight:700;color:{{ $g['color'] }}">
-                            <span>{{ $g['icon'] }}</span> {{ $g['label'] }}
+                        <td style="display:flex;align-items:center;gap:10px;font-weight:700;color:{{ $g['color'] }}">
+                            @if(!empty($g['logo']))
+                                <img src="{{ $g['logo'] }}" alt="{{ $g['label'] }}"
+                                     style="height:20px;width:auto;max-width:80px;object-fit:contain"
+                                     onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                                <span style="display:none">{{ $g['icon'] }}</span>
+                            @else
+                                <span>{{ $g['icon'] }}</span>
+                            @endif
+                            {{ $g['label'] }}
                             @if($key === 'peex')
                                 <span style="font-size:10px;font-weight:600;color:#94a3b8;border:1px solid #e2e8f0;border-radius:6px;padding:1px 6px">
                                     sandbox
