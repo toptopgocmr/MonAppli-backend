@@ -181,7 +181,11 @@ class PaymentPartnerController extends Controller
      */
     public function withdrawalsIndex(Request $request)
     {
-        $query = Withdrawal::with(['driver', 'wallet']);
+        $period = $request->get('period', 'month');
+        [$startDate, $endDate] = $this->getDateRange($period, $request);
+
+        $query = Withdrawal::with(['driver', 'wallet'])
+            ->whereBetween('created_at', [$startDate, $endDate]);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -189,9 +193,85 @@ class PaymentPartnerController extends Controller
 
         $withdrawals = $query->latest()->paginate(20)->withQueryString();
 
-        $pendingCount = Withdrawal::where('status', 'pending')->count();
+        // ── KPI ────────────────────────────────────────────────────
+        // "En attente" et "en retard" regardent TOUTE la base (peu importe la
+        // période choisie) : un retrait en attente reste un problème actif
+        // même s'il a été demandé le mois dernier.
+        $pendingCount  = Withdrawal::where('status', 'pending')->count();
+        $pendingAmount = Withdrawal::where('status', 'pending')->sum('amount');
+        $lateCount     = Withdrawal::where('status', 'pending')
+            ->where('created_at', '<=', now()->subHours(24))
+            ->count();
 
-        return view('admin.payments.withdrawals', compact('withdrawals', 'pendingCount'));
+        // Le reste est bien filtré sur la période sélectionnée.
+        $paidCount     = Withdrawal::where('status', 'success')
+            ->whereBetween('processed_at', [$startDate, $endDate])
+            ->count();
+        $paidAmount    = Withdrawal::where('status', 'success')
+            ->whereBetween('processed_at', [$startDate, $endDate])
+            ->sum('amount');
+        $rejectedCount = Withdrawal::where('status', 'failed')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+
+        return view('admin.payments.withdrawals', compact(
+            'withdrawals',
+            'pendingCount',
+            'pendingAmount',
+            'lateCount',
+            'paidCount',
+            'paidAmount',
+            'rejectedCount',
+            'period'
+        ));
+    }
+
+    /**
+     * Export CSV des retraits chauffeurs (respecte la période + le filtre statut).
+     */
+    public function exportWithdrawals(Request $request)
+    {
+        $period = $request->get('period', 'month');
+        [$startDate, $endDate] = $this->getDateRange($period, $request);
+
+        $query = Withdrawal::with('driver')
+            ->whereBetween('created_at', [$startDate, $endDate]);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $withdrawals = $query->latest()->get();
+
+        $filename = "retraits-chauffeurs-" . now()->format('Y-m-d') . ".csv";
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=$filename",
+        ];
+
+        $callback = function () use ($withdrawals) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Chauffeur', 'Pays véhicule', 'Méthode', 'Téléphone', 'Montant (XAF)', 'Référence', 'Statut', 'Demandé le', 'Traité le']);
+
+            foreach ($withdrawals as $w) {
+                fputcsv($file, [
+                    trim(($w->driver->first_name ?? '') . ' ' . ($w->driver->last_name ?? '')),
+                    strtoupper($w->driver->vehicle_country ?? ''),
+                    strtoupper($w->method),
+                    $w->phone_number,
+                    $w->amount,
+                    $w->transaction_ref,
+                    $w->status,
+                    $w->created_at,
+                    $w->processed_at,
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

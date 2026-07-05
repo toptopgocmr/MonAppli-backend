@@ -227,6 +227,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('payments', [PaymentPartnerController::class, 'index'])->name('payments.index');
         Route::get('payments/export', [PaymentPartnerController::class, 'export'])->name('payments.export');
         Route::get('payments/withdrawals', [PaymentPartnerController::class, 'withdrawalsIndex'])->name('payments.withdrawals');
+        Route::get('payments/withdrawals/export', [PaymentPartnerController::class, 'exportWithdrawals'])->name('payments.withdrawals.export');
         Route::post('payments/withdrawals/{withdrawal}/approve', [PaymentPartnerController::class, 'approveWithdrawal'])->name('payments.approve-withdrawal');
         Route::post('payments/withdrawals/{withdrawal}/reject',  [PaymentPartnerController::class, 'rejectWithdrawal'])->name('payments.reject-withdrawal');
 

@@ -13,19 +13,50 @@
                 (sinon il reste manuel, comme avant). Rejeter un retrait rembourse immédiatement le wallet du chauffeur.
             </p>
         </div>
-        <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary">← Retour aux paiements</a>
+        <div style="display:flex;gap:8px">
+            <a href="{{ route('admin.payments.index') }}" class="btn btn-secondary">← Retour aux paiements</a>
+            <a href="{{ route('admin.payments.withdrawals.export') }}?period={{ $period }}&status={{ request('status') }}" class="btn btn-success">Exporter CSV</a>
+        </div>
     </div>
 
-    @if($pendingCount > 0)
-    <div class="stat-card" style="border-left:4px solid #f59e0b;max-width:320px">
-        <div class="lbl">EN ATTENTE D'APPROBATION</div>
-        <div class="val" style="color:#d97706;font-size:22px">{{ $pendingCount }}</div>
-        <div class="sub">Objectif interne : traiter sous 24h</div>
+    {{-- Période --}}
+    <div style="display:flex;flex-wrap:wrap;gap:8px">
+        @foreach(['today'=>"Aujourd'hui",'week'=>'Cette semaine','month'=>'Ce mois','year'=>'Cette année'] as $key=>$label)
+        <a href="?period={{ $key }}{{ request('status') ? '&status='.request('status') : '' }}"
+           style="padding:7px 16px;border-radius:9px;font-size:13px;font-weight:600;text-decoration:none;transition:all .2s;
+           {{ $period===$key ? 'background:#1DA1F2;color:#fff' : 'background:#fff;color:#475569;border:1.5px solid #e2e8f0' }}">
+            {{ $label }}
+        </a>
+        @endforeach
     </div>
-    @endif
+
+    {{-- KPI --}}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px">
+        <div class="stat-card" style="border-left:4px solid #f59e0b">
+            <div class="lbl">EN ATTENTE</div>
+            <div class="val" style="color:#d97706;font-size:22px">{{ $pendingCount }}</div>
+            <div class="sub">{{ number_format($pendingAmount,0,',',' ') }} XAF</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #dc2626">
+            <div class="lbl">EN RETARD (&gt;24H)</div>
+            <div class="val" style="color:#dc2626;font-size:22px">{{ $lateCount }}</div>
+            <div class="sub">objectif interne : sous 24h</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #22c55e">
+            <div class="lbl">PAYÉS (période)</div>
+            <div class="val" style="color:#16a34a;font-size:22px">{{ $paidCount }}</div>
+            <div class="sub">{{ number_format($paidAmount,0,',',' ') }} XAF</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #94a3b8">
+            <div class="lbl">REJETÉS (période)</div>
+            <div class="val" style="color:#475569;font-size:22px">{{ $rejectedCount }}</div>
+            <div class="sub">remboursés automatiquement</div>
+        </div>
+    </div>
 
     {{-- Filtre statut --}}
     <form method="GET" class="filter-bar" style="gap:10px">
+        <input type="hidden" name="period" value="{{ $period }}">
         <div style="display:flex;flex-direction:column;gap:4px">
             <label class="ttg-label">Statut</label>
             <select name="status" class="ttg-select" onchange="this.form.submit()">
