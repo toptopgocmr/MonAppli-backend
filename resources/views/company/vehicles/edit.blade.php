@@ -60,19 +60,15 @@
                     <select name="country" id="country" class="aws-input">
                         <option value="">— Choisir —</option>
                         @foreach($countries as $c)
-                            <option value="{{ $c['name'] }}" {{ old('country', $vehicle->country) === $c['name'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
+                            <option value="{{ $c['name'] }}" data-code="{{ $c['code'] }}" {{ old('country', $vehicle->country) === $c['name'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
                         @endforeach
                     </select>
                 </div>
-                <div class="aws-field">
+                <div class="aws-field" style="position:relative">
                     <label class="aws-label">Ville d'opération</label>
-                    <select name="city" id="city" class="aws-input">
-                        @if($vehicle->city)
-                            <option value="{{ $vehicle->city }}" selected>{{ $vehicle->city }}</option>
-                        @else
-                            <option value="">— Choisir un pays d'abord —</option>
-                        @endif
-                    </select>
+                    <input type="text" name="city" id="city" value="{{ old('city', $vehicle->city) }}" class="aws-input" autocomplete="off"
+                        placeholder="Choisir un pays, puis taper le nom de la ville">
+                    <div class="city-dropdown" id="city-dropdown"></div>
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Statut</label>
@@ -101,23 +97,101 @@
 </div>
 
 @push('scripts')
+<style>
+.city-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%; left: 0; right: 0;
+    background: #fff;
+    border: 1px solid var(--aws-border);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.10);
+    z-index: 999;
+    max-height: 240px;
+    overflow-y: auto;
+}
+.city-dropdown.open { display: block; }
+.city-item { padding: 9px 14px; cursor: pointer; border-bottom: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; }
+.city-item:last-child { border-bottom: none; }
+.city-item:hover { background: #f0f6ff; }
+.city-item .city-name { font-size: 13px; font-weight: 600; color: var(--aws-header); }
+.city-item .city-country { font-size: 11px; color: var(--aws-sub); }
+.city-loading { padding: 10px 14px; font-size: 12px; color: var(--aws-sub); }
+</style>
 <script>
+// ── Autocomplétion ville (OpenStreetMap/Nominatim), filtrée par pays choisi ──
 (function () {
-    const citiesByCountry = @json(collect($countries)->mapWithKeys(fn($c) => [$c['name'] => $c['cities']]));
-    const currentCity = @json(old('city', $vehicle->city));
-
     const countrySelect = document.getElementById('country');
-    const citySelect     = document.getElementById('city');
+    const cityInput     = document.getElementById('city');
+    const dropdown      = document.getElementById('city-dropdown');
+    let timer = null;
 
-    function populateCities(selectedCity) {
-        const cities = citiesByCountry[countrySelect.value] || [];
-        citySelect.innerHTML = cities.length
-            ? cities.map(c => `<option value="${c}" ${c === selectedCity ? 'selected' : ''}>${c}</option>`).join('')
-            : '<option value="">— Aucune ville pour ce pays —</option>';
+    function selectedCountryCode() {
+        const opt = countrySelect.options[countrySelect.selectedIndex];
+        return opt ? opt.dataset.code : '';
     }
 
-    countrySelect.addEventListener('change', () => populateCities(null));
-    if (countrySelect.value) populateCities(currentCity);
+    cityInput.addEventListener('input', function () {
+        const q = this.value.trim();
+        clearTimeout(timer);
+        if (q.length < 2) { dropdown.className = 'city-dropdown'; return; }
+        dropdown.className = 'city-dropdown open';
+        dropdown.innerHTML = '<div class="city-loading">Recherche…</div>';
+        timer = setTimeout(() => search(q), 350);
+    });
+
+    document.addEventListener('click', function (e) {
+        if (!cityInput.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.className = 'city-dropdown';
+        }
+    });
+
+    async function search(q) {
+        try {
+            const code = selectedCountryCode();
+            let url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=8&addressdetails=1&accept-language=fr`;
+            if (code) url += `&countrycodes=${code.toLowerCase()}`;
+
+            const res  = await fetch(url);
+            const data = await res.json();
+
+            const seen = new Set();
+            const items = [];
+            for (const item of data) {
+                const addr    = item.address || {};
+                const city    = addr.city || addr.town || addr.village || addr.county || addr.municipality || item.name || '';
+                const country = addr.country || '';
+                const key     = city + '|' + country;
+                if (city && !seen.has(key)) { seen.add(key); items.push({ city, country }); }
+            }
+
+            if (!items.length) {
+                dropdown.innerHTML = '<div class="city-loading">Aucun résultat</div>';
+                return;
+            }
+
+            dropdown.innerHTML = items.map(m => `
+                <div class="city-item" data-city="${m.city}">
+                    <svg width="12" height="14" viewBox="0 0 12 16" fill="none" style="flex-shrink:0">
+                        <path d="M6 0C3.24 0 1 2.24 1 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5C5.17 6.5 4.5 5.83 4.5 5S5.17 3.5 6 3.5 7.5 4.17 7.5 5 6.83 6.5 6 6.5z" fill="#ec7211"/>
+                    </svg>
+                    <div>
+                        <div class="city-name">${m.city}</div>
+                        <div class="city-country">${m.country}</div>
+                    </div>
+                </div>`).join('');
+
+            dropdown.querySelectorAll('.city-item').forEach(el => {
+                el.addEventListener('click', function () {
+                    cityInput.value = this.dataset.city;
+                    dropdown.className = 'city-dropdown';
+                });
+            });
+        } catch (e) {
+            dropdown.innerHTML = '<div class="city-loading">Erreur de connexion</div>';
+        }
+    }
 })();
 
 (function () {
