@@ -38,6 +38,28 @@ class PaymentPartnerController extends Controller
             ];
         }
 
+        // ── Stats par passerelle (provider réel : peex, flutterwave, stripe) ──
+        // Contrairement à $partnerStats (par opérateur mobile money), ce
+        // regroupement se base sur la colonne `provider`, qui est toujours
+        // renseignée correctement — c'est la vue fiable pour suivre Peex.
+        $gateways = [
+            'peex'        => ['label' => 'Peex',        'color' => '#16a34a', 'icon' => '🟢'],
+            'flutterwave' => ['label' => 'Flutterwave',  'color' => '#f97316', 'icon' => '🟠'],
+            'stripe'      => ['label' => 'Stripe',       'color' => '#6366f1', 'icon' => '💳'],
+        ];
+
+        $gatewayStats = [];
+        foreach ($gateways as $key => $meta) {
+            $q = Payment::where('provider', $key)->whereBetween('created_at', [$startDate, $endDate]);
+
+            $gatewayStats[$key] = array_merge($meta, [
+                'total'   => (clone $q)->where('status', 'success')->sum('amount'),
+                'count'   => (clone $q)->where('status', 'success')->count(),
+                'pending' => (clone $q)->where('status', 'pending')->count(),
+                'failed'  => (clone $q)->whereIn('status', ['failed', 'cancelled'])->count(),
+            ]);
+        }
+
         // ── Stats globales ────────────────────────────────────────
         $totalRevenue     = Payment::where('status', 'success')->whereBetween('paid_at', [$startDate, $endDate])->sum('amount');
         $totalCommission  = Payment::where('status', 'success')->whereBetween('paid_at', [$startDate, $endDate])->sum('commission');
@@ -107,6 +129,7 @@ class PaymentPartnerController extends Controller
         return view('admin.payments.index', compact(
             'partnerStats',
             'partners',
+            'gatewayStats',
             'totalRevenue',
             'totalCommission',
             'totalDriverNet',

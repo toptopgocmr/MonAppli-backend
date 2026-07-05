@@ -48,6 +48,42 @@
         </div>
     </div>
 
+    {{-- ===== PASSERELLES DE PAIEMENT (Peex / Flutterwave / Stripe) ===== --}}
+    <div class="panel" style="padding:0;overflow:hidden">
+        <div class="panel-header">Passerelles de paiement</div>
+        <div style="overflow-x:auto">
+            <table class="ttg-table">
+                <thead>
+                    <tr>
+                        <th>Passerelle</th>
+                        <th style="text-align:right">Montant collecté</th>
+                        <th style="text-align:right">Paiements réussis</th>
+                        <th style="text-align:right;color:#f97316">En attente</th>
+                        <th style="text-align:right;color:#ef4444">Échoués</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($gatewayStats as $key => $g)
+                    <tr>
+                        <td style="display:flex;align-items:center;gap:8px;font-weight:700;color:{{ $g['color'] }}">
+                            <span>{{ $g['icon'] }}</span> {{ $g['label'] }}
+                            @if($key === 'peex')
+                                <span style="font-size:10px;font-weight:600;color:#94a3b8;border:1px solid #e2e8f0;border-radius:6px;padding:1px 6px">
+                                    sandbox
+                                </span>
+                            @endif
+                        </td>
+                        <td style="text-align:right;font-weight:700;color:{{ $g['color'] }}">{{ number_format($g['total'],0,',',' ') }} FCFA</td>
+                        <td style="text-align:right">{{ $g['count'] }}</td>
+                        <td style="text-align:right;color:#f97316">{{ $g['pending'] }}</td>
+                        <td style="text-align:right;color:#ef4444">{{ $g['failed'] }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     {{-- ===== PARTENAIRES (2 groupes) ===== --}}
     @php
         $mobileMoney = ['mtn','orange','airtel','moov'];

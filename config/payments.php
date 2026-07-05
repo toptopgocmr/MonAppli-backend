@@ -26,12 +26,23 @@ return [
 
     'peex' => [
         'base_url' => env('PEEX_BASE_URL', 'https://sandbox.peexit.com/api/v1/'),
-        'production_url' => env('PEEX_PRODUCTION_URL', 'https://api.peexit.com/api/v1/'),
+        'production_url' => env('PEEX_PRODUCTION_URL', 'https://server.peexit.com/api/v1/'),
         'secret_key' => env('PEEX_SECRET_KEY'),
         'webhook_secret' => env('PEEX_WEBHOOK_SECRET'),
         'sandbox' => env('PEEX_SANDBOX', true),
         'currency' => 'XAF',
         'timeout' => 30,
+
+        // Basic Auth credentials Peex must send back on our /webhooks/peex/* endpoints.
+        'callback_username' => env('PEEX_CALLBACK_USERNAME', 'peex'),
+        'callback_password' => env('PEEX_CALLBACK_PASSWORD', 'peex_callback'),
+
+        // Per https://peex-api-docs.peexit.com/collect : "facilitates mobile money
+        // collections in Cameroon". Disbursement API doc explicitly states Cameroon
+        // is the only active country. Until Peex support confirms coverage for
+        // Congo/Gabon, keep the Collect API scoped to these countries and let
+        // other countries fall back to the existing provider (Flutterwave).
+        'collect_countries' => array_filter(explode(',', env('PEEX_COLLECT_COUNTRIES', 'CM'))),
     ],
 
     /*

@@ -3,12 +3,17 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Events\PaymentValidated;
+use App\Models\Booking;
+use App\Models\Payment;
 use App\Services\Payment\FlutterwaveService;
 use App\Services\Payment\PaymentService;
+use App\Services\Payment\PeexService;
 use App\Services\Payment\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class WebhookController extends Controller
 {
@@ -16,6 +21,7 @@ class WebhookController extends Controller
         protected PaymentService      $paymentService,
         protected StripeService       $stripeService,
         protected FlutterwaveService  $flutterwaveService,
+        protected PeexService         $peexService,
     ) {}
 
     // =========================================================================
@@ -66,60 +72,123 @@ class WebhookController extends Controller
 
     // =========================================================================
     // PEEX
+    //
+    // Peex secures its callbacks with HTTP Basic Auth (not a signature header)
+    // and posts an ARRAY of transaction objects — see
+    // https://peex-api-docs.peexit.com/notifications
+    //
+    // These handlers update the `Payment` model directly (the model actually
+    // used by the live booking/payment flow), not the disconnected
+    // Transaction/Ride scaffold that PaymentService::handleWebhook() targets.
     // =========================================================================
+
+    protected function verifyPeexBasicAuth(Request $request): bool
+    {
+        $expectedUser = config('payments.peex.callback_username');
+        $expectedPass = config('payments.peex.callback_password');
+
+        return $request->getUser() === $expectedUser && $request->getPassword() === $expectedPass;
+    }
 
     public function handlePeexCollect(Request $request): JsonResponse
     {
-        Log::info('Peex Collect Webhook received', $request->all());
+        if (!$this->verifyPeexBasicAuth($request)) {
+            Log::warning('Peex collect webhook: invalid Basic Auth credentials', ['ip' => $request->ip()]);
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
 
-        try {
-            $result = $this->paymentService->handleWebhook('peex', $request->all());
+        $items = $request->all();
+        // Peex sends a JSON array at the request root; Laravel's $request->all()
+        // still returns it as an array either way (list or single object).
+        if (!array_is_list($items)) {
+            $items = [$items];
+        }
 
-            if ($result['success']) {
-                return response()->json(['status' => 'success'], 200);
+        Log::info('Peex Collect Webhook received', ['count' => count($items)]);
+
+        $processed = 0;
+        $errors = [];
+
+        foreach ($items as $item) {
+            $normalized = $this->peexService->handleWebhook($item);
+
+            if (!$normalized['success']) {
+                $errors[] = $normalized['error'] ?? 'invalid item';
+                continue;
             }
 
-            Log::warning('Peex webhook processing failed', $result);
-            return response()->json(['status' => 'error', 'message' => $result['error']], 400);
+            $payment = Payment::where('transaction_ref', $normalized['reference'])
+                ->where('provider', 'peex')
+                ->first();
 
-        } catch (\Exception $e) {
-            Log::error('Peex webhook exception: ' . $e->getMessage());
-            return response()->json(['status' => 'error'], 500);
+            if (!$payment) {
+                Log::warning('Peex webhook: no matching payment for track_id', ['track_id' => $normalized['reference']]);
+                $errors[] = 'unknown track_id: ' . $normalized['reference'];
+                continue;
+            }
+
+            $this->applyPeexStatus($payment, $normalized['status']);
+            $processed++;
         }
+
+        if ($processed === 0 && !empty($errors)) {
+            return response()->json(['status' => 'error', 'message' => implode('; ', $errors)], 200);
+        }
+
+        return response()->json(['status' => 'success', 'processed' => $processed], 200);
     }
 
     public function handlePeexPayout(Request $request): JsonResponse
     {
-        Log::info('Peex Payout Webhook received', $request->all());
-
-        try {
-            $result = $this->paymentService->handleWebhook('peex', $request->all());
-
-            if ($result['success']) {
-                return response()->json(['status' => 'success'], 200);
-            }
-
-            return response()->json(['status' => 'error', 'message' => $result['error']], 400);
-
-        } catch (\Exception $e) {
-            Log::error('Peex payout webhook exception: ' . $e->getMessage());
-            return response()->json(['status' => 'error'], 500);
+        if (!$this->verifyPeexBasicAuth($request)) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
+
+        Log::info('Peex Payout Webhook received', $request->all());
+        // Driver payouts are not wired into an automated flow yet (see
+        // PeexService::payout doc block) — logged for now so nothing is lost.
+
+        return response()->json(['status' => 'success'], 200);
     }
 
     public function handlePeexBankPayout(Request $request): JsonResponse
     {
+        if (!$this->verifyPeexBasicAuth($request)) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
         Log::info('Peex Bank Payout Webhook received', $request->all());
 
-        try {
-            $result = $this->paymentService->handleWebhook('peex', $request->all());
+        return response()->json(['status' => 'success'], 200);
+    }
 
-            return response()->json(['status' => $result['success'] ? 'success' : 'error'], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Peex bank payout webhook exception: ' . $e->getMessage());
-            return response()->json(['status' => 'error'], 500);
+    /**
+     * Apply a mapped Peex status ('success'|'pending'|'failed'|'cancelled')
+     * to a Payment row, mirroring what UserPaymentController::status() does
+     * when polling.
+     */
+    protected function applyPeexStatus(Payment $payment, string $status): void
+    {
+        if ($payment->status === 'success') {
+            return; // already finalized, avoid double-processing
         }
+
+        if ($status === 'success') {
+            $payment->update([
+                'status'         => 'success',
+                'paid_at'        => now(),
+                'receipt_number' => $payment->receipt_number ?? ('RCP-' . strtoupper(Str::random(8)) . '-' . now()->format('YmdHis')),
+            ]);
+
+            $booking = Booking::find($payment->booking_id);
+            if ($booking && $booking->status !== 'paid') {
+                $booking->update(['status' => 'paid']);
+                PaymentValidated::dispatch($booking->load('trip'));
+            }
+        } elseif (in_array($status, ['failed', 'cancelled'], true)) {
+            $payment->update(['status' => $status]);
+        }
+        // 'pending' → nothing to do, still waiting.
     }
 
     // =========================================================================

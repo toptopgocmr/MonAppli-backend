@@ -7,6 +7,7 @@ use App\Models\Booking;
 use App\Models\Payment;
 use App\Events\PaymentValidated;
 use App\Services\Payment\FlutterwaveService;
+use App\Services\Payment\PeexService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -15,18 +16,32 @@ use Illuminate\Support\Str;
 class UserPaymentController extends Controller
 {
     public function __construct(
-        protected FlutterwaveService $flutterwave
+        protected FlutterwaveService $flutterwave,
+        protected PeexService        $peex,
     ) {}
 
-    // ── Paiement Mobile Money via Flutterwave ────────────────────────
+    // ── Paiement Mobile Money (Peex si le pays est couvert, sinon Flutterwave) ──
     public function mobileMoney(Request $request)
     {
         $request->validate([
-            'booking_id'   => 'required|exists:bookings,id',
-            'phone'        => 'required|string',
-            'provider'     => 'required|in:mtn,airtel',
-            'country_code' => 'sometimes|string',
+            'booking_id' => 'required|exists:bookings,id',
+            'phone'      => 'required|string',
         ]);
+
+        // L'app mobile envoie soit 'network' + 'country' (écran multi-pays),
+        // soit l'ancien schéma 'provider' (mtn|airtel) + 'country_code'.
+        // On accepte les deux pour ne rien casser.
+        $network = $request->input('network') ?? $request->input('provider');
+        $countryCode = strtoupper($request->input('country') ?? $request->input('country_code', config('flutterwave.country_code', 'CM')));
+
+        if (!$network) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Moyen de paiement (network/provider) manquant.',
+            ], 422);
+        }
+
+        [$method, $operator] = $this->mapNetwork($network);
 
         $booking = Booking::with('trip')
             ->where('user_id', Auth::id())
@@ -52,9 +67,13 @@ class UserPaymentController extends Controller
         }
 
         $transactionRef = 'TXN-' . strtoupper(Str::random(10));
-        $user           = Auth::user();
-        $operator       = strtoupper($request->provider);
-        $countryCode    = $request->input('country_code', config('flutterwave.country_code'));
+        $user = Auth::user();
+
+        // ── Choix de la passerelle ────────────────────────────────────
+        // Peex ne couvre aujourd'hui que les pays confirmés par sa doc
+        // officielle (Cameroun pour le moment). Ailleurs on garde Flutterwave.
+        $usePeex = $this->peex->supportsCollectFor($countryCode);
+        $gateway = $usePeex ? 'peex' : 'flutterwave';
 
         // ── Créer le paiement en base (statut pending) ───────────────
         $payment = Payment::create([
@@ -65,30 +84,43 @@ class UserPaymentController extends Controller
             'amount'          => $booking->amount,
             'commission'      => $booking->amount * 0.10,
             'driver_net'      => $booking->amount * 0.90,
-            'method'          => 'mobile_money',
-            'provider'        => 'flutterwave',
+            'method'          => $method,
+            'provider'        => $gateway,
             'status'          => 'pending',
             'transaction_ref' => $transactionRef,
+            'country'         => $countryCode,
             'city'            => $booking->trip->departure_city ?? 'N/A',
             'paid_at'         => null,
         ]);
 
-        // ── Appel Flutterwave ────────────────────────────────────────
-        $result = $this->flutterwave->collect([
-            'phone'        => $request->phone,
-            'country_code' => $countryCode,
-            'amount'       => (int) $booking->amount,
-            'operator'     => $operator,
-            'reference'    => $transactionRef,
-            'description'  => 'ToptopGo – Réservation #' . $booking->id,
-            'user_id'      => $user->id,
-            'email'        => $user->email ?? "user_{$user->id}@toptopgo.app",
-            'first_name'   => $user->first_name ?? null,
-            'last_name'    => $user->last_name  ?? null,
-        ]);
+        if ($usePeex) {
+            $result = $this->peex->collect([
+                'track_id'      => $transactionRef,
+                'phone'         => $request->phone,
+                'amount'        => (int) $booking->amount,
+                'currency'      => 'XAF',
+                'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
+                'country'       => $countryCode,
+                'description'   => 'TopTopGo - Réservation #' . $booking->id,
+            ]);
+        } else {
+            $result = $this->flutterwave->collect([
+                'phone'        => $request->phone,
+                'country_code' => $countryCode,
+                'amount'       => (int) $booking->amount,
+                'operator'     => $operator,
+                'reference'    => $transactionRef,
+                'description'  => 'ToptopGo – Réservation #' . $booking->id,
+                'user_id'      => $user->id,
+                'email'        => $user->email ?? "user_{$user->id}@toptopgo.app",
+                'first_name'   => $user->first_name ?? null,
+                'last_name'    => $user->last_name  ?? null,
+            ]);
+        }
 
         if (!$result['success']) {
-            Log::error('UserPaymentController::mobileMoney FLW error', [
+            Log::error('UserPaymentController::mobileMoney error', [
+                'gateway'    => $gateway,
                 'booking_id' => $booking->id,
                 'error'      => $result['error'] ?? 'unknown',
             ]);
@@ -101,10 +133,16 @@ class UserPaymentController extends Controller
             ], 400);
         }
 
-        // ── Sauvegarder l'ID de charge Flutterwave ───────────────────
-        $payment->update([
-            'flw_charge_id' => $result['data']['charge_id'] ?? null,
-        ]);
+        // ── Sauvegarder l'identifiant de transaction fournisseur ─────
+        if ($usePeex) {
+            $payment->update([
+                'provider_transaction_id' => $result['transaction_id'] ?? null,
+            ]);
+        } else {
+            $payment->update([
+                'flw_charge_id' => $result['data']['charge_id'] ?? null,
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -114,6 +152,7 @@ class UserPaymentController extends Controller
                 'amount'          => $booking->amount,
                 'status'          => 'pending',
                 'instruction'     => $result['instruction'] ?? 'Autorisez le paiement sur votre téléphone Mobile Money.',
+                'gateway'         => $gateway,
                 'charge_id'       => $result['data']['charge_id'] ?? null,
                 'chat_enabled'    => false,
                 'chat_channel'    => 'chat.trip.' . $booking->trip_id,
@@ -133,14 +172,14 @@ class UserPaymentController extends Controller
             ->latest()
             ->firstOrFail();
 
-        // Si toujours en attente et qu'on a un charge_id FLW, on re-vérifie
-        if ($payment->status === 'pending' && !empty($payment->flw_charge_id)) {
-            $check = $this->flutterwave->getTransactionStatus($payment->flw_charge_id);
+        // Si toujours en attente, on re-vérifie auprès du bon fournisseur
+        if ($payment->status === 'pending') {
+            $check = $this->pollProviderStatus($payment);
 
-            if ($check['success'] && isset($check['status'])) {
+            if ($check && ($check['success'] ?? false) && isset($check['status'])) {
                 $newStatus = $check['status'];
 
-                if ($newStatus === 'completed') {
+                if (in_array($newStatus, ['success', 'completed'], true)) {
                     $receiptNumber = 'RCP-' . strtoupper(Str::random(8)) . '-' . now()->format('YmdHis');
                     $payment->update([
                         'status'         => 'success',
@@ -154,8 +193,8 @@ class UserPaymentController extends Controller
                         $booking->update(['status' => 'paid']);
                         PaymentValidated::dispatch($booking->load('trip'));
                     }
-                } elseif ($newStatus === 'failed') {
-                    $payment->update(['status' => 'failed']);
+                } elseif (in_array($newStatus, ['failed', 'cancelled'], true)) {
+                    $payment->update(['status' => $newStatus]);
                     $payment->refresh();
                 }
             }
@@ -201,5 +240,42 @@ class UserPaymentController extends Controller
                 'receipt'         => $receipt,
             ],
         ]);
+    }
+
+    /**
+     * Poll the right provider depending on how the payment was initiated.
+     */
+    protected function pollProviderStatus(Payment $payment): ?array
+    {
+        if ($payment->provider === 'peex') {
+            return $this->peex->getTransactionStatus($payment->transaction_ref);
+        }
+
+        if (!empty($payment->flw_charge_id)) {
+            return $this->flutterwave->getTransactionStatus($payment->flw_charge_id);
+        }
+
+        return null;
+    }
+
+    /**
+     * Map the network string sent by the app (or the legacy 'provider' field)
+     * to [enum method value stored in DB, operator code used by gateways].
+     *
+     * `payments.method` is a strict DB enum:
+     * ['mtn','orange','airtel','moov','visa','mastercard'] — an unrecognized
+     * value would fail the insert, so we always normalize to a safe fallback.
+     */
+    protected function mapNetwork(string $network): array
+    {
+        $normalized = strtoupper(trim($network));
+
+        return match (true) {
+            str_contains($normalized, 'MTN')    => ['mtn', 'MTN'],
+            str_contains($normalized, 'ORANGE') => ['orange', 'ORANGE'],
+            str_contains($normalized, 'AIRTEL') => ['airtel', 'AIRTEL'],
+            str_contains($normalized, 'MOOV') || str_contains($normalized, 'TMONEY') => ['moov', 'MOOV'],
+            default => ['mtn', 'MTN'],
+        };
     }
 }
