@@ -56,13 +56,14 @@
                 @php
                     $stMap = ['pending'=>['#fef3c7;color:#92400e','En attente'],'success'=>['#dcfce7;color:#166534','Payé'],'failed'=>['#fee2e2;color:#991b1b','Rejeté']];
                     $sc = $stMap[$w->status] ?? ['#f3f4f6;color:#374151', $w->status];
-                    $bankReady = filled($w->company->bank_iban ?? null) && filled($w->company->bank_swift ?? null);
+                    $methodLabel = ['mobile_money'=>'Mobile Money','bank'=>'Virement bancaire','manual'=>'Manuel'][$w->method] ?? ($w->method ?? '—');
                 @endphp
                 <tr style="border-top:1px solid #f0f0f0">
                     <td style="padding:10px 16px;font-weight:600">{{ $w->company->name ?? '—' }}</td>
                     <td style="padding:10px 16px">{{ number_format($w->amount, 0, ',', ' ') }} FCFA</td>
                     <td style="padding:10px 16px">
-                        {{ $w->method ? strtoupper($w->method) : ($bankReady ? 'Banque prévue' : 'Mobile money / manuel') }}
+                        {{ $methodLabel }}
+                        @if($w->country)<div style="font-size:11px;color:#6b7280">{{ $w->country }}{{ $w->phone_number ? ' · '.$w->phone_number : '' }}</div>@endif
                     </td>
                     <td style="padding:10px 16px"><span style="background:{{ $sc[0] }};padding:2px 8px;border-radius:10px;font-size:12px">{{ $sc[1] }}</span></td>
                     <td style="padding:10px 16px">{{ $w->created_at->format('d/m/Y H:i') }}</td>

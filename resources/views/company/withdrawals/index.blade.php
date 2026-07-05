@@ -40,23 +40,25 @@
         <div style="overflow-x:auto">
             <table class="aws-table">
                 <thead>
-                    <tr><th>Montant</th><th>Statut</th><th>Référence</th><th>Demandé le</th><th>Traité le</th></tr>
+                    <tr><th>Montant</th><th>Méthode</th><th>Statut</th><th>Référence</th><th>Demandé le</th><th>Traité le</th></tr>
                 </thead>
                 <tbody>
                     @forelse($withdrawals as $w)
                     @php
                         $stMap = ['pending'=>['aws-badge-yellow','En attente'],'success'=>['aws-badge-green','Payé'],'failed'=>['aws-badge-red','Rejeté']];
                         $sc = $stMap[$w->status] ?? ['aws-badge-gray', $w->status];
+                        $methodLabel = ['mobile_money'=>'Mobile Money','bank'=>'Virement bancaire','manual'=>'Manuel'][$w->method] ?? ($w->method ?? '—');
                     @endphp
                     <tr>
                         <td style="font-weight:600">{{ number_format($w->amount, 0, ',', ' ') }} FCFA</td>
+                        <td>{{ $methodLabel }}{{ $w->country ? ' · '.$w->country : '' }}</td>
                         <td><span class="aws-badge {{ $sc[0] }}">{{ $sc[1] }}</span></td>
                         <td>{{ $w->transaction_ref ?? '—' }}</td>
                         <td>{{ $w->created_at->format('d/m/Y H:i') }}</td>
                         <td>{{ $w->processed_at?->format('d/m/Y H:i') ?? '—' }}</td>
                     </tr>
                     @empty
-                    <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--aws-sub)">Aucune demande de retrait pour le moment.</td></tr>
+                    <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--aws-sub)">Aucune demande de retrait pour le moment.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -76,9 +78,40 @@
                 @csrf
                 <div class="aws-field">
                     <label class="aws-label">Montant (FCFA)</label>
-                    <input type="number" name="amount" min="1000" max="{{ $availableBalance }}" step="100" required class="aws-input" placeholder="Ex: 50000">
+                    <input type="number" name="amount" value="{{ old('amount') }}" min="1000" max="{{ $availableBalance }}" step="100" required class="aws-input" placeholder="Ex: 50000">
                     <p class="aws-hint">Solde disponible : {{ number_format($availableBalance, 0, ',', ' ') }} FCFA</p>
                 </div>
+
+                <div class="aws-field">
+                    <label class="aws-label">Moyen de paiement</label>
+                    <select name="method" id="w-method" required class="aws-input">
+                        <option value="">— Choisir —</option>
+                        <option value="mobile_money" {{ old('method') === 'mobile_money' ? 'selected' : '' }}>Mobile Money</option>
+                        <option value="bank" {{ old('method') === 'bank' ? 'selected' : '' }} {{ !$hasBankInfo ? 'disabled' : '' }}>Virement bancaire{{ !$hasBankInfo ? ' (coordonnées manquantes)' : '' }}</option>
+                    </select>
+                    @if(!$hasBankInfo)
+                    <p class="aws-hint">Renseignez vos coordonnées bancaires ci-dessous pour activer le virement bancaire.</p>
+                    @endif
+                </div>
+
+                <div class="aws-field">
+                    <label class="aws-label">Pays du retrait</label>
+                    <select name="country" required class="aws-input">
+                        <option value="">— Choisir —</option>
+                        @foreach($payoutCountries as $c)
+                            <option value="{{ $c['code'] }}" {{ old('country') === $c['code'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
+                        @endforeach
+                    </select>
+                    @if(empty($payoutCountries))
+                    <p class="aws-hint">Aucun pays de retrait n'est actuellement disponible.</p>
+                    @endif
+                </div>
+
+                <div class="aws-field" id="w-phone-field">
+                    <label class="aws-label">Numéro Mobile Money</label>
+                    <input type="text" name="phone_number" value="{{ old('phone_number', $company->phone ?? '') }}" class="aws-input" placeholder="Ex: 06XXXXXXXX">
+                </div>
+
                 <button type="submit" class="aws-btn aws-btn-primary" style="width:100%" {{ $availableBalance < 1000 ? 'disabled' : '' }}>Envoyer la demande</button>
                 </form>
             </div>
@@ -90,9 +123,9 @@
             <div class="aws-panel-body">
                 <p class="aws-hint" style="margin-top:0">
                     @if($hasBankInfo)
-                        Renseignées — le virement bancaire sera tenté en priorité. Sinon, un virement mobile money ou un paiement manuel sera utilisé.
+                        Renseignées — vous pouvez choisir « Virement bancaire » comme moyen de paiement lors d'une demande de retrait.
                     @else
-                        Non renseignées — vos retraits seront payés par mobile money (si couvert) ou manuellement par l'administration.
+                        Non renseignées — renseignez-les ici pour pouvoir choisir le virement bancaire comme moyen de paiement.
                     @endif
                 </p>
                 <form method="POST" action="{{ route('company.withdrawals.bank-info') }}">
@@ -120,4 +153,20 @@
 
     </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const methodSelect = document.getElementById('w-method');
+    const phoneField    = document.getElementById('w-phone-field');
+    if (!methodSelect || !phoneField) return;
+
+    function togglePhone() {
+        phoneField.style.display = methodSelect.value === 'mobile_money' ? '' : 'none';
+    }
+    methodSelect.addEventListener('change', togglePhone);
+    togglePhone();
+})();
+</script>
+@endpush
 @endsection

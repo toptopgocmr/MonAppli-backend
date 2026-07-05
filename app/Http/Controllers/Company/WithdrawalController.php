@@ -13,6 +13,18 @@ class WithdrawalController extends Controller
         return auth('company')->user();
     }
 
+    // Pays vers lesquels un retrait peut être effectué (couverts par Peex Disbursement/Remittance).
+    private function payoutCountries(): array
+    {
+        $codes = config('payments.peex.disbursement_countries', ['CM', 'CG']);
+        $all   = config('geo.countries', []);
+
+        return collect($all)
+            ->filter(fn ($c) => in_array($c['code'], $codes, true))
+            ->values()
+            ->all();
+    }
+
     public function index()
     {
         $company = $this->company();
@@ -25,9 +37,10 @@ class WithdrawalController extends Controller
                                         ->paginate(15);
 
         $hasBankInfo = filled($company->bank_iban) && filled($company->bank_swift);
+        $payoutCountries = $this->payoutCountries();
 
         return view('company.withdrawals.index', compact(
-            'company', 'availableBalance', 'totalNetRevenue', 'withdrawals', 'hasBankInfo'
+            'company', 'availableBalance', 'totalNetRevenue', 'withdrawals', 'hasBankInfo', 'payoutCountries'
         ));
     }
 
@@ -35,9 +48,13 @@ class WithdrawalController extends Controller
     {
         $company = $this->company();
         $available = $company->availableBalance();
+        $allowedCountryCodes = collect($this->payoutCountries())->pluck('code')->all();
 
         $request->validate([
-            'amount' => 'required|numeric|min:1000|max:' . max(1000, $available),
+            'amount'       => 'required|numeric|min:1000|max:' . max(1000, $available),
+            'method'       => 'required|in:mobile_money,bank',
+            'country'      => 'required|in:' . implode(',', $allowedCountryCodes ?: ['CM']),
+            'phone_number' => 'required_if:method,mobile_money|nullable|string|max:20',
         ], [
             'amount.max' => 'Le montant demandé dépasse votre solde disponible (' . number_format($available, 0, ',', ' ') . ' FCFA).',
         ]);
@@ -46,10 +63,17 @@ class WithdrawalController extends Controller
             return back()->with('error', 'Le montant demandé dépasse votre solde disponible.')->withInput();
         }
 
+        if ($request->method === 'bank' && !(filled($company->bank_iban) && filled($company->bank_swift))) {
+            return back()->with('error', 'Renseignez vos coordonnées bancaires avant de demander un retrait par virement bancaire.')->withInput();
+        }
+
         CompanyWithdrawal::create([
-            'company_id' => $company->id,
-            'amount'     => $request->amount,
-            'status'     => 'pending',
+            'company_id'   => $company->id,
+            'amount'       => $request->amount,
+            'method'       => $request->method,
+            'country'      => $request->country,
+            'phone_number' => $request->method === 'mobile_money' ? $request->phone_number : null,
+            'status'       => 'pending',
         ]);
 
         return redirect()->route('company.withdrawals.index')

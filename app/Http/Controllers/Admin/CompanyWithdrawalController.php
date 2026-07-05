@@ -32,9 +32,11 @@ class CompanyWithdrawalController extends Controller
     }
 
     /**
-     * Approuver un retrait société : tente un virement bancaire Peex si les
-     * coordonnées bancaires sont renseignées, sinon un virement mobile money
-     * Peex si le pays de la société est couvert, sinon paiement manuel.
+     * Approuver un retrait société : utilise le moyen de paiement (banque ou
+     * mobile money) et le pays explicitement choisis par la société lors de
+     * sa demande. Aucun changement automatique de méthode n'est effectué —
+     * si le paiement Peex échoue, le retrait reste en attente pour
+     * intervention manuelle.
      */
     public function approve(CompanyWithdrawal $withdrawal)
     {
@@ -43,11 +45,15 @@ class CompanyWithdrawalController extends Controller
         }
 
         $company = $withdrawal->company;
-        $country = strtoupper($company->country ?? '');
+        $country = strtoupper($withdrawal->country ?: $company->country ?? '') ?: 'CM';
         $reference = 'CWD-' . $withdrawal->id . '-' . strtoupper(Str::random(6));
 
-        // ── 1) Virement bancaire Peex si coordonnées bancaires renseignées ──
-        if (filled($company->bank_iban) && filled($company->bank_swift)) {
+        // ── Virement bancaire : uniquement si la société a choisi "bank" ────
+        if ($withdrawal->method === 'bank') {
+            if (!(filled($company->bank_iban) && filled($company->bank_swift))) {
+                return back()->with('error', 'Coordonnées bancaires manquantes pour cette société. Impossible de traiter ce retrait par virement bancaire.');
+            }
+
             $result = $this->peex->bankPayout([
                 'reference'     => $reference,
                 'bank_name'     => $company->bank_name,
@@ -56,7 +62,7 @@ class CompanyWithdrawalController extends Controller
                 'bank_swift'    => $company->bank_swift,
                 'amount'        => (int) $withdrawal->amount,
                 'currency'      => 'XAF',
-                'country'       => $country ?: 'CM',
+                'country'       => $country,
                 'first_name'    => $company->contact_name ?? $company->name,
                 'last_name'     => $company->name,
                 'purpose'       => 'BUSINESS',
@@ -66,7 +72,6 @@ class CompanyWithdrawalController extends Controller
             if ($result['success'] ?? false) {
                 $withdrawal->update([
                     'status'          => 'success',
-                    'method'          => 'bank',
                     'processed_at'    => now(),
                     'transaction_ref' => $result['reference'] ?? $result['transaction_id'] ?? $reference,
                 ]);
@@ -74,17 +79,27 @@ class CompanyWithdrawalController extends Controller
                 return back()->with('success', 'Retrait société payé automatiquement par virement bancaire (Peex).');
             }
 
-            Log::warning('Peex bankPayout failed on company withdrawal, trying mobile money fallback', [
+            Log::error('Peex bankPayout failed on company withdrawal approval', [
                 'withdrawal_id' => $withdrawal->id,
                 'error'         => $result['error'] ?? 'unknown',
             ]);
+
+            return back()->with('error', 'Échec du virement bancaire Peex : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour intervention manuelle.');
         }
 
-        // ── 2) Virement mobile money Peex si le pays est couvert ────────────
-        if ($this->peex->supportsDisbursementFor($country) && filled($company->phone)) {
+        // ── Mobile money : uniquement si la société a choisi "mobile_money" ─
+        if ($withdrawal->method === 'mobile_money') {
+            if (!filled($withdrawal->phone_number)) {
+                return back()->with('error', 'Numéro mobile money manquant sur cette demande de retrait.');
+            }
+
+            if (!$this->peex->supportsDisbursementFor($country)) {
+                return back()->with('error', "Le pays choisi ($country) n'est pas couvert pour le paiement mobile money.");
+            }
+
             $result = $this->peex->payout([
                 'reference'   => $reference,
-                'phone'       => $company->phone,
+                'phone'       => $withdrawal->phone_number,
                 'amount'      => (int) $withdrawal->amount,
                 'currency'    => 'XAF',
                 'country'     => $country,
@@ -97,7 +112,6 @@ class CompanyWithdrawalController extends Controller
             if ($result['success'] ?? false) {
                 $withdrawal->update([
                     'status'          => 'success',
-                    'method'          => 'mobile_money',
                     'processed_at'    => now(),
                     'transaction_ref' => $result['reference'] ?? $result['transaction_id'] ?? $reference,
                 ]);
@@ -110,17 +124,17 @@ class CompanyWithdrawalController extends Controller
                 'error'         => $result['error'] ?? 'unknown',
             ]);
 
-            return back()->with('error', 'Échec du paiement Peex (banque et mobile money) : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour intervention manuelle.');
+            return back()->with('error', 'Échec du paiement mobile money Peex : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour intervention manuelle.');
         }
 
-        // ── 3) Ni banque ni mobile money disponibles/couverts → manuel ──────
+        // ── Aucune méthode Peex reconnue (anciennes demandes) → manuel ──────
         $withdrawal->update([
             'status'       => 'success',
-            'method'       => 'manual',
+            'method'       => $withdrawal->method ?: 'manual',
             'processed_at' => now(),
         ]);
 
-        return back()->with('success', 'Retrait marqué comme payé (paiement manuel — aucune coordonnée Peex disponible ou pays non couvert).');
+        return back()->with('success', 'Retrait marqué comme payé manuellement (aucun moyen de paiement Peex reconnu sur cette demande).');
     }
 
     public function reject(Request $request, CompanyWithdrawal $withdrawal)
