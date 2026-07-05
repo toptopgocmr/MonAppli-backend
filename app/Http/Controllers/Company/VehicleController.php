@@ -65,7 +65,7 @@ class VehicleController extends Controller
             'notes' => 'nullable|string|max:500',
         ]);
 
-        Vehicle::create([
+        $vehicle = Vehicle::create([
             'company_id' => $company->id,
             'plate'      => $request->plate,
             'brand'      => $request->brand,
@@ -78,8 +78,10 @@ class VehicleController extends Controller
             'status'     => 'active',
         ]);
 
-        return redirect()->route('company.vehicles.index')
-                         ->with('success', 'Véhicule ajouté à la flotte.');
+        // Étape suivante du parcours : attribuer le véhicule à un ou plusieurs
+        // chauffeurs — on enchaîne directement sur la fiche du véhicule.
+        return redirect()->route('company.vehicles.show', $vehicle->id)
+                         ->with('success', 'Véhicule ajouté à la flotte. Attribuez-le maintenant à un ou plusieurs chauffeurs.');
     }
 
     // Fiche véhicule : infos + chauffeurs assignés + créneaux
