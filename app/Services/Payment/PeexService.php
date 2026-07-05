@@ -78,6 +78,25 @@ class PeexService implements PaymentProviderInterface
         return in_array(strtoupper($countryCode), array_map('strtoupper', $this->supportedCollectCountries()), true);
     }
 
+    /**
+     * Countries Peex currently confirms as supported for the Disbursement API
+     * (driver payouts). Kept separate from collect_countries in case Peex
+     * enables one before the other.
+     */
+    public function supportedDisbursementCountries(): array
+    {
+        return config('payments.peex.disbursement_countries', ['CM']);
+    }
+
+    public function supportsDisbursementFor(?string $countryCode): bool
+    {
+        if (!$countryCode) {
+            return false;
+        }
+
+        return in_array(strtoupper($countryCode), array_map('strtoupper', $this->supportedDisbursementCountries()), true);
+    }
+
     // =========================================================================
     // COLLECT API — GET /collection/me, /collection/get_fees,
     //               POST /collection/request_payment, GET /collection/all_requests
@@ -266,17 +285,18 @@ class PeexService implements PaymentProviderInterface
     }
 
     // =========================================================================
-    // DISBURSEMENT API — driver payouts (Cameroon only per Peex docs, for now)
+    // DISBURSEMENT API — driver payouts
     // =========================================================================
 
     /**
      * Payout to a driver's mobile wallet.
      * POST /disbursement/request_payment
      *
-     * NOTE: Peex's own documentation states Cameroon is currently the only
-     * active country for disbursement. Do not route CG/GA driver payouts here
-     * until Peex support confirms coverage — this method is provided for
-     * completeness but is not wired into the withdrawal-approval flow yet.
+     * Wired into the admin withdrawal-approval flow
+     * (PaymentPartnerController::approveWithdrawal). Only call this for
+     * countries returned by supportedDisbursementCountries() — Peex's public
+     * docs only mention Cameroon, widened to include Congo Brazzaville per
+     * written confirmation from Peex (see PEEX_DISBURSEMENT_COUNTRIES).
      */
     public function payout(array $data): array
     {

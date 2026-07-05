@@ -37,12 +37,12 @@ return [
         'callback_username' => env('PEEX_CALLBACK_USERNAME', 'peex'),
         'callback_password' => env('PEEX_CALLBACK_PASSWORD', 'peex_callback'),
 
-        // Per https://peex-api-docs.peexit.com/collect : "facilitates mobile money
-        // collections in Cameroon". Disbursement API doc explicitly states Cameroon
-        // is the only active country. Until Peex support confirms coverage for
-        // Congo/Gabon, keep the Collect API scoped to these countries and let
-        // other countries fall back to the existing provider (Flutterwave).
-        'collect_countries' => array_filter(explode(',', env('PEEX_COLLECT_COUNTRIES', 'CM'))),
+        // Per https://peex-api-docs.peexit.com/collect the public docs only
+        // mention Cameroon; widened to include Congo Brazzaville per written
+        // confirmation from Peex support. Any other country falls back to
+        // Flutterwave (collect) / manual payout (disbursement) automatically.
+        'collect_countries' => array_filter(explode(',', env('PEEX_COLLECT_COUNTRIES', 'CM,CG'))),
+        'disbursement_countries' => array_filter(explode(',', env('PEEX_DISBURSEMENT_COUNTRIES', 'CM,CG'))),
     ],
 
     /*

@@ -8,11 +8,19 @@ use App\Models\Wallet;
 use App\Models\WalletTransaction;
 use App\Models\Withdrawal;
 use App\Models\Driver\Driver;
+use App\Notifications\WithdrawalProcessedNotification;
+use App\Services\Payment\PeexService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class PaymentPartnerController extends Controller
 {
+    public function __construct(protected PeexService $peex)
+    {
+    }
+
     public function index(Request $request)
     {
         $period = $request->get('period', 'month');
@@ -154,7 +162,33 @@ class PaymentPartnerController extends Controller
     }
 
     /**
-     * Approuver un retrait
+     * Page dédiée à la gestion des retraits chauffeurs (approbation/rejet).
+     * Séparée du dashboard principal pour le garder concis.
+     */
+    public function withdrawalsIndex(Request $request)
+    {
+        $query = Withdrawal::with(['driver', 'wallet']);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $withdrawals = $query->latest()->paginate(20)->withQueryString();
+
+        $pendingCount = Withdrawal::where('status', 'pending')->count();
+
+        return view('admin.payments.withdrawals', compact('withdrawals', 'pendingCount'));
+    }
+
+    /**
+     * Approuver un retrait.
+     *
+     * IMPORTANT sur l'argent : le wallet du chauffeur a déjà été débité au
+     * moment de la DEMANDE de retrait (WalletService::requestWithdrawal).
+     * Cette méthode ne doit donc plus re-débiter le wallet ici (c'était un
+     * bug — double débit) : elle se contente de déclencher le vrai paiement
+     * (via Peex Disbursement quand le pays du chauffeur est couvert), puis
+     * de marquer le retrait comme traité.
      */
     public function approveWithdrawal(Withdrawal $withdrawal)
     {
@@ -162,31 +196,65 @@ class PaymentPartnerController extends Controller
             return back()->with('error', 'Ce retrait ne peut plus être modifié.');
         }
 
+        $driver = $withdrawal->driver;
+        $country = strtoupper($driver->vehicle_country ?? '');
+        $eligibleForPeex = $this->peex->supportsDisbursementFor($country);
+
+        if ($eligibleForPeex) {
+            $result = $this->peex->payout([
+                'reference'   => 'WD-' . $withdrawal->id . '-' . strtoupper(Str::random(6)),
+                'phone'       => $withdrawal->phone_number,
+                'amount'      => (int) $withdrawal->amount,
+                'currency'    => 'XAF',
+                'country'     => $country,
+                'first_name'  => $driver->first_name ?? 'Chauffeur',
+                'last_name'   => $driver->last_name ?? 'TopTopGo',
+                'purpose'     => 'BUSINESS',
+                'fund_origin' => 'SALES_AND_BUSINESS_DEVELOPMENT',
+            ]);
+
+            if (!($result['success'] ?? false)) {
+                Log::error('Peex payout failed on withdrawal approval', [
+                    'withdrawal_id' => $withdrawal->id,
+                    'driver_id'     => $driver->id ?? null,
+                    'error'         => $result['error'] ?? 'unknown',
+                ]);
+
+                // Volontairement laissé en 'pending' : le wallet chauffeur reste
+                // débité (comme depuis la demande), rien n'est perdu, mais le
+                // retrait attend une intervention manuelle (relancer ou payer
+                // par un autre moyen) plutôt que d'être marqué traité à tort.
+                return back()->with('error', 'Échec du paiement Peex : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour vérification manuelle.');
+            }
+
+            $withdrawal->update([
+                'status'          => 'success',
+                'processed_at'    => now(),
+                'transaction_ref' => $result['reference'] ?? $result['transaction_id'] ?? $withdrawal->transaction_ref,
+            ]);
+
+            $driver?->notify(new WithdrawalProcessedNotification($withdrawal));
+
+            return back()->with('success', 'Retrait payé automatiquement via Peex.');
+        }
+
+        // Pays non couvert par Peex Disbursement → process manuel inchangé :
+        // l'admin paie lui-même le chauffeur en dehors de la plateforme,
+        // et se contente ici de marquer le retrait comme traité.
         $withdrawal->update([
             'status'       => 'success',
             'processed_at' => now(),
         ]);
 
-        // Débiter le wallet
-        $wallet = $withdrawal->wallet;
-        $balanceBefore = $wallet->balance;
-        $wallet->decrement('balance', $withdrawal->amount);
+        $driver?->notify(new WithdrawalProcessedNotification($withdrawal));
 
-        WalletTransaction::create([
-            'wallet_id'      => $wallet->id,
-            'type'           => 'debit',
-            'amount'         => $withdrawal->amount,
-            'balance_before' => $balanceBefore,
-            'balance_after'  => $wallet->fresh()->balance,
-            'description'    => 'Retrait approuvé via ' . strtoupper($withdrawal->method),
-            'reference'      => $withdrawal->transaction_ref,
-        ]);
-
-        return back()->with('success', 'Retrait approuvé et wallet débité.');
+        return back()->with('success', 'Retrait marqué comme payé (paiement manuel — pays non couvert par Peex).');
     }
 
     /**
-     * Rejeter un retrait
+     * Rejeter un retrait — rembourse le wallet du chauffeur, puisqu'il avait
+     * été débité dès la demande (sinon l'argent disparaissait sans retour :
+     * bug corrigé ici).
      */
     public function rejectWithdrawal(Withdrawal $withdrawal)
     {
@@ -194,9 +262,27 @@ class PaymentPartnerController extends Controller
             return back()->with('error', 'Ce retrait ne peut plus être modifié.');
         }
 
-        $withdrawal->update(['status' => 'failed']);
+        $withdrawal->update(['status' => 'failed', 'processed_at' => now()]);
 
-        return back()->with('success', 'Retrait rejeté.');
+        $wallet = $withdrawal->wallet;
+        if ($wallet) {
+            $before = $wallet->balance;
+            $wallet->increment('balance', $withdrawal->amount);
+
+            WalletTransaction::create([
+                'wallet_id'      => $wallet->id,
+                'type'           => 'credit',
+                'amount'         => $withdrawal->amount,
+                'balance_before' => $before,
+                'balance_after'  => $wallet->fresh()->balance,
+                'description'    => 'Remboursement retrait rejeté #' . $withdrawal->id,
+                'reference'      => $withdrawal->transaction_ref,
+            ]);
+        }
+
+        $withdrawal->driver?->notify(new WithdrawalProcessedNotification($withdrawal));
+
+        return back()->with('success', 'Retrait rejeté et solde remboursé au chauffeur.');
     }
 
     /**
