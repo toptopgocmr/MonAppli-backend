@@ -27,7 +27,9 @@ class PaymentPartnerController extends Controller
         [$startDate, $endDate] = $this->getDateRange($period, $request);
 
         // ── Stats par partenaire ──────────────────────────────────
-        $partners = ['mtn', 'orange', 'airtel', 'moov', 'visa', 'mastercard'];
+        // Visa/Mastercard retirés : Stripe n'est plus une passerelle active,
+        // Peex couvre aussi la collecte bancaire.
+        $partners = ['mtn', 'orange', 'airtel', 'moov'];
 
         $partnerStats = [];
         foreach ($partners as $partner) {

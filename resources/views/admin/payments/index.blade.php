@@ -94,7 +94,7 @@
             <label class="ttg-label">Méthode</label>
             <select name="method" class="ttg-select">
                 <option value="">Toutes</option>
-                @foreach(['mtn'=>'MTN Money','orange'=>'Orange Money','airtel'=>'Airtel Money','moov'=>'Moov Money','visa'=>'Visa/Stripe','mastercard'=>'Mastercard'] as $val=>$lbl)
+                @foreach(['mtn'=>'MTN Money','orange'=>'Orange Money','airtel'=>'Airtel Money','moov'=>'Moov Money'] as $val=>$lbl)
                     <option value="{{ $val }}" {{ request('method')===$val ? 'selected' : '' }}>{{ $lbl }}</option>
                 @endforeach
             </select>
