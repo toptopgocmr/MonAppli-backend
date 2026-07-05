@@ -14,6 +14,7 @@ use App\Models\Trip;
 use App\Models\DriverLocation;
 use App\Models\SupportMessage;
 use App\Models\Company;
+use App\Models\VehicleDriverShift;
 
 class Driver extends Authenticatable
 {
@@ -131,5 +132,24 @@ class Driver extends Authenticatable
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    // ── Flotte société : véhicules & créneaux ──────────────────────
+    public function vehicleShifts()
+    {
+        return $this->hasMany(VehicleDriverShift::class);
+    }
+
+    public function activeVehicleShifts()
+    {
+        return $this->hasMany(VehicleDriverShift::class)->where('status', 'active');
+    }
+
+    public function vehicles()
+    {
+        return $this->belongsToMany(Vehicle::class, 'vehicle_driver_shifts')
+                    ->wherePivot('status', 'active')
+                    ->withPivot(['id', 'day_of_week', 'specific_date', 'start_time', 'end_time', 'is_primary', 'status'])
+                    ->distinct();
     }
 }

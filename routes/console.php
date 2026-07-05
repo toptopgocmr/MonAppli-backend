@@ -10,3 +10,6 @@ Schedule::command('toptopgo:clean-locations --days=7')->dailyAt('02:00');
 
 // Rapport quotidien — chaque matin à 7h
 Schedule::command('toptopgo:daily-report')->dailyAt('07:00');
+
+// Bascule automatique véhicule ↔ chauffeur selon le planning — toutes les 15 min
+Schedule::command('toptopgo:sync-vehicle-shifts')->everyFifteenMinutes();

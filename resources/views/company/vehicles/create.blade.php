@@ -18,12 +18,9 @@
     </div>
     @endif
 
-    @if($drivers->isEmpty())
-    <div class="aws-alert" style="background:#fef9f0;border:1px solid #f5d798;color:#8a6116">
-        Tous vos chauffeurs ont déjà un véhicule assigné, ou vous n'avez pas encore de chauffeur.
-        <a href="{{ route('company.drivers.create') }}" style="color:var(--aws-blue);margin-left:6px">Créer un chauffeur →</a>
+    <div class="aws-alert" style="background:#eef7ff;border:1px solid #b8daf5;color:#0073bb;margin-bottom:16px">
+        Vous pourrez assigner un ou plusieurs chauffeurs (avec leurs créneaux) après la création du véhicule.
     </div>
-    @else
 
     <form method="POST" action="{{ route('company.vehicles.store') }}">
     @csrf
@@ -32,49 +29,45 @@
         <div class="aws-panel-header"><span class="aws-panel-title">Informations du véhicule</span></div>
         <div class="aws-panel-body">
 
-            <div class="aws-field">
-                <label class="aws-label">Chauffeur assigné</label>
-                <select name="driver_id" required class="aws-input">
-                    <option value="">— Sélectionner un chauffeur —</option>
-                    @foreach($drivers as $driver)
-                        <option value="{{ $driver->id }}" {{ old('driver_id') == $driver->id ? 'selected' : '' }}>
-                            {{ $driver->first_name }} {{ $driver->last_name }} ({{ $driver->phone }})
-                        </option>
-                    @endforeach
-                </select>
-                <p class="aws-hint">Seuls les chauffeurs sans véhicule assigné apparaissent ici.</p>
-            </div>
-
             <div class="aws-grid-3">
                 <div class="aws-field">
+                    <label class="aws-label">Plaque *</label>
+                    <input type="text" name="plate" value="{{ old('plate') }}" required class="aws-input" style="font-family:monospace" placeholder="LT-1234-A">
+                </div>
+                <div class="aws-field">
                     <label class="aws-label">Marque</label>
-                    <input type="text" name="vehicle_brand" value="{{ old('vehicle_brand') }}" required class="aws-input" placeholder="Toyota">
+                    <input type="text" name="brand" value="{{ old('brand') }}" class="aws-input" placeholder="Toyota">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Modèle</label>
-                    <input type="text" name="vehicle_model" value="{{ old('vehicle_model') }}" required class="aws-input" placeholder="Corolla">
-                </div>
-                <div class="aws-field">
-                    <label class="aws-label">Plaque</label>
-                    <input type="text" name="vehicle_plate" value="{{ old('vehicle_plate') }}" required class="aws-input" style="font-family:monospace" placeholder="LT-1234-A">
+                    <input type="text" name="model" value="{{ old('model') }}" class="aws-input" placeholder="Corolla">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Couleur</label>
-                    <input type="text" name="vehicle_color" value="{{ old('vehicle_color') }}" required class="aws-input" placeholder="Blanc">
+                    <input type="text" name="color" value="{{ old('color') }}" class="aws-input" placeholder="Blanc">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Type</label>
-                    <select name="vehicle_type" required class="aws-input">
+                    <select name="type" class="aws-input">
                         <option value="">— Choisir —</option>
-                        @foreach(['Berline','SUV','Monospace','Pickup','Minibus','Moto'] as $type)
-                            <option value="{{ $type }}" {{ old('vehicle_type') === $type ? 'selected' : '' }}>{{ $type }}</option>
+                        @foreach(['Standard','Confort','Van','PMR'] as $type)
+                            <option value="{{ $type }}" {{ old('type') === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Ville d'opération</label>
-                    <input type="text" name="vehicle_city" value="{{ old('vehicle_city') }}" class="aws-input" placeholder="Yaoundé">
+                    <input type="text" name="city" value="{{ old('city') }}" class="aws-input" placeholder="Yaoundé">
                 </div>
+                <div class="aws-field">
+                    <label class="aws-label">Pays</label>
+                    <input type="text" name="country" value="{{ old('country') }}" class="aws-input" placeholder="Cameroun">
+                </div>
+            </div>
+
+            <div class="aws-field">
+                <label class="aws-label">Notes</label>
+                <textarea name="notes" class="aws-input" rows="2">{{ old('notes') }}</textarea>
             </div>
 
         </div>
@@ -86,6 +79,5 @@
     </div>
 
     </form>
-    @endif
 </div>
 @endsection

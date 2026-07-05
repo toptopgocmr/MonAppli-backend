@@ -3,18 +3,45 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use App\Models\Driver\Driver;
 
 class Vehicle extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'driver_id', 'plate', 'brand', 'model',
+        'company_id', 'plate', 'brand', 'model',
         'type', 'color', 'country', 'city',
-        'lat', 'lng', 'status',
+        'lat', 'lng', 'status', 'notes',
     ];
 
-    public function driver()
+    protected $casts = [
+        'lat' => 'float',
+        'lng' => 'float',
+    ];
+
+    public function company()
     {
-        return $this->belongsTo(Driver::class);
+        return $this->belongsTo(Company::class);
+    }
+
+    public function shifts()
+    {
+        return $this->hasMany(VehicleDriverShift::class);
+    }
+
+    public function activeShifts()
+    {
+        return $this->hasMany(VehicleDriverShift::class)->where('status', 'active');
+    }
+
+    // Chauffeurs actuellement associés à ce véhicule (via les créneaux actifs)
+    public function drivers()
+    {
+        return $this->belongsToMany(Driver::class, 'vehicle_driver_shifts')
+                    ->wherePivot('status', 'active')
+                    ->withPivot(['id', 'day_of_week', 'specific_date', 'start_time', 'end_time', 'is_primary', 'status'])
+                    ->distinct();
     }
 }

@@ -12,24 +12,7 @@
 
 <div style="max-width:780px">
 
-    <!-- Chauffeur card -->
-    <div class="aws-panel" style="margin-bottom:16px">
-        <div class="aws-panel-body" style="display:flex;align-items:center;gap:14px;padding:14px 20px">
-            @if($driver->profile_photo)
-                <img src="{{ $driver->profile_photo }}" style="width:44px;height:44px;border-radius:50%;object-fit:cover;border:1px solid var(--aws-border)">
-            @else
-                <div style="width:44px;height:44px;border-radius:50%;background:#0073bb;color:#fff;font-size:18px;font-weight:700;display:flex;align-items:center;justify-content:center">
-                    {{ strtoupper(substr($driver->first_name, 0, 1)) }}
-                </div>
-            @endif
-            <div>
-                <div style="font-size:15px;font-weight:700;color:var(--aws-header)">{{ $driver->first_name }} {{ $driver->last_name }}</div>
-                <div style="font-size:13px;color:var(--aws-sub)">{{ $driver->phone }}</div>
-            </div>
-        </div>
-    </div>
-
-    <form method="POST" action="{{ route('company.vehicles.update', $driver->id) }}">
+    <form method="POST" action="{{ route('company.vehicles.update', $vehicle->id) }}">
     @csrf @method('PUT')
 
     <div class="aws-panel">
@@ -42,36 +25,53 @@
             </div>
             @endif
 
-            <div class="aws-grid-2">
+            <div class="aws-grid-3">
+                <div class="aws-field">
+                    <label class="aws-label">Plaque *</label>
+                    <input type="text" name="plate" value="{{ old('plate', $vehicle->plate) }}" required class="aws-input" style="font-family:monospace">
+                </div>
                 <div class="aws-field">
                     <label class="aws-label">Marque</label>
-                    <input type="text" name="vehicle_brand" value="{{ old('vehicle_brand', $driver->vehicle_brand) }}" class="aws-input" placeholder="Toyota, Renault...">
+                    <input type="text" name="brand" value="{{ old('brand', $vehicle->brand) }}" class="aws-input" placeholder="Toyota, Renault...">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Modèle</label>
-                    <input type="text" name="vehicle_model" value="{{ old('vehicle_model', $driver->vehicle_model) }}" class="aws-input" placeholder="Corolla, Clio...">
-                </div>
-                <div class="aws-field">
-                    <label class="aws-label">Plaque d'immatriculation</label>
-                    <input type="text" name="vehicle_plate" value="{{ old('vehicle_plate', $driver->vehicle_plate) }}" class="aws-input" style="font-family:monospace" placeholder="AB-1234-CD">
+                    <input type="text" name="model" value="{{ old('model', $vehicle->model) }}" class="aws-input" placeholder="Corolla, Clio...">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Couleur</label>
-                    <input type="text" name="vehicle_color" value="{{ old('vehicle_color', $driver->vehicle_color) }}" class="aws-input" placeholder="Blanc, Noir...">
+                    <input type="text" name="color" value="{{ old('color', $vehicle->color) }}" class="aws-input" placeholder="Blanc, Noir...">
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Type de véhicule</label>
-                    <select name="vehicle_type" class="aws-input">
+                    <select name="type" class="aws-input">
                         <option value="">— Sélectionner —</option>
-                        @foreach(['Berline','SUV','Monospace','Pickup','Minibus','Moto'] as $type)
-                            <option value="{{ $type }}" {{ old('vehicle_type', $driver->vehicle_type) === $type ? 'selected' : '' }}>{{ $type }}</option>
+                        @foreach(['Standard','Confort','Van','PMR'] as $type)
+                            <option value="{{ $type }}" {{ old('type', $vehicle->type) === $type ? 'selected' : '' }}>{{ $type }}</option>
                         @endforeach
                     </select>
                 </div>
                 <div class="aws-field">
                     <label class="aws-label">Ville d'opération</label>
-                    <input type="text" name="vehicle_city" value="{{ old('vehicle_city', $driver->vehicle_city) }}" class="aws-input" placeholder="Yaoundé, Douala...">
+                    <input type="text" name="city" value="{{ old('city', $vehicle->city) }}" class="aws-input" placeholder="Yaoundé, Douala...">
                 </div>
+                <div class="aws-field">
+                    <label class="aws-label">Pays</label>
+                    <input type="text" name="country" value="{{ old('country', $vehicle->country) }}" class="aws-input">
+                </div>
+                <div class="aws-field">
+                    <label class="aws-label">Statut</label>
+                    <select name="status" class="aws-input">
+                        @foreach(['active'=>'Actif','maintenance'=>'Maintenance','inactive'=>'Inactif'] as $val => $label)
+                            <option value="{{ $val }}" {{ old('status', $vehicle->status) === $val ? 'selected' : '' }}>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+
+            <div class="aws-field">
+                <label class="aws-label">Notes</label>
+                <textarea name="notes" class="aws-input" rows="2">{{ old('notes', $vehicle->notes) }}</textarea>
             </div>
 
         </div>
@@ -79,7 +79,7 @@
 
     <div style="display:flex;align-items:center;gap:14px;padding:4px 0 20px">
         <button type="submit" class="aws-btn aws-btn-primary">Enregistrer les modifications</button>
-        <a href="{{ route('company.vehicles.index') }}" style="font-size:13px;color:var(--aws-blue);text-decoration:none">Annuler</a>
+        <a href="{{ route('company.vehicles.show', $vehicle->id) }}" style="font-size:13px;color:var(--aws-blue);text-decoration:none">Annuler</a>
     </div>
 
     </form>

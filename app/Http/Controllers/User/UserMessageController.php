@@ -115,7 +115,7 @@ class UserMessageController extends Controller
                     ? trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? ''))
                     : 'Chauffeur',
                 'driver_photo' => $driverPhoto,
-                'driver_phone' => $driver?->phone ?? '',
+                // ⚠️ Numéro personnel du chauffeur volontairement absent : appel in-app uniquement.
                 'trip_status'  => $trip?->status ?? 'pending',
                 'last_message' => $last?->content ?? '',
                 'updated_at'   => $last?->created_at ?? $trip?->updated_at,

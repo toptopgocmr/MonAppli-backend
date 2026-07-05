@@ -8,6 +8,7 @@ use App\Http\Controllers\Company\ReservationController;
 use App\Http\Controllers\Company\RevenueController;
 use App\Http\Controllers\Company\ItineraryController;
 use App\Http\Controllers\Company\CompanyMessageController;
+use App\Http\Controllers\Company\ScheduleController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('company')->name('company.')->group(function () {
@@ -40,9 +41,17 @@ Route::prefix('company')->name('company.')->group(function () {
         Route::get('/vehicles',           [VehicleController::class, 'index'])->name('vehicles.index');
         Route::get('/vehicles/create',    [VehicleController::class, 'create'])->name('vehicles.create');
         Route::post('/vehicles',          [VehicleController::class, 'store'])->name('vehicles.store');
+        Route::get('/vehicles/{id}',      [VehicleController::class, 'show'])->name('vehicles.show');
         Route::get('/vehicles/{id}/edit', [VehicleController::class, 'edit'])->name('vehicles.edit');
         Route::put('/vehicles/{id}',      [VehicleController::class, 'update'])->name('vehicles.update');
         Route::delete('/vehicles/{id}',   [VehicleController::class, 'destroy'])->name('vehicles.destroy');
+
+        // Véhicules — association chauffeurs / créneaux
+        Route::post('/vehicles/{id}/shifts',                 [VehicleController::class, 'storeShift'])->name('vehicles.shifts.store');
+        Route::delete('/vehicles/{id}/shifts/{shiftId}',     [VehicleController::class, 'destroyShift'])->name('vehicles.shifts.destroy');
+
+        // Planning chauffeurs (calendrier)
+        Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
 
         // Réservations / courses
         Route::get('/reservations',       [ReservationController::class, 'index'])->name('reservations.index');

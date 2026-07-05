@@ -25,6 +25,18 @@ class UserTripController extends Controller
             ->whereIn('status', ['pending', 'accepted'])
             ->where('available_seats', '>=', 1);
 
+        // ── Ségrégation Covoiturage / Chauffeur privé ───────────────────
+        // Un trajet dont le chauffeur est rattaché à une société (company_id
+        // renseigné) est un trajet "société" : il ne doit JAMAIS apparaître
+        // dans les résultats covoiturage — uniquement côté "chauffeur privé".
+        // L'app mobile envoie déjà service=covoiturage sur l'onglet covoiturage.
+        $service = $request->get('service');
+        if ($service === 'covoiturage') {
+            $query->whereHas('driver', fn($q) => $q->whereNull('company_id'));
+        } elseif ($service === 'chauffeur') {
+            $query->whereHas('driver', fn($q) => $q->whereNotNull('company_id'));
+        }
+
         // ── Filtre départ ──────────────────────────────────────────────
         $dep = $request->departure ?? $request->pickup ?? null;
         if ($dep) {
@@ -165,12 +177,16 @@ class UserTripController extends Controller
                 'name'         => trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? '')),
                 'first_name'   => $driver->first_name  ?? '',
                 'last_name'    => $driver->last_name   ?? '',
-                'phone'        => $driver->phone        ?? '',
+                // ⚠️ Le numéro personnel du chauffeur n'est JAMAIS transmis au client
+                // (sécurité/vie privée) : les appels passent uniquement par l'appel in-app.
                 'rating'       => $rating,
                 'rating_count' => $ratingCount,
                 'photo'        => $photo,
                 'company_id'   => $driver->company_id ?? null,
                 'company_name' => $driver->company?->name ?? null,
+                // Pour un trajet société ("Courses Sociétés"), le client contacte
+                // la société via son numéro professionnel — pas le chauffeur individuel.
+                'company_phone' => $driver->company?->phone ?? null,
                 'company_logo' => $driver->company?->logo
                     ? (str_starts_with($driver->company->logo, 'http')
                         ? $driver->company->logo

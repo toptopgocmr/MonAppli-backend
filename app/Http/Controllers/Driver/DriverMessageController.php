@@ -90,7 +90,7 @@ class DriverMessageController extends Controller
                     'client_id'      => $user->id,
                     'client_name'    => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')),
                     'client_photo'   => $clientPhoto,
-                    'client_phone'   => $user->phone ?? '',
+                    // ⚠️ Numéro personnel du client volontairement absent : appel in-app uniquement.
                     'booking_status' => $booking->status ?? 'pending',
                     'trip_status'    => $trip->status ?? 'pending',
                     'last_message'   => $lastMessage?->content ?? '',

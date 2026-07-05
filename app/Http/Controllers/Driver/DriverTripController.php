@@ -340,7 +340,8 @@ class DriverTripController extends Controller
             'client'     => $user ? [
                 'id'            => $user->id,
                 'name'          => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')),
-                'phone'         => $user->phone ?? '',
+                // ⚠️ Le numéro personnel du client n'est JAMAIS transmis au chauffeur
+                // (sécurité/vie privée) : les appels passent uniquement par l'appel in-app.
                 'profile_photo' => $photo,
             ] : null,
             'trip' => $b->trip ? [

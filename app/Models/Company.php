@@ -34,6 +34,11 @@ class Company extends Authenticatable
         return $this->hasMany(Driver::class)->where('status', 'approved');
     }
 
+    public function vehicles()
+    {
+        return $this->hasMany(Vehicle::class);
+    }
+
     // ── Helpers ──────────────────────────────────────────────────
     public function getLogoUrlAttribute(): ?string
     {
