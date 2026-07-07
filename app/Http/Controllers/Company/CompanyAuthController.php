@@ -27,9 +27,19 @@ class CompanyAuthController extends Controller
         if (auth('company')->attempt($credentials, $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            if (auth('company')->user()->status === 'pending') {
+            $status = auth('company')->user()->status;
+
+            if ($status === 'pending') {
                 auth('company')->logout();
                 return back()->withErrors(['email' => 'Votre compte est en attente de validation par l\'administrateur.']);
+            }
+
+            // ✅ Un compte société suspendu ne devait bloquer nulle part —
+            // seul 'pending' était vérifié, une société suspendue pouvait
+            // donc continuer à se connecter normalement.
+            if ($status === 'suspended') {
+                auth('company')->logout();
+                return back()->withErrors(['email' => 'Votre compte a été suspendu. Veuillez contacter le support TopTopGo.']);
             }
 
             return redirect()->route('company.dashboard');

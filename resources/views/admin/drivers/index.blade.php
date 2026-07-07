@@ -128,22 +128,22 @@
                             <a href="{{ route('admin.drivers.edit',$driver->id) }}" class="btn btn-primary btn-sm">Modifier ️</a>
                             @if($driver->status=='pending')
                                 <form method="POST" action="{{ route('admin.drivers.approve',$driver->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm"></button>
+                                    <button class="btn btn-success btn-sm">✓ Approuver</button>
                                 </form>
                                 <form method="POST" action="{{ route('admin.drivers.reject',$driver->id) }}">@csrf
-                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Rejeter ?')"></button>
+                                    <button class="btn btn-danger btn-sm" onclick="return confirm('Rejeter ?')">✕ Rejeter</button>
                                 </form>
                             @elseif($driver->status=='approved')
                                 <form method="POST" action="{{ route('admin.drivers.suspend',$driver->id) }}">@csrf
-                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Suspendre ?')"></button>
+                                    <button class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa" onclick="return confirm('Suspendre ?')">⏸ Suspendre</button>
                                 </form>
                             @elseif($driver->status=='suspended')
                                 <form method="POST" action="{{ route('admin.drivers.activate',$driver->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm">️</button>
+                                    <button class="btn btn-success btn-sm">▶ Activer</button>
                                 </form>
                             @elseif($driver->status=='rejected')
                                 <form method="POST" action="{{ route('admin.drivers.approve',$driver->id) }}">@csrf
-                                    <button class="btn btn-success btn-sm"></button>
+                                    <button class="btn btn-success btn-sm">✓ Approuver</button>
                                 </form>
                             @endif
                             <form method="POST" action="{{ route('admin.drivers.destroy',$driver->id) }}">

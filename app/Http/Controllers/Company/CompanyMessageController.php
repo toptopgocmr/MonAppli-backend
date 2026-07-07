@@ -17,7 +17,9 @@ class CompanyMessageController extends Controller
      */
     public function index(Request $request)
     {
-        $company   = auth('company')->user();
+        // ✅ Résout la société pour le compte principal ET pour un agent
+        // connecté (auth('company')->user() renvoie null pour un agent).
+        $company   = \App\Support\CompanyContext::company();
         $driverIds = $company->drivers()->pluck('id');
 
         $query = Trip::whereIn('driver_id', $driverIds)
@@ -51,7 +53,9 @@ class CompanyMessageController extends Controller
      */
     public function show(Request $request, $tripId)
     {
-        $company   = auth('company')->user();
+        // ✅ Résout la société pour le compte principal ET pour un agent
+        // connecté (auth('company')->user() renvoie null pour un agent).
+        $company   = \App\Support\CompanyContext::company();
         $driverIds = $company->drivers()->pluck('id');
 
         $trip = Trip::whereIn('driver_id', $driverIds)
@@ -70,7 +74,9 @@ class CompanyMessageController extends Controller
      */
     public function support(Request $request)
     {
-        $company   = auth('company')->user();
+        // ✅ Résout la société pour le compte principal ET pour un agent
+        // connecté (auth('company')->user() renvoie null pour un agent).
+        $company   = \App\Support\CompanyContext::company();
         $driverIds = $company->drivers()->pluck('id');
 
         // Récupérer les user_ids qui ont eu un trajet avec un chauffeur de la société

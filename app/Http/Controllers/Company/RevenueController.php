@@ -11,7 +11,9 @@ class RevenueController extends Controller
 {
     public function index(Request $request)
     {
-        $company   = auth('company')->user();
+        // ✅ Résout la société pour le compte principal ET pour un agent
+        // connecté (auth('company')->user() renvoie null pour un agent).
+        $company   = \App\Support\CompanyContext::company();
         $driverIds = Driver::where('company_id', $company->id)->pluck('id');
 
         // Revenus ce mois

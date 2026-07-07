@@ -43,7 +43,7 @@ class UserPaymentController extends Controller
 
         [$method, $operator] = $this->mapNetwork($network);
 
-        $booking = Booking::with('trip')
+        $booking = Booking::with('trip.driver')
             ->where('user_id', Auth::id())
             ->findOrFail($request->booking_id);
 
@@ -88,6 +88,32 @@ class UserPaymentController extends Controller
         $usePeex = $this->peex->supportsCollectFor($countryCode);
         $gateway = $usePeex ? 'peex' : 'flutterwave';
 
+        // ✅ Taux de commission réellement applicable à CE chauffeur/société,
+        // au lieu d'un 10% fixe qui ignorait complètement les taux configurés
+        // par l'admin (société : Company::commission_rate, chauffeur
+        // indépendant : App\Models\CommissionRate — priorité chauffeur >
+        // type de véhicule > pays > taux global).
+        $driver = $booking->trip->driver;
+        $commissionRatePercent = null;
+
+        if ($driver && $driver->company_id) {
+            $company = \App\Models\Company::find($driver->company_id);
+            if ($company && $company->commission_rate !== null) {
+                $commissionRatePercent = (float) $company->commission_rate;
+            }
+        }
+
+        if ($commissionRatePercent === null) {
+            $commissionRatePercent = \App\Models\CommissionRate::resolveRate(
+                (int) ($driver->id ?? 0),
+                $driver->vehicle_type ?? '',
+                $countryCode
+            );
+        }
+
+        $commissionAmount = round($booking->amount * ($commissionRatePercent / 100), 2);
+        $driverNetAmount   = round($booking->amount - $commissionAmount, 2);
+
         // ✅ Garde-fou global : toute exception inattendue ici (contrainte
         // DB, colonne enum non élargie, etc.) doit remonter un message JSON
         // exploitable plutôt que le "Server Error" générique de Laravel.
@@ -99,8 +125,8 @@ class UserPaymentController extends Controller
                 'driver_id'       => $booking->trip->driver_id,
                 'booking_id'      => $booking->id,
                 'amount'          => $booking->amount,
-                'commission'      => $booking->amount * 0.10,
-                'driver_net'      => $booking->amount * 0.90,
+                'commission'      => $commissionAmount,
+                'driver_net'      => $driverNetAmount,
                 'method'          => $method,
                 'provider'        => $gateway,
                 'status'          => 'pending',

@@ -14,6 +14,26 @@ class CompanyContext
         return app()->bound('current.company_agent') ? app('current.company_agent') : null;
     }
 
+    /**
+     * La société courante, que l'utilisateur connecté soit le compte
+     * principal (guard "company") OU un agent (guard "company_agent").
+     *
+     * Avant ce correctif, chaque contrôleur du panel société résolvait la
+     * société via `auth('company')->user()` uniquement — ce qui renvoie
+     * `null` quand c'est un AGENT qui est connecté (DG, comptable...),
+     * provoquant une erreur 500 ("Attempt to read property on null") dès
+     * qu'un agent ouvrait une section utilisant sa société (ex: Agents,
+     * Chauffeurs, Retraits...).
+     */
+    public static function company(): ?\App\Models\Company
+    {
+        if ($company = auth('company')->user()) {
+            return $company;
+        }
+
+        return self::agent()?->company;
+    }
+
     public static function isAgent(): bool
     {
         return self::agent() !== null;

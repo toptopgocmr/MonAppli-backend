@@ -10,7 +10,9 @@ class ScheduleController extends Controller
 {
     private function company()
     {
-        return auth('company')->user();
+        // ✅ Résout la société pour le compte principal ET pour un agent
+        // connecté (auth('company')->user() renvoie null pour un agent).
+        return \App\Support\CompanyContext::company();
     }
 
     // Planning chauffeurs : vue récurrente (semaine type) + créneaux à dates précises à venir

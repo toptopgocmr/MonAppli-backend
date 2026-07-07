@@ -10,7 +10,11 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $company = auth('company')->user();
+        // ✅ Résout la société pour le compte principal ET pour un agent
+        // connecté (auth('company')->user() renvoie null pour un agent,
+        // ce qui faisait planter le dashboard — première page vue après
+        // connexion — pour absolument tous les agents).
+        $company = \App\Support\CompanyContext::company();
 
         $totalDrivers  = Driver::where('company_id', $company->id)->count();
         $activeDrivers = Driver::where('company_id', $company->id)
