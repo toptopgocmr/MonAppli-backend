@@ -145,5 +145,16 @@
             }
         });
     } catch (e) { console.warn('Pusher init (call widget) failed', e); }
+
+    // ✅ Si la société ferme/quitte l'onglet en plein appel (répondu ou pas
+    // encore), on prévient le serveur pour ne pas laisser l'appel "actif"
+    // bloquer indéfiniment les tentatives suivantes entre les deux parties.
+    window.addEventListener('pagehide', function () {
+        if (currentCallId) {
+            try {
+                fetch(`/company/calls/${currentCallId}/end`, { method: 'POST', headers: headers(), keepalive: true });
+            } catch (e) {}
+        }
+    });
 })();
 </script>

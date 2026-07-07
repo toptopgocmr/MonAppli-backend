@@ -39,6 +39,14 @@ class CallOrchestrator
             ->active()
             ->first();
 
+        // ✅ Un appel "actif" abandonné (personne n'a décroché, onglet fermé
+        // sans raccrocher…) ne doit jamais bloquer indéfiniment les appels
+        // suivants entre les deux mêmes parties.
+        if ($active && $active->isStale()) {
+            $active->update(['status' => 'missed', 'ended_at' => now()]);
+            $active = null;
+        }
+
         if ($active) {
             return [$active, null, true]; // true = déjà un appel actif
         }

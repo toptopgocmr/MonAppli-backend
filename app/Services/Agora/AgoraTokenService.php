@@ -62,4 +62,60 @@ class AgoraTokenService
     {
         return match ($type) {
             \App\Models\User\User::class     => self::uidForUser($id),
-            \App\Models\Driver\
+            \App\Models\Driver\Driver::class  => self::uidForDriver($id),
+            \App\Models\Company::class        => self::uidForCompany($id),
+            \App\Models\Admin\AdminUser::class => self::uidForAdmin($id),
+            default => $id,
+        };
+    }
+
+    /**
+     * Résout le channel Pusher (notifications, pas Agora) sur lequel
+     * broadcaster un event pour ce type de destinataire.
+     *   - user.{id}   / driver.{id}   : channel personnel (déjà utilisé)
+     *   - company.{id}                : channel personnel société (nouveau)
+     *   - admin-support               : file d'attente partagée (n'importe
+     *     quel admin connecté au panel peut décrocher)
+     */
+    public static function pusherChannelFor(string $type, int $id): string
+    {
+        return match ($type) {
+            \App\Models\User\User::class      => "user.{$id}",
+            \App\Models\Driver\Driver::class  => "driver.{$id}",
+            \App\Models\Company::class        => "company.{$id}",
+            \App\Models\Admin\AdminUser::class => 'admin-support',
+            default => "unknown.{$id}",
+        };
+    }
+
+    /**
+     * @return array{app_id:string,channel:string,uid:int,token:string,expires_in:int}|null
+     *         null si les identifiants Agora ne sont pas configurés (.env).
+     */
+    public static function generate(string $channelName, int $uid): ?array
+    {
+        if (!self::isConfigured()) {
+            return null;
+        }
+
+        $ttl = (int) config('agora.token_ttl', 3600);
+
+        $token = RtcTokenBuilder2::buildTokenWithUid(
+            config('agora.app_id'),
+            config('agora.app_certificate'),
+            $channelName,
+            $uid,
+            RtcTokenBuilder2::ROLE_PUBLISHER,
+            $ttl,
+            $ttl
+        );
+
+        return [
+            'app_id'     => config('agora.app_id'),
+            'channel'    => $channelName,
+            'uid'        => $uid,
+            'token'      => $token,
+            'expires_in' => $ttl,
+        ];
+    }
+}

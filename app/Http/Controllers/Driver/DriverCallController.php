@@ -58,8 +58,14 @@ class DriverCallController extends Controller
             ], 404);
         }
 
-        // Vérifier qu'il n'y a pas déjà un appel actif sur ce trajet
+        // Vérifier qu'il n'y a pas déjà un appel actif sur ce trajet — sauf
+        // s'il est "abandonné" (personne n'a décroché, app fermée sans
+        // raccrocher), auquel cas on le referme automatiquement.
         $active = Call::forTrip($tripId)->active()->first();
+        if ($active && $active->isStale()) {
+            $active->update(['status' => 'missed', 'ended_at' => now()]);
+            $active = null;
+        }
         if ($active) {
             return response()->json([
                 'success' => false,

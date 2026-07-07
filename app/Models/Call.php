@@ -79,6 +79,25 @@ class Call extends Model
         });
     }
 
+    /**
+     * Un appel marqué "actif" en base mais en réalité abandonné : personne
+     * n'a décroché après 90s de sonnerie, ou un appel "answered" qui traîne
+     * depuis des heures (onglet fermé/app tuée sans raccrocher proprement).
+     * Sans ça, un seul appel mal terminé bloque indéfiniment tout nouvel
+     * appel entre les deux mêmes parties (ex: société ↔ support).
+     */
+    public function isStale(): bool
+    {
+        if ($this->status === 'initiated') {
+            return $this->created_at && $this->created_at->diffInSeconds(now()) > 90;
+        }
+        if ($this->status === 'answered') {
+            $ref = $this->started_at ?? $this->created_at;
+            return $ref && $ref->diffInHours(now()) > 6;
+        }
+        return false;
+    }
+
     // ── Accessors ──────────────────────────────────────────────────
 
     public function getDurationFormattedAttribute(): string

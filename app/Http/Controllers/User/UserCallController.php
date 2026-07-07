@@ -62,8 +62,14 @@ class UserCallController extends Controller
             ], 404);
         }
 
-        // Un seul appel actif à la fois sur ce trajet
+        // Un seul appel actif à la fois sur ce trajet — sauf s'il est
+        // "abandonné" (personne n'a décroché, app fermée sans raccrocher),
+        // auquel cas on le referme automatiquement pour ne pas bloquer.
         $active = Call::forTrip($tripId)->active()->first();
+        if ($active && $active->isStale()) {
+            $active->update(['status' => 'missed', 'ended_at' => now()]);
+            $active = null;
+        }
         if ($active) {
             return response()->json([
                 'success' => false,
