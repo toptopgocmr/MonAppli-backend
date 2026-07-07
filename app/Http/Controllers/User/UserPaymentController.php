@@ -47,6 +47,19 @@ class UserPaymentController extends Controller
             ->where('user_id', Auth::id())
             ->findOrFail($request->booking_id);
 
+        // ✅ Garde-fou : une réservation orpheline (trip supprimé/introuvable)
+        // ne doit jamais faire planter le paiement avec une erreur 500 opaque.
+        if (!$booking->trip) {
+            Log::error('UserPaymentController::mobileMoney: booking sans trip associé', [
+                'booking_id' => $booking->id,
+                'trip_id'    => $booking->trip_id,
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Le trajet associé à cette réservation est introuvable. Contactez le support.',
+            ], 422);
+        }
+
         // ✅ Le client peut payer dès que la réservation est en pending ou confirmed
         if (!in_array($booking->status, ['pending', 'confirmed', 'accepted'])) {
             return response()->json([
@@ -75,89 +88,112 @@ class UserPaymentController extends Controller
         $usePeex = $this->peex->supportsCollectFor($countryCode);
         $gateway = $usePeex ? 'peex' : 'flutterwave';
 
-        // ── Créer le paiement en base (statut pending) ───────────────
-        $payment = Payment::create([
-            'user_id'         => $user->id,
-            'trip_id'         => $booking->trip_id,
-            'driver_id'       => $booking->trip->driver_id,
-            'booking_id'      => $booking->id,
-            'amount'          => $booking->amount,
-            'commission'      => $booking->amount * 0.10,
-            'driver_net'      => $booking->amount * 0.90,
-            'method'          => $method,
-            'provider'        => $gateway,
-            'status'          => 'pending',
-            'transaction_ref' => $transactionRef,
-            'country'         => $countryCode,
-            'city'            => $booking->trip->departure_city ?? 'N/A',
-            'paid_at'         => null,
-        ]);
-
-        if ($usePeex) {
-            $result = $this->peex->collect([
-                'track_id'      => $transactionRef,
-                'phone'         => $request->phone,
-                'amount'        => (int) $booking->amount,
-                'currency'      => 'XAF',
-                'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
-                'country'       => $countryCode,
-                'description'   => 'TopTopGo - Réservation #' . $booking->id,
+        // ✅ Garde-fou global : toute exception inattendue ici (contrainte
+        // DB, colonne enum non élargie, etc.) doit remonter un message JSON
+        // exploitable plutôt que le "Server Error" générique de Laravel.
+        try {
+            // ── Créer le paiement en base (statut pending) ───────────────
+            $payment = Payment::create([
+                'user_id'         => $user->id,
+                'trip_id'         => $booking->trip_id,
+                'driver_id'       => $booking->trip->driver_id,
+                'booking_id'      => $booking->id,
+                'amount'          => $booking->amount,
+                'commission'      => $booking->amount * 0.10,
+                'driver_net'      => $booking->amount * 0.90,
+                'method'          => $method,
+                'provider'        => $gateway,
+                'status'          => 'pending',
+                'transaction_ref' => $transactionRef,
+                'country'         => $countryCode,
+                'city'            => $booking->trip->departure_city ?? 'N/A',
+                'paid_at'         => null,
             ]);
-        } else {
-            $result = $this->flutterwave->collect([
-                'phone'        => $request->phone,
-                'country_code' => $countryCode,
-                'amount'       => (int) $booking->amount,
-                'operator'     => $operator,
-                'reference'    => $transactionRef,
-                'description'  => 'ToptopGo – Réservation #' . $booking->id,
-                'user_id'      => $user->id,
-                'email'        => $user->email ?? "user_{$user->id}@toptopgo.app",
-                'first_name'   => $user->first_name ?? null,
-                'last_name'    => $user->last_name  ?? null,
-            ]);
-        }
 
-        if (!$result['success']) {
-            Log::error('UserPaymentController::mobileMoney error', [
-                'gateway'    => $gateway,
+            if ($usePeex) {
+                $result = $this->peex->collect([
+                    'track_id'      => $transactionRef,
+                    'phone'         => $request->phone,
+                    'amount'        => (int) $booking->amount,
+                    'currency'      => 'XAF',
+                    'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
+                    'country'       => $countryCode,
+                    'description'   => 'TopTopGo - Réservation #' . $booking->id,
+                ]);
+            } else {
+                $result = $this->flutterwave->collect([
+                    'phone'        => $request->phone,
+                    'country_code' => $countryCode,
+                    'amount'       => (int) $booking->amount,
+                    'operator'     => $operator,
+                    'reference'    => $transactionRef,
+                    'description'  => 'ToptopGo – Réservation #' . $booking->id,
+                    'user_id'      => $user->id,
+                    'email'        => $user->email ?? "user_{$user->id}@toptopgo.app",
+                    'first_name'   => $user->first_name ?? null,
+                    'last_name'    => $user->last_name  ?? null,
+                ]);
+            }
+
+            if (!$result['success']) {
+                Log::error('UserPaymentController::mobileMoney error', [
+                    'gateway'    => $gateway,
+                    'booking_id' => $booking->id,
+                    'error'      => $result['error'] ?? 'unknown',
+                ]);
+
+                $payment->update(['status' => 'failed']);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error'] ?? 'Erreur lors de l\'initiation du paiement Mobile Money.',
+                ], 400);
+            }
+
+            // ── Sauvegarder l'identifiant de transaction fournisseur ─────
+            if ($usePeex) {
+                $payment->update([
+                    'provider_transaction_id' => $result['transaction_id'] ?? null,
+                ]);
+            } else {
+                $payment->update([
+                    'flw_charge_id' => $result['data']['charge_id'] ?? null,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Paiement initié. Veuillez autoriser la transaction sur votre téléphone.',
+                'data'    => [
+                    'transaction_ref' => $transactionRef,
+                    'amount'          => $booking->amount,
+                    'status'          => 'pending',
+                    'instruction'     => $result['instruction'] ?? 'Autorisez le paiement sur votre téléphone Mobile Money.',
+                    'gateway'         => $gateway,
+                    'charge_id'       => $result['data']['charge_id'] ?? null,
+                    'chat_enabled'    => false,
+                    'chat_channel'    => 'chat.trip.' . $booking->trip_id,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('UserPaymentController::mobileMoney exception non gérée', [
                 'booking_id' => $booking->id,
-                'error'      => $result['error'] ?? 'unknown',
+                'gateway'    => $gateway,
+                'error'      => $e->getMessage(),
+                'file'       => $e->getFile(),
+                'line'       => $e->getLine(),
+                'trace'      => $e->getTraceAsString(),
             ]);
 
-            $payment->update(['status' => 'failed']);
+            if (isset($payment)) {
+                $payment->update(['status' => 'failed']);
+            }
 
             return response()->json([
                 'success' => false,
-                'message' => $result['error'] ?? 'Erreur lors de l\'initiation du paiement Mobile Money.',
-            ], 400);
+                'message' => 'Une erreur technique est survenue lors de l\'initiation du paiement. Veuillez réessayer.',
+            ], 500);
         }
-
-        // ── Sauvegarder l'identifiant de transaction fournisseur ─────
-        if ($usePeex) {
-            $payment->update([
-                'provider_transaction_id' => $result['transaction_id'] ?? null,
-            ]);
-        } else {
-            $payment->update([
-                'flw_charge_id' => $result['data']['charge_id'] ?? null,
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Paiement initié. Veuillez autoriser la transaction sur votre téléphone.',
-            'data'    => [
-                'transaction_ref' => $transactionRef,
-                'amount'          => $booking->amount,
-                'status'          => 'pending',
-                'instruction'     => $result['instruction'] ?? 'Autorisez le paiement sur votre téléphone Mobile Money.',
-                'gateway'         => $gateway,
-                'charge_id'       => $result['data']['charge_id'] ?? null,
-                'chat_enabled'    => false,
-                'chat_channel'    => 'chat.trip.' . $booking->trip_id,
-            ],
-        ]);
     }
 
     // ── Statut d'un paiement (polling) ───────────────────────────────

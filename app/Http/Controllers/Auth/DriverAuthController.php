@@ -95,6 +95,17 @@ class DriverAuthController extends Controller
             ], 403);
         }
 
+        // ✅ L'application mobile Chauffeur est réservée aux chauffeurs
+        // covoiturage (indépendants). Les chauffeurs rattachés à une société
+        // (company_id renseigné) passent par le portail/l'app dédié aux
+        // sociétés de transport.
+        if (!empty($driver->company_id)) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cette application est réservée aux chauffeurs covoiturage indépendants. En tant que chauffeur d'une société de transport, veuillez utiliser le portail dédié aux sociétés.",
+            ], 403);
+        }
+
         $token = $driver->createToken('driver-token')->plainTextToken;
 
         return response()->json(['success' => true, 'token' => $token, 'driver' => $driver]);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SupportMessage;
 use App\Models\User\User;
+use App\Services\Realtime\PusherBroadcaster;
 
 class AdminUserSupportController extends Controller
 {
@@ -113,12 +114,25 @@ class AdminUserSupportController extends Controller
 
         $user = User::findOrFail($userId);
 
-        SupportMessage::create([
-            'admin_id'       => session('admin_id'),
+        $message = SupportMessage::create([
+            'sender_type'    => \App\Models\Admin\AdminUser::class,
+            'sender_id'      => session('admin_id'),
             'recipient_type' => \App\Models\User\User::class,
             'recipient_id'   => $userId,
             'content'        => $request->content,
             'is_read'        => false,
+        ]);
+
+        // ✅ NOUVEAU — cette réponse n'était jamais notifiée en temps réel
+        // au client avant (aucun broadcast n'existait ici du tout).
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
         ]);
 
         return redirect()->route('admin.support.users.show', array_filter([

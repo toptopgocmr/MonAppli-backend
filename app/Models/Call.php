@@ -61,6 +61,24 @@ class Call extends Model
         return $query->whereIn('status', ['initiated', 'answered']);
     }
 
+    /**
+     * Appel actif entre deux parties précises (peu importe qui a appelé
+     * qui), sans dépendre d'un trip_id — utilisé pour les appels
+     * support/société qui ne sont pas toujours liés à un trajet.
+     */
+    public function scopeBetweenParties($query, string $typeA, int $idA, string $typeB, int $idB)
+    {
+        return $query->where(function ($q) use ($typeA, $idA, $typeB, $idB) {
+            $q->where(function ($q2) use ($typeA, $idA, $typeB, $idB) {
+                $q2->where('caller_type', $typeA)->where('caller_id', $idA)
+                   ->where('receiver_type', $typeB)->where('receiver_id', $idB);
+            })->orWhere(function ($q2) use ($typeA, $idA, $typeB, $idB) {
+                $q2->where('caller_type', $typeB)->where('caller_id', $idB)
+                   ->where('receiver_type', $typeA)->where('receiver_id', $idA);
+            });
+        });
+    }
+
     // ── Accessors ──────────────────────────────────────────────────
 
     public function getDurationFormattedAttribute(): string

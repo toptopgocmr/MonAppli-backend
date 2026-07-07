@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>@yield('title', 'Admin') — TopTopGo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" href="{{ asset('images/logo3.ico') }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>tailwind.config={theme:{extend:{colors:{brand:'#1DA1F2','brand-d':'#0b8fd6',accent:'#FFC107'}}}}</script>
@@ -372,6 +373,8 @@
 </div>
 
 <div id="sb-overlay" onclick="toggleSidebar()"></div>
+
+@include('partials.admin-call-widget')
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script>

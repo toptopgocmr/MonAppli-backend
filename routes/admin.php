@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminMessageController;
 use App\Http\Controllers\Admin\AdminUserSupportController;
 use App\Http\Controllers\Admin\AdminDriverSupportController;
+use App\Http\Controllers\Admin\AdminCallController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\CommissionRateController;
 use App\Http\Controllers\Admin\PaymentPartnerController;
@@ -159,6 +160,17 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('support/drivers', [AdminDriverSupportController::class, 'index'])->name('support.drivers.index');
         Route::get('support/drivers/{driver}', [AdminDriverSupportController::class, 'show'])->name('support.drivers.show');
         Route::post('support/drivers/{driver}/send', [AdminDriverSupportController::class, 'send'])->name('support.drivers.send');
+
+        /*
+        |--------------------------------------------------------------------------
+        | APPELS VOIX IN-APP — SUPPORT (client, chauffeur, société)
+        |--------------------------------------------------------------------------
+        */
+        Route::post('calls/initiate',       [AdminCallController::class, 'initiate'])->name('calls.initiate');
+        Route::post('calls/{callId}/answer', [AdminCallController::class, 'answer'])->name('calls.answer');
+        Route::post('calls/{callId}/end',    [AdminCallController::class, 'end'])->name('calls.end');
+        Route::post('calls/{callId}/missed', [AdminCallController::class, 'missed'])->name('calls.missed');
+        Route::get('calls/{callId}/token',   [AdminCallController::class, 'token'])->name('calls.token');
 
         /*
         |--------------------------------------------------------------------------

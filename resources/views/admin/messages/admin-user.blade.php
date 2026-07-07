@@ -142,7 +142,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex gap-2 text-xs">
+                    <div class="flex gap-2 text-xs items-center">
                         @if($user->phone)
                             <span class="bg-indigo-50 text-indigo-700 px-2 py-1 rounded">
                                 {{ $user->phone }}
@@ -153,6 +153,10 @@
                                 {{ $user->email }}
                             </span>
                         @endif
+                        <button onclick="TTCall.startCall('user', {{ $user->id }})"
+                                class="bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded flex items-center gap-1 font-semibold">
+                            📞 Appeler
+                        </button>
                     </div>
                 </div>
 

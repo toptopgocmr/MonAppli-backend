@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers\Driver;
 
-use App\Events\CallInitiated;
-use App\Events\CallEnded;
 use App\Http\Controllers\Controller;
 use App\Models\Call;
 use App\Models\Trip;
+use App\Services\Agora\AgoraTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Pusher\Pusher;
 
 /**
  * DriverCallController — Appels voix in-app côté Chauffeur
@@ -20,9 +20,25 @@ use Illuminate\Support\Facades\Log;
  *   POST  /api/driver/calls/{call_id}/end       → raccrocher
  *   POST  /api/driver/calls/{call_id}/missed    → marquer manqué
  *   GET   /api/driver/calls/{trip_id}           → historique
+ *
+ * NOTE : broadcast() diffusion via les Events Laravel a été volontairement
+ * évité ici — le driver de broadcasting configuré (BROADCAST_DRIVER) vaut
+ * "log" par défaut sur ce projet (voir .env), ce qui rendrait broadcast()
+ * silencieusement inopérant. On utilise donc le même pattern que
+ * UserCallController : un trigger Pusher direct, garanti fonctionnel.
  */
 class DriverCallController extends Controller
 {
+    private function pusher(): Pusher
+    {
+        return new Pusher(
+            env('PUSHER_APP_KEY',    'b936f5c8f1666939a7fa'),
+            env('PUSHER_APP_SECRET', ''),
+            env('PUSHER_APP_ID',     ''),
+            ['cluster' => env('PUSHER_APP_CLUSTER', 'eu'), 'useTLS' => true]
+        );
+    }
+
     /**
      * Initier un appel vers le client.
      * → Déclenche IncomingCallBanner sur l'app client via Pusher.
@@ -63,11 +79,28 @@ class DriverCallController extends Controller
             'started_at'    => now(),
         ]);
 
-        // 📡 Pusher → bannière Flutter sur l'app client
+        // 📡 Pusher → channel personnel du client (user.{id}), event
+        // call.incoming — c'est exactement ce que PusherService._subscribeUser()
+        // écoute côté app Client (mobile-client-main/lib/core/services/pusher_service.dart).
         try {
-            broadcast(new CallInitiated($call))->toOthers();
+            $callerName  = trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? ''));
+            $callerPhoto = '';
+            if (!empty($driver->profile_photo)) {
+                $callerPhoto = str_starts_with($driver->profile_photo, 'http')
+                    ? $driver->profile_photo
+                    : asset('storage/' . $driver->profile_photo);
+            }
+
+            $this->pusher()->trigger("user.{$trip->user_id}", 'call.incoming', [
+                'trip_id'      => (int) $tripId,
+                'call_id'      => $call->id,
+                'caller_id'    => $driver->id,
+                'caller_name'  => $callerName ?: 'Votre chauffeur',
+                'caller_photo' => $callerPhoto,
+                'initiated_at' => now()->toIso8601String(),
+            ]);
         } catch (\Exception $e) {
-            Log::warning('Pusher CallInitiated error: ' . $e->getMessage());
+            Log::warning('Pusher call.incoming error: ' . $e->getMessage());
         }
 
         Log::info('📞 Appel initié par chauffeur', [
@@ -76,6 +109,12 @@ class DriverCallController extends Controller
             'trip_id'   => $tripId,
             'user_id'   => $trip->user_id,
         ]);
+
+        // ✅ Audio réel (Agora) : le chauffeur qui initie l'appel rejoint tout
+        // de suite le canal dédié. Le client récupère le sien via
+        // GET /user/calls/{callId}/token une fois la notification reçue.
+        $channel = AgoraTokenService::channelForCall($call->id);
+        $agora   = AgoraTokenService::generate($channel, AgoraTokenService::uidForDriver($driver->id));
 
         return response()->json([
             'success' => true,
@@ -86,7 +125,44 @@ class DriverCallController extends Controller
                 'type'    => $call->type,
                 'status'  => $call->status,
             ],
+            'agora' => $agora,
         ]);
+    }
+
+    /**
+     * GET /driver/calls/{callId}/token
+     * Récupère (ou régénère) le token Agora du chauffeur pour un appel en
+     * cours, qu'il en soit l'appelant ou le destinataire (appel client).
+     */
+    public function token(Request $request, $callId): JsonResponse
+    {
+        $driver = $request->user();
+        $call   = Call::find($callId);
+
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        $driverClass = \App\Models\Driver\Driver::class;
+        $isParticipant =
+            ($call->caller_type === $driverClass && (int) $call->caller_id === (int) $driver->id) ||
+            ($call->receiver_type === $driverClass && (int) $call->receiver_id === (int) $driver->id);
+
+        if (!$isParticipant) {
+            return response()->json(['success' => false, 'message' => 'Non autorisé.'], 403);
+        }
+
+        $channel = AgoraTokenService::channelForCall($call->id);
+        $agora   = AgoraTokenService::generate($channel, AgoraTokenService::uidForDriver($driver->id));
+
+        if (!$agora) {
+            return response()->json([
+                'success' => false,
+                'message' => "Le service d'appel audio n'est pas configuré.",
+            ], 503);
+        }
+
+        return response()->json(['success' => true, 'agora' => $agora]);
     }
 
     /**
@@ -103,7 +179,12 @@ class DriverCallController extends Controller
 
         $call->update(['status' => 'answered', 'started_at' => now()]);
 
-        return response()->json(['success' => true, 'message' => 'Appel décroché.']);
+        // ✅ Le chauffeur (destinataire d'un appel initié par le client) reçoit
+        // ici son token Agora pour rejoindre le même canal que l'appelant.
+        $channel = AgoraTokenService::channelForCall($call->id);
+        $agora   = AgoraTokenService::generate($channel, AgoraTokenService::uidForDriver($driver->id));
+
+        return response()->json(['success' => true, 'message' => 'Appel décroché.', 'agora' => $agora]);
     }
 
     /**
@@ -128,9 +209,13 @@ class DriverCallController extends Controller
         ]);
 
         try {
-            broadcast(new CallEnded($call))->toOthers();
+            $this->pusher()->trigger("user.{$call->receiver_id}", 'call.ended', [
+                'call_id'  => $call->id,
+                'trip_id'  => $call->trip_id,
+                'duration' => $duration,
+            ]);
         } catch (\Exception $e) {
-            Log::warning('Pusher CallEnded error: ' . $e->getMessage());
+            Log::warning('Pusher call.ended error: ' . $e->getMessage());
         }
 
         Log::info('📵 Appel terminé par chauffeur', [
@@ -159,9 +244,13 @@ class DriverCallController extends Controller
         $call->update(['status' => 'missed', 'ended_at' => now()]);
 
         try {
-            broadcast(new CallEnded($call))->toOthers();
+            $this->pusher()->trigger("user.{$call->receiver_id}", 'call.ended', [
+                'call_id' => $call->id,
+                'trip_id' => $call->trip_id,
+                'missed'  => true,
+            ]);
         } catch (\Exception $e) {
-            Log::warning('Pusher CallEnded error: ' . $e->getMessage());
+            Log::warning('Pusher call.ended error: ' . $e->getMessage());
         }
 
         return response()->json(['success' => true, 'message' => 'Appel marqué manqué.']);

@@ -30,6 +30,7 @@ use App\Http\Controllers\Driver\DriverWithdrawalController;
 use App\Http\Controllers\Driver\DriverSosController;
 use App\Http\Controllers\Driver\DriverMessageController;
 use App\Http\Controllers\Driver\DriverCallController;
+use App\Http\Controllers\Driver\DriverSupportCallController;   // ✅ NOUVEAU
 use App\Http\Controllers\Driver\DriverSupportController;
 use App\Http\Controllers\Driver\DriverDocumentController;
 use App\Http\Controllers\Driver\DriverPasswordController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\User\UserPaymentController;
 use App\Http\Controllers\User\UserSupportController;
 use App\Http\Controllers\User\UserMessageController;       // 🔄 MODIFIÉ (modération)
 use App\Http\Controllers\User\UserCallController;          // ✅ NOUVEAU
+use App\Http\Controllers\User\UserOutboundCallController;  // ✅ NOUVEAU — appels support/société
 use App\Http\Controllers\User\UserPasswordController;
 
 /*
@@ -219,7 +221,11 @@ Route::prefix('driver')->name('api.driver.')->middleware(['auth:sanctum'])->grou
     Route::post('calls/{callId}/answer',   [DriverCallController::class, 'answer'])->name('calls.answer');
     Route::post('calls/{callId}/end',      [DriverCallController::class, 'end'])->name('calls.end');
     Route::post('calls/{callId}/missed',   [DriverCallController::class, 'missed'])->name('calls.missed');
+    Route::get('calls/{callId}/token',     [DriverCallController::class, 'token'])->name('calls.token');
     Route::get('calls/{tripId}',           [DriverCallController::class, 'history'])->name('calls.history');
+
+    // ── ✅ NOUVEAU — Appel chauffeur → support (réutilise answer/end/missed/token ci-dessus) ──
+    Route::post('calls/support/initiate', [DriverSupportCallController::class, 'initiate'])->name('calls.support.initiate');
 
     // ── Support & Documents ───────────────────────────────────────
     Route::get('support',  [DriverSupportController::class, 'index'])->name('support.index');
@@ -274,7 +280,11 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     Route::post('calls/{callId}/answer',   [UserCallController::class, 'answer'])->name('calls.answer');
     Route::post('calls/{callId}/end',      [UserCallController::class, 'end'])->name('calls.end');
     Route::post('calls/{callId}/missed',   [UserCallController::class, 'missed'])->name('calls.missed');
+    Route::get('calls/{callId}/token',     [UserCallController::class, 'token'])->name('calls.token');
     Route::get('calls/{tripId}',           [UserCallController::class, 'history'])->name('calls.history');
+
+    // ── ✅ NOUVEAU — Appel client → support ou société (réutilise answer/end/missed/token ci-dessus) ──
+    Route::post('calls/outbound/initiate', [UserOutboundCallController::class, 'initiate'])->name('calls.outbound.initiate');
 
     // ── Support & SOS ─────────────────────────────────────────────
     Route::get('support',  [UserSupportController::class, 'index'])->name('support.index');

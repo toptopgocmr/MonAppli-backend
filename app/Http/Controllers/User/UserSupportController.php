@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\User;
 
 use App\Http\Controllers\Controller;
-use App\Events\SupportMessageSent;
 use App\Models\SupportMessage;
 use App\Models\Admin\AdminUser;
+use App\Services\Realtime\PusherBroadcaster;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -73,11 +73,18 @@ class UserSupportController extends Controller
             'is_read'        => false,
         ]);
 
-        try {
-            broadcast(new SupportMessageSent($msg));
-        } catch (\Exception $e) {
-            Log::error('SupportMessageSent broadcast: ' . $e->getMessage());
-        }
+        // ✅ broadcast() (Events Laravel) est silencieusement inopérant sur ce
+        // projet — BROADCAST_DRIVER=log en .env. On déclenche directement
+        // via Pusher, même pattern que UserCallController/DriverCallController.
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $msg->id,
+            'content'        => $msg->content,
+            'sender_type'    => $msg->sender_type,
+            'sender_id'      => $msg->sender_id,
+            'recipient_type' => $msg->recipient_type,
+            'recipient_id'   => $msg->recipient_id,
+            'created_at'     => $msg->created_at->format('d/m H:i'),
+        ]);
 
         return response()->json([
             'success' => true,

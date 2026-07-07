@@ -87,6 +87,9 @@
             </div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button type="button" onclick="TTCall.startCall('company', {{ $company->id }})" class="aws-btn aws-btn-primary" style="background:#1E8449;border-color:#196F3D">
+                📞 Appeler
+            </button>
             <a href="{{ route('admin.companies.edit', $company) }}" class="aws-btn aws-btn-primary">
                 ✎ Modifier
             </a>

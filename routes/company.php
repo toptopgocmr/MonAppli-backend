@@ -8,6 +8,7 @@ use App\Http\Controllers\Company\ReservationController;
 use App\Http\Controllers\Company\RevenueController;
 use App\Http\Controllers\Company\ItineraryController;
 use App\Http\Controllers\Company\CompanyMessageController;
+use App\Http\Controllers\Company\CompanyCallController;
 use App\Http\Controllers\Company\ScheduleController;
 use App\Http\Controllers\Company\PricingGridController;
 use App\Http\Controllers\Company\WithdrawalController;
@@ -102,6 +103,15 @@ Route::prefix('company')->name('company.')->group(function () {
             Route::get('/withdrawals',            [WithdrawalController::class, 'index'])->name('withdrawals.index');
             Route::post('/withdrawals',            [WithdrawalController::class, 'store'])->name('withdrawals.store');
             Route::post('/withdrawals/bank-info',  [WithdrawalController::class, 'updateBankInfo'])->name('withdrawals.bank-info');
+        });
+
+        // Appels voix in-app (support + clients)
+        Route::middleware('company.permission:messages')->group(function () {
+            Route::post('/calls/initiate',       [CompanyCallController::class, 'initiate'])->name('calls.initiate');
+            Route::post('/calls/{callId}/answer', [CompanyCallController::class, 'answer'])->name('calls.answer');
+            Route::post('/calls/{callId}/end',    [CompanyCallController::class, 'end'])->name('calls.end');
+            Route::post('/calls/{callId}/missed', [CompanyCallController::class, 'missed'])->name('calls.missed');
+            Route::get('/calls/{callId}/token',   [CompanyCallController::class, 'token'])->name('calls.token');
         });
 
         // Messages

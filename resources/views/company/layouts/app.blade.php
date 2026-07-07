@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Panel Société') — TopTopGo</title>
     <link rel="icon" type="image/x-icon" href="{{ asset('images/logo3.ico') }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ asset('images/logo3.ico') }}">
@@ -191,6 +192,10 @@
         </span>
         @endif
         <div class="aws-topbar-right">
+            <button type="button" onclick="TTCall.callSupport()"
+                    style="background:rgba(29,140,73,.18);border:1px solid rgba(29,140,73,.4);color:#3ddc84;border-radius:4px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px">
+                📞 Appeler le support
+            </button>
             <span class="aws-topbar-email" style="color:rgba(255,255,255,.6)">{{ auth('company')->user()->email }}</span>
             <div class="aws-topbar-avatar">
                 @if(auth('company')->user()->logo_url)
@@ -362,6 +367,8 @@
         </div>
 
     </div>
+
+@include('partials.company-call-widget')
 
 @stack('scripts')
 </body>

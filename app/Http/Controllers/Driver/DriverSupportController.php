@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\SupportMessage;
 use App\Models\Driver\Driver;
 use App\Models\Admin\AdminUser;
-use App\Events\SupportMessageSent;
+use App\Services\Realtime\PusherBroadcaster;
 
 class DriverSupportController extends Controller
 {
@@ -66,8 +66,17 @@ class DriverSupportController extends Controller
             'is_read'        => false,
         ]);
 
-        // 🔥 Broadcaster en temps réel à l'admin via Pusher
-        broadcast(new SupportMessageSent($message));
+        // ✅ broadcast() (Events Laravel) est silencieusement inopérant sur ce
+        // projet — BROADCAST_DRIVER=log en .env. Trigger Pusher direct.
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
+        ]);
 
         return response()->json([
             'status' => 'success',
