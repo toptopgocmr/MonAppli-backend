@@ -39,6 +39,92 @@ class AdminCallController extends Controller
     }
 
     /**
+     * Résout un nom affichable pour n'importe quel type d'appelant/receveur
+     * polymorphique (User, Driver, Company, AdminUser) — utilisé par
+     * pending() et index() pour afficher le journal des appels.
+     */
+    private function displayName(string $type, int $id): string
+    {
+        $model = $type::find($id);
+        if (!$model) {
+            return 'Inconnu (#' . $id . ')';
+        }
+        if ($type === Company::class) {
+            return $model->name ?? 'Société #' . $id;
+        }
+        return trim(($model->first_name ?? '') . ' ' . ($model->last_name ?? '')) ?: 'Utilisateur #' . $id;
+    }
+
+    /**
+     * GET /admin/calls/pending — file de secours (polling).
+     * Le widget temps réel (Pusher) doit normalement afficher les appels
+     * entrants instantanément, mais si le push échoue silencieusement (ex:
+     * identifiants Pusher invalides côté serveur — voir PusherBroadcaster),
+     * RIEN ne s'affichait jamais côté admin : ni panel, ni journal, ni
+     * action possible. Ce endpoint est interrogé toutes les quelques
+     * secondes par admin-call-widget.blade.php pour rattraper les appels
+     * en attente même si le temps réel est cassé.
+     */
+    public function pending(): JsonResponse
+    {
+        $calls = \App\Models\Call::where('receiver_type', AdminUser::class)
+            ->where('status', 'initiated')
+            ->orderBy('created_at')
+            ->get()
+            ->filter(fn ($c) => !$c->isStale())
+            ->map(fn ($c) => [
+                'call_id'     => $c->id,
+                'caller_name' => $this->displayName($c->caller_type, (int) $c->caller_id),
+                'queue_type'  => CallOrchestrator::queueTypeFor($c->caller_type),
+            ])
+            ->values();
+
+        return response()->json(['success' => true, 'calls' => $calls]);
+    }
+
+    /**
+     * GET /admin/calls — journal des appels support (client, chauffeur,
+     * société ↔ support), pour que l'admin voie l'historique même si le
+     * temps réel n'a jamais sonné.
+     */
+    public function index(Request $request)
+    {
+        $query = \App\Models\Call::where('receiver_type', AdminUser::class)
+            ->orWhere('caller_type', AdminUser::class);
+
+        if ($request->filled('queue_type')) {
+            $typeMap = [
+                'client'    => User::class,
+                'chauffeur' => Driver::class,
+                'societe'   => Company::class,
+            ];
+            $filterType = $typeMap[$request->queue_type] ?? null;
+            if ($filterType) {
+                $query = \App\Models\Call::where(function ($q) use ($filterType) {
+                    $q->where('caller_type', $filterType)->where('receiver_type', AdminUser::class);
+                })->orWhere(function ($q) use ($filterType) {
+                    $q->where('receiver_type', $filterType)->where('caller_type', AdminUser::class);
+                });
+            }
+        }
+
+        $calls = (clone $query)->orderByDesc('created_at')->paginate(25)->withQueryString();
+
+        $calls->getCollection()->transform(function ($c) {
+            $isInbound = $c->receiver_type === AdminUser::class;
+            $otherType = $isInbound ? $c->caller_type : $c->receiver_type;
+            $otherId   = $isInbound ? $c->caller_id   : $c->receiver_id;
+
+            $c->direction    = $isInbound ? 'Entrant (vers support)' : 'Sortant (depuis support)';
+            $c->other_name   = $this->displayName($otherType, (int) $otherId);
+            $c->queue_type   = CallOrchestrator::queueTypeFor($isInbound ? $c->caller_type : $c->receiver_type);
+            return $c;
+        });
+
+        return view('admin.calls.index', compact('calls'));
+    }
+
+    /**
      * POST /admin/calls/initiate
      * body: { target_type: 'user'|'driver'|'company', target_id: int }
      */

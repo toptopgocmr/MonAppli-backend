@@ -211,6 +211,34 @@
         });
     } catch (e) { console.warn('Pusher init (call widget) failed', e); }
 
+    // ✅ Filet de sécurité : le push Pusher ci-dessus doit normalement faire
+    // sonner l'admin instantanément, mais si le push échoue silencieusement
+    // (ex: identifiants Pusher invalides côté serveur — le seul symptôme
+    // visible était alors "rien ne se passe, aucun panel, aucun journal"),
+    // on interroge périodiquement le serveur pour rattraper les appels en
+    // attente que le temps réel n'aurait pas signalés.
+    async function pollPending() {
+        try {
+            const res = await fetch('/admin/calls/pending', { headers: headers() });
+            const data = await res.json();
+            if (!data.success) return;
+
+            const seenIds = new Set(data.calls.map(c => parseInt(c.call_id)));
+
+            data.calls.forEach(c => {
+                window.TTCall.showIncoming(c.call_id, c.caller_name, c.queue_type);
+            });
+
+            // Un appel qu'on affichait n'est plus "en attente" côté serveur
+            // (pris par un collègue, expiré, annulé) : on le retire.
+            pendingCalls.forEach((info, id) => {
+                if (!seenIds.has(id)) removeFromQueue(id);
+            });
+        } catch (e) { /* silencieux : simple filet de secours */ }
+    }
+    pollPending();
+    setInterval(pollPending, 4000);
+
     // ✅ Si l'admin ferme/quitte l'onglet en plein appel (répondu ou pas
     // encore), on prévient le serveur pour ne pas laisser l'appel "actif"
     // bloquer indéfiniment les tentatives suivantes entre les deux parties.

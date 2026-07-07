@@ -166,6 +166,8 @@ Route::prefix('admin')->name('admin.')->group(function () {
         | APPELS VOIX IN-APP — SUPPORT (client, chauffeur, société)
         |--------------------------------------------------------------------------
         */
+        Route::get('calls',                  [AdminCallController::class, 'index'])->name('calls.index');
+        Route::get('calls/pending',          [AdminCallController::class, 'pending'])->name('calls.pending');
         Route::post('calls/initiate',       [AdminCallController::class, 'initiate'])->name('calls.initiate');
         Route::post('calls/{callId}/answer', [AdminCallController::class, 'answer'])->name('calls.answer');
         Route::post('calls/{callId}/end',    [AdminCallController::class, 'end'])->name('calls.end');
