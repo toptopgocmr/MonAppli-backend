@@ -45,11 +45,18 @@ class CompanyCallController extends Controller
             return response()->json(['success' => false, 'message' => 'Support indisponible pour le moment.'], 503);
         }
 
-        [$call, $agora, $alreadyActive] = $this->calls->initiate(
+        [$call, $agora, $alreadyActive, $busy] = $this->calls->initiate(
             Company::class, $company->id, $company->name, $company->logo_url ?? '',
             AdminUser::class, $admin->id,
             null
         );
+
+        if ($busy) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Toutes nos lignes société sont actuellement occupées. Veuillez réessayer dans un instant.',
+            ], 503);
+        }
 
         if ($alreadyActive) {
             return response()->json([
@@ -75,6 +82,9 @@ class CompanyCallController extends Controller
         $result = $this->calls->answer((int) $callId, Company::class, $this->company()->id);
         if (!$result) {
             return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+        if (!empty($result['already_taken'])) {
+            return response()->json(['success' => false, 'message' => 'Cet appel a déjà été traité.'], 409);
         }
 
         return response()->json(['success' => true, 'agora' => $result['agora']]);

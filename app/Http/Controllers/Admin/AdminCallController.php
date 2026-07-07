@@ -98,7 +98,24 @@ class AdminCallController extends Controller
         }
 
         if ($call->status === 'initiated') {
-            $call->update(['status' => 'answered', 'started_at' => now()]);
+            // ✅ Mise à jour atomique conditionnelle : file d'attente
+            // partagée entre plusieurs admins/machines — si deux d'entre eux
+            // cliquent "Répondre" en même temps, un seul gagne la course.
+            $won = \App\Models\Call::where('id', $callId)->where('status', 'initiated')
+                ->update(['status' => 'answered', 'started_at' => now()]);
+
+            if (!$won) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cet appel vient d\'être pris par un collègue.',
+                ], 409);
+            }
+
+            $call->refresh();
+
+            // Prévenir les AUTRES admins connectés que cet appel est pris,
+            // pour qu'ils le retirent de leur file d'attente.
+            \App\Services\Realtime\PusherBroadcaster::trigger('admin-support', 'call.taken', ['call_id' => $call->id]);
         }
 
         $agora = \App\Services\Agora\AgoraTokenService::generate(

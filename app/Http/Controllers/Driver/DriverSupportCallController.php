@@ -44,11 +44,18 @@ class DriverSupportCallController extends Controller
                 : asset('storage/' . $driver->profile_photo);
         }
 
-        [$call, $agora, $alreadyActive] = $this->calls->initiate(
+        [$call, $agora, $alreadyActive, $busy] = $this->calls->initiate(
             Driver::class, $driver->id, $callerName, $callerPhoto,
             AdminUser::class, $admin->id,
             null
         );
+
+        if ($busy) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Toutes nos lignes chauffeur sont actuellement occupées. Veuillez réessayer dans un instant.',
+            ], 503);
+        }
 
         if ($alreadyActive) {
             return response()->json([

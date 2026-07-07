@@ -2,20 +2,22 @@
      Widget d'appel vocal in-app (Agora) — Panel Admin / Support
      Chargé globalement dans admin/layouts/app.blade.php : sonne sur
      N'IMPORTE QUELLE page du panel admin, pas seulement la messagerie.
-     File d'attente partagée : n'importe quel admin connecté peut décrocher.
+
+     Mode "call center" : jusqu'à 10 appels simultanés PAR catégorie
+     (client / chauffeur / société) peuvent sonner en même temps — chacun
+     apparaît comme une carte dans la file d'attente ci-dessous. N'importe
+     quel admin connecté, sur n'importe quelle machine, peut décrocher
+     n'importe laquelle de ces cartes (file partagée). Dès qu'un admin
+     décroche, la carte disparaît chez tous les autres admins ("call.taken").
+     Un admin ne peut être que sur UN SEUL appel actif à la fois : les
+     boutons "Répondre" des autres cartes sont désactivés tant qu'il est en
+     ligne.
      ══════════════════════════════════════════════════════════════════ --}}
 
-<div id="tt-call-incoming" style="display:none;position:fixed;top:16px;right:16px;z-index:9998;background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:16px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);min-width:260px;color:#fff;font-family:'Inter',sans-serif">
-    <div style="font-size:12px;color:rgba(255,255,255,.5);margin-bottom:4px">📞 Appel entrant</div>
-    <div id="tt-call-caller-name" style="font-size:15px;font-weight:700;margin-bottom:12px">—</div>
-    <div style="display:flex;gap:8px">
-        <button onclick="TTCall.accept()" style="flex:1;background:#1E8449;color:#fff;border:none;border-radius:6px;padding:8px;font-weight:600;cursor:pointer">Répondre</button>
-        <button onclick="TTCall.decline()" style="flex:1;background:#D13212;color:#fff;border:none;border-radius:6px;padding:8px;font-weight:600;cursor:pointer">Refuser</button>
-    </div>
-</div>
+<div id="tt-call-queue" style="display:none;position:fixed;top:16px;right:16px;z-index:9998;flex-direction:column;gap:10px;max-width:300px"></div>
 
-<div id="tt-call-active" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:12px">
-    <span style="font-size:13px;font-weight:600">🎙️ Appel en cours</span>
+<div id="tt-call-active" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:'Inter',sans-serif;align-items:center;gap:12px">
+    <span style="font-size:13px;font-weight:600" id="tt-call-active-label">🎙️ Appel en cours</span>
     <button id="tt-call-mute-btn" onclick="TTCall.toggleMute()" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">🎙️</button>
     <button onclick="TTCall.hangup()" style="background:#D13212;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600">Raccrocher</button>
 </div>
@@ -25,8 +27,12 @@
 <script>
 (function () {
     let client = null, localAudioTrack = null, currentCallId = null, ringInterval = null;
+    const pendingCalls = new Map(); // callId -> { callerName, queueType }
+
+    const QUEUE_LABELS = { client: '📞 Appel Client', chauffeur: '📞 Appel Chauffeur', societe: '📞 Appel Société' };
 
     function ring() {
+        if (ringInterval) return; // déjà en train de sonner
         try {
             const ctx = new (window.AudioContext || window.webkitAudioContext)();
             function beep() {
@@ -67,35 +73,81 @@
         client = null; localAudioTrack = null;
     }
 
+    function refreshQueueInteractivity() {
+        const busy = currentCallId !== null;
+        document.querySelectorAll('#tt-call-queue .tt-call-answer').forEach(btn => {
+            btn.disabled = busy;
+            btn.style.opacity = busy ? '.4' : '1';
+            btn.style.cursor = busy ? 'not-allowed' : 'pointer';
+        });
+    }
+
+    function renderCard(callId, callerName, queueType) {
+        const box = document.createElement('div');
+        box.className = 'tt-call-card';
+        box.id = 'tt-call-card-' + callId;
+        box.style = 'background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:"Inter",sans-serif';
+        box.innerHTML = `
+            <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px">${QUEUE_LABELS[queueType] || '📞 Appel entrant'}</div>
+            <div style="font-size:14px;font-weight:700;margin-bottom:10px">${callerName || 'Appel entrant'}</div>
+            <div style="display:flex;gap:8px">
+                <button class="tt-call-answer" style="flex:1;background:#1E8449;color:#fff;border:none;border-radius:6px;padding:7px;font-weight:600;cursor:pointer;font-size:13px">Répondre</button>
+                <button class="tt-call-decline" style="flex:1;background:#D13212;color:#fff;border:none;border-radius:6px;padding:7px;font-weight:600;cursor:pointer;font-size:13px">Refuser</button>
+            </div>`;
+        box.querySelector('.tt-call-answer').addEventListener('click', () => window.TTCall.accept(callId));
+        box.querySelector('.tt-call-decline').addEventListener('click', () => window.TTCall.decline(callId));
+        document.getElementById('tt-call-queue').appendChild(box);
+        refreshQueueInteractivity();
+    }
+
+    function removeFromQueue(callId) {
+        pendingCalls.delete(callId);
+        document.getElementById('tt-call-card-' + callId)?.remove();
+        if (pendingCalls.size === 0) {
+            stopRing();
+            document.getElementById('tt-call-queue').style.display = 'none';
+        }
+    }
+
     window.TTCall = {
-        showIncoming(callId, callerName) {
-            currentCallId = callId;
-            document.getElementById('tt-call-caller-name').textContent = callerName || 'Appel entrant';
-            document.getElementById('tt-call-incoming').style.display = 'block';
+        showIncoming(callId, callerName, queueType) {
+            callId = parseInt(callId);
+            if (pendingCalls.has(callId)) return; // déjà affiché (reconnexion Pusher, etc.)
+            pendingCalls.set(callId, { callerName, queueType });
+            document.getElementById('tt-call-queue').style.display = 'flex';
+            renderCard(callId, callerName, queueType);
             ring();
         },
 
-        async accept() {
-            stopRing();
-            document.getElementById('tt-call-incoming').style.display = 'none';
+        async accept(callId) {
+            callId = parseInt(callId);
+            if (currentCallId) return; // déjà en ligne — bouton normalement désactivé
+            const info = pendingCalls.get(callId);
+            removeFromQueue(callId);
             try {
-                const res = await fetch(`/admin/calls/${currentCallId}/answer`, { method: 'POST', headers: headers() });
+                const res = await fetch(`/admin/calls/${callId}/answer`, { method: 'POST', headers: headers() });
                 const data = await res.json();
-                if (data.success && data.agora) await joinChannel(data.agora);
+                if (!data.success) {
+                    if (data.message) alert(data.message); // ex: "pris par un collègue"
+                    return;
+                }
+                currentCallId = callId;
+                if (data.agora) await joinChannel(data.agora);
+                document.getElementById('tt-call-active-label').textContent = '🎙️ ' + (info?.callerName || 'Appel en cours');
+                document.getElementById('tt-call-active').style.display = 'flex';
+                refreshQueueInteractivity();
             } catch (e) { console.warn('call answer error', e); }
-            document.getElementById('tt-call-active').style.display = 'flex';
         },
 
-        async decline() {
-            stopRing();
-            document.getElementById('tt-call-incoming').style.display = 'none';
-            const id = currentCallId;
-            currentCallId = null;
-            try { await fetch(`/admin/calls/${id}/missed`, { method: 'POST', headers: headers() }); } catch (e) {}
+        async decline(callId) {
+            callId = parseInt(callId);
+            removeFromQueue(callId);
+            try { await fetch(`/admin/calls/${callId}/missed`, { method: 'POST', headers: headers() }); } catch (e) {}
         },
 
         /** Appeler un client, un chauffeur ou une société depuis une page admin. */
         async startCall(targetType, targetId) {
+            if (currentCallId) { alert('Terminez votre appel en cours avant d\'en démarrer un autre.'); return; }
             try {
                 const res = await fetch('/admin/calls/initiate', {
                     method: 'POST', headers: headers(),
@@ -105,7 +157,9 @@
                 if (!data.success) { alert(data.message || 'Appel impossible.'); return; }
                 currentCallId = data.call.id;
                 if (data.agora) await joinChannel(data.agora);
+                document.getElementById('tt-call-active-label').textContent = '🎙️ Appel en cours';
                 document.getElementById('tt-call-active').style.display = 'flex';
+                refreshQueueInteractivity();
             } catch (e) { console.warn('startCall error', e); alert('Erreur réseau.'); }
         },
 
@@ -115,6 +169,7 @@
             currentCallId = null;
             await leaveChannel();
             document.getElementById('tt-call-active').style.display = 'none';
+            refreshQueueInteractivity();
             try { await fetch(`/admin/calls/${id}/end`, { method: 'POST', headers: headers() }); } catch (e) {}
         },
 
@@ -134,16 +189,24 @@
         const channel = pusher.subscribe('admin-support');
 
         channel.bind('call.incoming', function (data) {
-            window.TTCall.showIncoming(data.call_id, (data.caller_name || 'Appel entrant') + (data.caller_type ? '' : ''));
+            window.TTCall.showIncoming(data.call_id, data.caller_name, data.queue_type);
+        });
+
+        // Un collègue (autre admin/machine) vient de décrocher cet appel :
+        // on le retire de notre propre file d'attente s'il y était encore.
+        channel.bind('call.taken', function (data) {
+            const id = parseInt(data.call_id);
+            if (pendingCalls.has(id)) removeFromQueue(id);
         });
 
         channel.bind('call.ended', function (data) {
-            if (String(data.call_id) === String(currentCallId)) {
-                stopRing();
-                document.getElementById('tt-call-incoming').style.display = 'none';
+            const id = parseInt(data.call_id);
+            if (pendingCalls.has(id)) removeFromQueue(id);
+            if (id === currentCallId) {
                 document.getElementById('tt-call-active').style.display = 'none';
                 leaveChannel();
                 currentCallId = null;
+                refreshQueueInteractivity();
             }
         });
     } catch (e) { console.warn('Pusher init (call widget) failed', e); }

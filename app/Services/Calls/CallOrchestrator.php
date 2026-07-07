@@ -23,7 +23,18 @@ use App\Services\Realtime\PusherBroadcaster;
 class CallOrchestrator
 {
     /**
-     * Initie un appel entre deux parties. Retourne [Call, agoraPourAppelant|null].
+     * Nombre max d'appels simultanés, PAR CATÉGORIE d'appelant (client,
+     * chauffeur, société), vers le support — comme des "lignes" de call
+     * center. Évite qu'une seule catégorie ne monopolise toute la file, et
+     * donne un message clair ("ligne occupée") plutôt qu'un blocage muet
+     * une fois la capacité atteinte. N'importe quel admin connecté peut
+     * décrocher n'importe laquelle de ces lignes (file partagée).
+     */
+    const SUPPORT_CAPACITY_PER_TYPE = 10;
+
+    /**
+     * Initie un appel entre deux parties.
+     * Retourne [Call|null, agoraPourAppelant|null, alreadyActive, busy].
      */
     public function initiate(
         string $callerType,
@@ -35,6 +46,18 @@ class CallOrchestrator
         ?int $tripId = null,
         string $type = 'audio'
     ): array {
+        // ── Capacité "call center" support ──────────────────────────────
+        if ($receiverType === \App\Models\Admin\AdminUser::class) {
+            $activeForType = Call::where('caller_type', $callerType)
+                ->where('receiver_type', \App\Models\Admin\AdminUser::class)
+                ->active()
+                ->count();
+
+            if ($activeForType >= self::SUPPORT_CAPACITY_PER_TYPE) {
+                return [null, null, false, true]; // true = toutes les lignes occupées
+            }
+        }
+
         $active = Call::betweenParties($callerType, $callerId, $receiverType, $receiverId)
             ->active()
             ->first();
@@ -48,7 +71,7 @@ class CallOrchestrator
         }
 
         if ($active) {
-            return [$active, null, true]; // true = déjà un appel actif
+            return [$active, null, true, false]; // true = déjà un appel actif
         }
 
         $call = Call::create([
@@ -72,13 +95,28 @@ class CallOrchestrator
                 'caller_id'    => $callerId,
                 'caller_name'  => $callerName,
                 'caller_photo' => $callerPhoto,
+                'queue_type'   => self::queueTypeFor($callerType),
                 'initiated_at' => now()->toIso8601String(),
             ]
         );
 
         $agora = Agora::generate(Agora::channelForCall($call->id), Agora::uidFor($callerType, $callerId));
 
-        return [$call, $agora, false];
+        return [$call, $agora, false, false];
+    }
+
+    /**
+     * Catégorie affichée côté widget support (client / chauffeur / société),
+     * pour regrouper visuellement la file d'attente par type d'appelant.
+     */
+    public static function queueTypeFor(string $callerType): ?string
+    {
+        return match ($callerType) {
+            \App\Models\User\User::class       => 'client',
+            \App\Models\Driver\Driver::class    => 'chauffeur',
+            \App\Models\Company::class          => 'societe',
+            default => null,
+        };
     }
 
     /**
@@ -93,7 +131,24 @@ class CallOrchestrator
         }
 
         if ($call->status === 'initiated') {
-            $call->update(['status' => 'answered', 'started_at' => now()]);
+            // ✅ Mise à jour atomique conditionnelle : si deux admins cliquent
+            // "Répondre" en même temps sur le même appel de la file partagée,
+            // un seul des deux gagne la course (0 ligne affectée = déjà pris).
+            $won = Call::where('id', $callId)->where('status', 'initiated')
+                ->update(['status' => 'answered', 'started_at' => now()]);
+
+            if (!$won) {
+                return ['call' => $call->fresh(), 'agora' => null, 'already_taken' => true];
+            }
+
+            $call->refresh();
+
+            // File d'attente support partagée : prévenir les AUTRES admins
+            // connectés que cet appel vient d'être pris, pour qu'ils le
+            // retirent de leur propre liste d'appels en attente.
+            if ($call->receiver_type === \App\Models\Admin\AdminUser::class) {
+                PusherBroadcaster::trigger('admin-support', 'call.taken', ['call_id' => $call->id]);
+            }
         }
 
         return [

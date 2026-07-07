@@ -54,11 +54,18 @@ class UserOutboundCallController extends Controller
                 return response()->json(['success' => false, 'message' => 'Support indisponible pour le moment.'], 503);
             }
 
-            [$call, $agora, $alreadyActive] = $this->calls->initiate(
+            [$call, $agora, $alreadyActive, $busy] = $this->calls->initiate(
                 User::class, $user->id, $callerName, $callerPhoto,
                 AdminUser::class, $admin->id,
                 null
             );
+
+            if ($busy) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Toutes nos lignes client sont actuellement occupées. Veuillez réessayer dans un instant.',
+                ], 503);
+            }
         } else {
             $trip = Trip::with('driver')->find($request->trip_id);
             if (!$trip || !$trip->driver || !$trip->driver->company_id) {
@@ -75,6 +82,10 @@ class UserOutboundCallController extends Controller
                 Company::class, $company->id,
                 $trip->id
             );
+        }
+
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel impossible pour le moment.'], 503);
         }
 
         if ($alreadyActive) {
