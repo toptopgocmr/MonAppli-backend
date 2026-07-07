@@ -129,7 +129,13 @@
         const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', {
             cluster: '{{ env("PUSHER_APP_CLUSTER", "eu") }}', forceTLS: true,
         });
-        const channel = pusher.subscribe('company.{{ auth("company")->id() }}');
+        {{-- ✅ auth('company')->id() renvoie null pour un agent connecté (guard
+             "company_agent"), ce qui produisait un channel malformé
+             "company." qui ne correspondait jamais au channel diffusé côté
+             serveur ("company.{id}") — l'appel ne sonnait donc jamais quand
+             un AGENT société était connecté. On résout l'id via
+             CompanyContext, qui gère les deux cas (compte principal + agent). --}}
+        const channel = pusher.subscribe('company.{{ \App\Support\CompanyContext::company()->id() }}');
 
         channel.bind('call.incoming', function (data) {
             window.TTCall.showIncoming(data.call_id, data.caller_name || 'Appel entrant');
@@ -145,6 +151,23 @@
             }
         });
     } catch (e) { console.warn('Pusher init (call widget) failed', e); }
+
+    // ✅ Filet de sécurité : si le push Pusher échoue silencieusement (ex:
+    // identifiants invalides côté serveur), rien ne sonnait jamais côté
+    // société. On interroge périodiquement le serveur pour rattraper un
+    // appel entrant que le temps réel n'aurait pas signalé.
+    async function pollPending() {
+        try {
+            const res = await fetch('/company/calls/pending', { headers: headers() });
+            const data = await res.json();
+            if (!data.success || !data.call) return;
+            if (!currentCallId) {
+                window.TTCall.showIncoming(data.call.call_id, data.call.caller_name);
+            }
+        } catch (e) { /* silencieux : simple filet de secours */ }
+    }
+    pollPending();
+    setInterval(pollPending, 4000);
 
     // ✅ Si la société ferme/quitte l'onglet en plein appel (répondu ou pas
     // encore), on prévient le serveur pour ne pas laisser l'appel "actif"

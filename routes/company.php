@@ -107,6 +107,8 @@ Route::prefix('company')->name('company.')->group(function () {
 
         // Appels voix in-app (support + clients)
         Route::middleware('company.permission:messages')->group(function () {
+            Route::get('/calls',                 [CompanyCallController::class, 'index'])->name('calls.index');
+            Route::get('/calls/pending',         [CompanyCallController::class, 'pending'])->name('calls.pending');
             Route::post('/calls/initiate',       [CompanyCallController::class, 'initiate'])->name('calls.initiate');
             Route::post('/calls/{callId}/answer', [CompanyCallController::class, 'answer'])->name('calls.answer');
             Route::post('/calls/{callId}/end',    [CompanyCallController::class, 'end'])->name('calls.end');
