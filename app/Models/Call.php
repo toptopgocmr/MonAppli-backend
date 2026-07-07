@@ -103,8 +103,12 @@ class Call extends Model
     public function getDurationFormattedAttribute(): string
     {
         if (!$this->duration_seconds) return '0:00';
-        $m = intdiv($this->duration_seconds, 60);
-        $s = $this->duration_seconds % 60;
+        // ✅ abs() : protège aussi contre d'anciens enregistrements dont la
+        // durée aurait été calculée avant le correctif du diff Carbon
+        // (affichait par ex. "-1:-22" au lieu de "1:22").
+        $seconds = abs($this->duration_seconds);
+        $m = intdiv($seconds, 60);
+        $s = $seconds % 60;
         return sprintf('%d:%02d', $m, $s);
     }
 }

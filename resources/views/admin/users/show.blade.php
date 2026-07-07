@@ -16,6 +16,10 @@
                 <p class="text-gray-500 text-sm mt-1">{{ $user->first_name }} {{ $user->last_name }}</p>
             </div>
         </div>
+        <button type="button" onclick="TTCall.startCall('user', {{ $user->id }})"
+                class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-xl font-semibold flex items-center gap-2 transition">
+            📞 Appeler
+        </button>
     </div>
 
     <!-- CARTE PROFIL -->

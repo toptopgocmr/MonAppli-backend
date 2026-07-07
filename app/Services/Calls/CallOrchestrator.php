@@ -179,7 +179,10 @@ class CallOrchestrator
         $call = Call::find($callId);
         if (!$call) return null;
 
-        $duration = $call->started_at ? (int) now()->diffInSeconds($call->started_at) : 0;
+        // ✅ abs() : selon la version de Carbon, diffInSeconds() n'est plus
+        // toujours absolu par défaut — sans ça la durée affichée pouvait
+        // être négative (ex: "-1:-22" dans le journal des appels).
+        $duration = $call->started_at ? (int) abs(now()->diffInSeconds($call->started_at)) : 0;
         $call->update(['status' => 'ended', 'duration_seconds' => $duration, 'ended_at' => now()]);
 
         // Prévenir l'AUTRE partie (celle qui n'a pas raccroché) que l'appel est terminé.

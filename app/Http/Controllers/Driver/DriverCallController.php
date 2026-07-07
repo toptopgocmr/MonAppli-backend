@@ -204,8 +204,11 @@ class DriverCallController extends Controller
             return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
         }
 
+        // ✅ abs() : selon la version de Carbon, diffInSeconds() n'est plus
+        // toujours absolu par défaut — sans ça la durée affichée pouvait
+        // être négative.
         $duration = $call->started_at
-            ? (int) now()->diffInSeconds($call->started_at)
+            ? (int) abs(now()->diffInSeconds($call->started_at))
             : 0;
 
         $call->update([
