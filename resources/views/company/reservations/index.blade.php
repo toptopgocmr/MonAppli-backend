@@ -78,4 +78,7 @@
     </div>
 
     @if($trips->hasPages())
-    <div style="padding:12px 20px;border-top:1px solid var(--aws-border)">{{ $trips->links()
+    <div style="padding:12px 20px;border-top:1px solid var(--aws-border)">{{ $trips->links() }}</div>
+    @endif
+</div>
+@endsection

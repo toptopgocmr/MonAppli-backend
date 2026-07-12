@@ -89,4 +89,28 @@ class CompanySupportController extends Controller
         }
 
         $message = SupportMessage::create([
-            's
+            'sender_type'    => Company::class,
+            'sender_id'      => $company->id,
+            'recipient_type' => AdminUser::class,
+            'recipient_id'   => $admin?->id ?? 1,
+            'content'        => $request->content,
+            'is_read'        => false,
+        ]);
+
+        // ✅ broadcast() (Events Laravel) est silencieusement inopérant sur ce
+        // projet — BROADCAST_DRIVER=log en .env. On déclenche directement via
+        // Pusher, même pattern que UserSupportController/CallOrchestrator.
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
+        ]);
+
+        return redirect()->route('company.support.index')
+                          ->with('success', 'Message envoyé au support.');
+    }
+}

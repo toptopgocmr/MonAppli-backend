@@ -260,4 +260,8 @@ class VehicleController extends Controller
             ->pluck('driver_id')
             ->unique();
 
-     
+        foreach (Driver::whereIn('id', $driverIds)->get() as $driver) {
+            $this->syncVehicleToDriver($vehicle, $driver);
+        }
+    }
+}

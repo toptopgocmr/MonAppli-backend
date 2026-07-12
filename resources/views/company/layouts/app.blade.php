@@ -374,4 +374,22 @@
             <div class="aws-content">
 
                 @if(session('success'))
-                <div class="aws-alert aws-alert-success">✓ {{ session(
+                <div class="aws-alert aws-alert-success">✓ {{ session('success') }}</div>
+                @endif
+
+                @if(session('error'))
+                <div class="aws-alert aws-alert-error">✕ {{ session('error') }}</div>
+                @endif
+
+                @yield('content')
+            </div>
+            <footer class="aws-footer">© {{ date('Y') }} TopTopGo — Administration &nbsp;·&nbsp; Développé avec <span style="color:#e53e3e">❤</span> par <strong>Basile Marius NGASSAKI ZONI</strong></footer>
+        </div>
+
+    </div>
+
+@include('partials.company-call-widget')
+
+@stack('scripts')
+</body>
+</html>

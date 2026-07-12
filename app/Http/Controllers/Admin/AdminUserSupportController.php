@@ -120,4 +120,76 @@ class AdminUserSupportController extends Controller
         // sous-comptait de moitié). unreadMessages ne compte que les
         // messages client → admin non lus (ceux qui attendent une réponse).
         $totalMessages = SupportMessage::where(function ($q) {
-            $q->where('sender_type', \App\Models\User\User::class)->where('recipient_type', \App\Models\Admin\AdminUser::class)
+            $q->where('sender_type', \App\Models\User\User::class)->where('recipient_type', \App\Models\Admin\AdminUser::class);
+        })->orWhere(function ($q) {
+            $q->where('sender_type', \App\Models\Admin\AdminUser::class)->where('recipient_type', \App\Models\User\User::class);
+        })->count();
+        $unreadMessages = SupportMessage::where('sender_type', \App\Models\User\User::class)
+            ->where('recipient_type', \App\Models\Admin\AdminUser::class)
+            ->where('is_read', false)->count();
+
+        return view('admin.messages.admin-user', compact(
+            'user', 'users', 'messages',
+            'totalConversations', 'totalMessages', 'unreadMessages'
+        ));
+    }
+
+    /**
+     * Envoyer un message à un utilisateur
+     */
+    public function send(Request $request, $userId)
+    {
+        $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        $user = User::findOrFail($userId);
+
+        // ✅ Modération — bloque les messages offensants/haineux/sexuels avant
+        // qu'ils n'atteignent le client (voir ContentModerator).
+        $reason = ContentModerator::moderateOffensive($request->content);
+        if ($reason) {
+            Log::warning('🚫 Message admin→client bloqué', [
+                'user_id' => $userId, 'reason' => $reason,
+                'content' => substr($request->content, 0, 80),
+            ]);
+            SupportMessage::create([
+                'sender_type'    => \App\Models\Admin\AdminUser::class,
+                'sender_id'      => session('admin_id'),
+                'recipient_type' => \App\Models\User\User::class,
+                'recipient_id'   => $userId,
+                'content'        => $request->content,
+                'is_read'        => false,
+                'refused'        => true,
+                'refused_reason' => $reason,
+            ]);
+            return back()->withErrors(['content' => 'Message refusé : contenu inapproprié (' . $reason . ').']);
+        }
+
+        $message = SupportMessage::create([
+            'sender_type'    => \App\Models\Admin\AdminUser::class,
+            'sender_id'      => session('admin_id'),
+            'recipient_type' => \App\Models\User\User::class,
+            'recipient_id'   => $userId,
+            'content'        => $request->content,
+            'is_read'        => false,
+        ]);
+
+        // ✅ NOUVEAU — cette réponse n'était jamais notifiée en temps réel
+        // au client avant (aucun broadcast n'existait ici du tout).
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
+        ]);
+
+        return redirect()->route('admin.support.users.show', array_filter([
+            'user'   => $userId,
+            'search' => $request->search,
+        ]))->with('success', 'Message envoyé à ' . $user->first_name . ' !');
+    }
+}

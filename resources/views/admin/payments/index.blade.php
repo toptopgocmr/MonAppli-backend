@@ -203,4 +203,16 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10" class="text-cente
+                        <td colspan="10" class="text-center text-gray-400 py-10">Aucune transaction pour cette période</td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($payments->hasPages())
+        <div style="padding:14px 20px;border-top:1px solid #f1f5f9">{{ $payments->links() }}</div>
+        @endif
+    </div>
+
+</div>
+@endsection

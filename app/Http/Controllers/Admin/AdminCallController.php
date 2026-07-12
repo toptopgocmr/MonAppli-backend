@@ -250,4 +250,154 @@ class AdminCallController extends Controller
     }
 
     /**
-     * P
+     * POST /admin/calls/{callId}/end
+     */
+    public function end(Request $request, $callId): JsonResponse
+    {
+        $call = $this->calls->end((int) $callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        return response()->json(['success' => true, 'duration' => $call->duration_seconds]);
+    }
+
+    /**
+     * POST /admin/calls/{callId}/missed
+     */
+    public function missed(Request $request, $callId): JsonResponse
+    {
+        $call = $this->calls->missed((int) $callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * GET /admin/calls/{callId}/status — filet de secours pour raccrocher
+     * automatiquement des DEUX côtés.
+     *
+     * Le Pusher event "call.ended" doit normalement le faire instantanément,
+     * mais si le push échoue silencieusement (mêmes identifiants Pusher
+     * potentiellement invalides que pour la sonnerie, voir pending()), le
+     * widget de la partie qui n'a PAS raccroché restait bloqué "en ligne"
+     * indéfiniment. Le widget interroge ce endpoint toutes les quelques
+     * secondes pendant un appel actif pour rattraper la fin d'appel.
+     */
+    public function status(Request $request, $callId): JsonResponse
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        return response()->json(['success' => true, 'status' => $call->status]);
+    }
+
+    /**
+     * POST /admin/calls/{callId}/recording — upload de l'enregistrement
+     * audio (micro admin + audio distant reçu, mixés côté navigateur via
+     * MediaRecorder — voir admin-call-widget.blade.php). Stocké sur le
+     * disque `local` (privé), jamais exposé en URL publique directe.
+     */
+    public function storeRecording(Request $request, $callId): JsonResponse
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        $request->validate([
+            'recording' => 'required|file|max:51200', // 50 Mo
+        ]);
+
+        $filename = 'call_recordings/' . $call->id . '/' . Str::uuid() . '.webm';
+        Storage::disk('local')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
+
+        \App\Models\CallRecording::create([
+            'call_id'           => $call->id,
+            'recorded_by_type'  => AdminUser::class,
+            'recorded_by_id'    => $this->adminId(),
+            'path'              => $filename,
+            'size_bytes'        => $request->file('recording')->getSize(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * GET /admin/calls/{callId}/recordings/{recordingId} — écoute d'un
+     * enregistrement (n'importe quel admin connecté peut écouter, comme pour
+     * le reste du support).
+     */
+    public function playRecording(Request $request, $callId, $recordingId)
+    {
+        $recording = \App\Models\CallRecording::where('call_id', $callId)->findOrFail($recordingId);
+
+        if (!Storage::disk('local')->exists($recording->path)) {
+            abort(404, 'Enregistrement introuvable.');
+        }
+
+        return Storage::disk('local')->response($recording->path, 'appel_' . $callId . '.webm', [
+            'Content-Type' => 'audio/webm',
+        ]);
+    }
+
+    /**
+     * GET /admin/calls/recordings — liste dédiée de TOUS les enregistrements
+     * d'appels (support : client, chauffeur, société ↔ admin), avec lecteur
+     * audio inline. Séparée du "Journal des appels" (qui liste TOUS les
+     * appels, avec ou sans enregistrement) pour que l'équipe support trouve
+     * directement les enregistrements sans avoir à chercher dans le journal.
+     */
+    public function recordings(Request $request)
+    {
+        $query = \App\Models\CallRecording::with(['call'])
+            ->whereHas('call', function ($q) {
+                $q->where('receiver_type', AdminUser::class)
+                  ->orWhere('caller_type', AdminUser::class);
+            });
+
+        if ($request->filled('queue_type')) {
+            $typeMap = [
+                'client'    => User::class,
+                'chauffeur' => Driver::class,
+                'societe'   => Company::class,
+            ];
+            $filterType = $typeMap[$request->queue_type] ?? null;
+            if ($filterType) {
+                $query->whereHas('call', function ($q) use ($filterType) {
+                    $q->where(function ($q2) use ($filterType) {
+                        $q2->where('caller_type', $filterType)->where('receiver_type', AdminUser::class);
+                    })->orWhere(function ($q2) use ($filterType) {
+                        $q2->where('receiver_type', $filterType)->where('caller_type', AdminUser::class);
+                    });
+                });
+            }
+        }
+
+        $recordings = $query->orderByDesc('created_at')->paginate(25)->withQueryString();
+
+        $recordings->getCollection()->transform(function ($rec) {
+            $call = $rec->call;
+            if ($call) {
+                $isInbound       = $call->receiver_type === AdminUser::class;
+                $otherType       = $isInbound ? $call->caller_type : $call->receiver_type;
+                $otherId         = $isInbound ? $call->caller_id   : $call->receiver_id;
+                $rec->other_name = $this->displayName($otherType, (int) $otherId);
+                $rec->direction  = $isInbound ? 'Entrant (vers support)' : 'Sortant (depuis support)';
+                $rec->queue_type = CallOrchestrator::queueTypeFor($isInbound ? $call->caller_type : $call->receiver_type);
+            } else {
+                $rec->other_name = 'Appel supprimé';
+                $rec->direction  = '—';
+                $rec->queue_type = null;
+            }
+            $rec->recorded_by_name = $this->displayName($rec->recorded_by_type, (int) $rec->recorded_by_id);
+            return $rec;
+        });
+
+        return view('admin.calls.recordings', compact('recordings'));
+    }
+}

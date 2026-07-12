@@ -61,4 +61,9 @@ class UserCompanyTripController extends Controller
                 'id'    => $company->id,
                 'name'  => $company->name,
                 'logo'  => $company->logo
-                    ? (str_starts_with($company->
+                    ? (str_starts_with($company->logo, 'http') ? $company->logo : url('storage/' . $company->logo))
+                    : null,
+            ] : null,
+        ];
+    }
+}

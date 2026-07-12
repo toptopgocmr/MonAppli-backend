@@ -158,4 +158,11 @@ class CompanyWithdrawalController extends Controller
         }
 
         $withdrawal->update([
-            'status'       =>
+            'status'       => 'failed',
+            'processed_at' => now(),
+            'notes'        => $request->get('reason'),
+        ]);
+
+        return back()->with('success', 'Retrait société rejeté.');
+    }
+}

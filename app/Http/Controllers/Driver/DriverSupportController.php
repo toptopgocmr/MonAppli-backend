@@ -80,4 +80,36 @@ class DriverSupportController extends Controller
             ]);
             return response()->json([
                 'status'  => 'blocked',
-                'message' => 'Message refusé 
+                'message' => 'Message refusé par la modération.',
+                'reason'  => $reason,
+            ], 422);
+        }
+
+        $message = SupportMessage::create([
+            'sender_type'    => Driver::class,
+            'sender_id'      => $driverId,
+            'recipient_type' => AdminUser::class,
+            'recipient_id'   => $admin->id,
+            'content'        => $request->content,
+            'is_read'        => false,
+        ]);
+
+        // ✅ broadcast() (Events Laravel) est silencieusement inopérant sur ce
+        // projet — BROADCAST_DRIVER=log en .env. Trigger Pusher direct.
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Message envoyé',
+            'data' => $message
+        ]);
+    }
+}

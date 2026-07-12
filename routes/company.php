@@ -139,4 +139,12 @@ Route::prefix('company')->name('company.')->group(function () {
             Route::get('/agents',              [AgentController::class, 'index'])->name('agents.index');
             Route::get('/agents/create',       [AgentController::class, 'create'])->name('agents.create');
             Route::post('/agents',             [AgentController::class, 'store'])->name('agents.store');
-            Route::get('/agents/{id}/edit',    [AgentController::cla
+            Route::get('/agents/{id}/edit',    [AgentController::class, 'edit'])->name('agents.edit');
+            Route::put('/agents/{id}',         [AgentController::class, 'update'])->name('agents.update');
+            Route::post('/agents/{id}/suspend',[AgentController::class, 'suspend'])->name('agents.suspend');
+            Route::post('/agents/{id}/activate',[AgentController::class, 'activate'])->name('agents.activate');
+            Route::delete('/agents/{id}',      [AgentController::class, 'destroy'])->name('agents.destroy');
+        });
+
+    });
+});

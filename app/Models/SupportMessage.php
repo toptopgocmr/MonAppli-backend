@@ -62,4 +62,24 @@ class SupportMessage extends Model
     public function adminRecipient()
     {
         return $this->belongsTo(AdminUser::class, 'recipient_id')
-                  
+                    ->where('recipient_type', AdminUser::class);
+    }
+
+    /**
+     * Si l'expéditeur est un Driver, on récupère le Driver
+     */
+    public function driverSender()
+    {
+        return $this->belongsTo(Driver::class, 'sender_id')
+                    ->where('sender_type', Driver::class);
+    }
+
+    /**
+     * Si le destinataire est un Driver, on récupère le Driver
+     */
+    public function driverRecipient()
+    {
+        return $this->belongsTo(Driver::class, 'recipient_id')
+                    ->where('recipient_type', Driver::class);
+    }
+}

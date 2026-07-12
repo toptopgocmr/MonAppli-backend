@@ -154,4 +154,31 @@ class AdminDriverSupportController extends Controller
                 'refused'        => true,
                 'refused_reason' => $reason,
             ]);
-            return back()->withErrors(['content' => 'Message refusé : contenu inappropr
+            return back()->withErrors(['content' => 'Message refusé : contenu inapproprié (' . $reason . ').']);
+        }
+
+        $message = SupportMessage::create([
+            'sender_type'    => AdminUser::class,
+            'sender_id'      => $adminId,
+            'recipient_type' => Driver::class,
+            'recipient_id'   => $driverId,
+            'content'        => $request->content,
+            'is_read'        => false,
+        ]);
+
+        // ✅ broadcast() (Events Laravel) est silencieusement inopérant sur ce
+        // projet — BROADCAST_DRIVER=log en .env. Trigger Pusher direct.
+        PusherBroadcaster::trigger('admin-support', 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
+        ]);
+
+        return redirect()->route('admin.support.drivers.show', $driverId)
+                         ->with('success', 'Message envoyé à ' . $driver->first_name . ' !');
+    }
+}

@@ -133,4 +133,71 @@ class AdminCompanySupportController extends Controller
             ->where('recipient_type', AdminUser::class)
             ->where('is_read', false)->count();
 
-        retu
+        return view('admin.messages.admin-company', compact(
+            'company', 'companies', 'messages',
+            'totalConversations', 'totalMessages', 'unreadMessages'
+        ));
+    }
+
+    /**
+     * Envoyer un message à une société
+     */
+    public function send(Request $request, $companyId)
+    {
+        $request->validate([
+            'content' => 'required|string|max:1000',
+        ]);
+
+        $company = Company::findOrFail($companyId);
+
+        // ✅ Modération — bloque les messages offensants/haineux/sexuels avant
+        // qu'ils n'atteignent la société (voir ContentModerator).
+        $reason = ContentModerator::moderateOffensive($request->content);
+        if ($reason) {
+            Log::warning('🚫 Message admin→société bloqué', [
+                'company_id' => $companyId, 'reason' => $reason,
+                'content' => substr($request->content, 0, 80),
+            ]);
+            SupportMessage::create([
+                'sender_type'    => AdminUser::class,
+                'sender_id'      => session('admin_id'),
+                'recipient_type' => Company::class,
+                'recipient_id'   => $companyId,
+                'content'        => $request->content,
+                'is_read'        => false,
+                'refused'        => true,
+                'refused_reason' => $reason,
+            ]);
+            return back()->withErrors(['content' => 'Message refusé : contenu inapproprié (' . $reason . ').']);
+        }
+
+        $message = SupportMessage::create([
+            'sender_type'    => AdminUser::class,
+            'sender_id'      => session('admin_id'),
+            'recipient_type' => Company::class,
+            'recipient_id'   => $companyId,
+            'content'        => $request->content,
+            'is_read'        => false,
+        ]);
+
+        // ✅ Diffusion temps réel sur le channel personnel de la société —
+        // affiché dans le widget d'appel société (déjà souscrit à
+        // "company.{id}"), qui pourra aussi réagir à "message.received"
+        // si besoin plus tard. Le rafraîchissement de la page (polling
+        // 10s) reste le mécanisme garanti, comme pour Admin ↔ Clients.
+        PusherBroadcaster::trigger('company.' . $companyId, 'message.received', [
+            'id'             => $message->id,
+            'content'        => $message->content,
+            'sender_type'    => $message->sender_type,
+            'sender_id'      => $message->sender_id,
+            'recipient_type' => $message->recipient_type,
+            'recipient_id'   => $message->recipient_id,
+            'created_at'     => $message->created_at->format('d/m H:i'),
+        ]);
+
+        return redirect()->route('admin.support.companies.show', array_filter([
+            'company' => $companyId,
+            'search'  => $request->search,
+        ]))->with('success', 'Message envoyé à ' . $company->name . ' !');
+    }
+}

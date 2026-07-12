@@ -246,4 +246,18 @@
             @endif
 
         </div>
-    </di
+    </div>
+
+</div>{{-- /page wrapper --}}
+@endsection
+
+@push('scripts')
+<script>
+    const box = document.getElementById('messagesBox');
+    if (box) box.scrollTop = box.scrollHeight;
+
+    @if(isset($company))
+    setInterval(() => location.reload(), 10000);
+    @endif
+</script>
+@endpush

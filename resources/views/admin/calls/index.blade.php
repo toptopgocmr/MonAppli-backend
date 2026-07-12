@@ -69,4 +69,30 @@
                                 onclick="TTCall.startCall('{{ $call->target_type }}', {{ $call->target_id }})"
                                 class="btn btn-sm btn-primary" style="white-space:nowrap">
                             📞 Rappeler
-                     
+                        </button>
+                        @else
+                        <span style="color:#cbd5e1;font-size:12px">—</span>
+                        @endif
+                        @foreach($call->recordings as $rec)
+                        <a href="{{ route('admin.calls.recording.play', [$call->id, $rec->id]) }}" target="_blank"
+                           class="btn btn-sm btn-gray" style="white-space:nowrap;margin-left:4px" title="Écouter l'enregistrement">
+                            🎧
+                        </a>
+                        @endforeach
+                    </td>
+                </tr>
+                @empty
+                <tr><td colspan="8" style="padding:40px;text-align:center;color:#94a3b8">Aucun appel enregistré.</td></tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if($calls->hasPages())
+    <div style="padding:16px 20px;border-top:1px solid #f1f5f9">
+        {{ $calls->appends(request()->query())->links() }}
+    </div>
+    @endif
+</div>
+
+</div>
+@endsection

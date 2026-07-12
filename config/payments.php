@@ -140,4 +140,26 @@ return [
     */
 
     'fees' => [
-        'platform_comm
+        'platform_commission' => env('PLATFORM_COMMISSION_PERCENT', 15), // 15%
+        'minimum_commission' => env('MINIMUM_COMMISSION', 100), // 100 XAF
+        'escrow_hold_hours' => env('ESCROW_HOLD_HOURS', 24), // Hold funds for 24h after ride
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Payment Providers by Country
+    |--------------------------------------------------------------------------
+    |
+    | Define available payment providers for each country
+    |
+    */
+
+    'providers_by_country' => [
+        'CG' => ['flutterwave', 'peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
+        'CD' => ['peex', 'airtel_money'], // Congo Kinshasa
+        'GA' => ['peex', 'airtel_money'], // Gabon
+        'CM' => ['peex', 'mtn_momo'], // Cameroon
+        'INTERNATIONAL' => ['stripe'], // International
+    ],
+
+];

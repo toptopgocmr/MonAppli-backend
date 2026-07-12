@@ -142,4 +142,226 @@
         client = null; localAudioTrack = null;
         remoteAudioTracks = []; speakerOn = false;
         const speakerBtn = document.getElementById('tt-call-speaker-btn');
-        if (speakerBtn) { speakerBtn.textContent = '🔈'; speakerBtn.classList.remove('tt-on
+        if (speakerBtn) { speakerBtn.textContent = '🔈'; speakerBtn.classList.remove('tt-on'); }
+        const muteBtn = document.getElementById('tt-call-mute-btn');
+        if (muteBtn) { muteBtn.textContent = '🎙️'; muteBtn.classList.remove('tt-on'); }
+    }
+
+    // ── Enregistrement : mixe le micro local + tout l'audio distant reçu via
+    // l'API Web Audio dans un seul flux, enregistré en webm/opus. Aucun
+    // service tiers requis (pas d'Agora Cloud Recording) — l'enregistrement
+    // se fait dans le navigateur puis est uploadé au raccroché.
+    function startRecording() {
+        try {
+            recordAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            recordDest = recordAudioCtx.createMediaStreamDestination();
+            if (localAudioTrack?.getMediaStreamTrack) {
+                const localStream = new MediaStream([localAudioTrack.getMediaStreamTrack()]);
+                recordAudioCtx.createMediaStreamSource(localStream).connect(recordDest);
+            }
+            recordedChunks = [];
+            mediaRecorder = new MediaRecorder(recordDest.stream, { mimeType: 'audio/webm' });
+            mediaRecorder.ondataavailable = (e) => { if (e.data && e.data.size > 0) recordedChunks.push(e.data); };
+            mediaRecorder.start(1000);
+        } catch (e) { console.warn('Enregistrement indisponible', e); mediaRecorder = null; }
+    }
+
+    function attachRemoteToRecording(audioTrack) {
+        if (!recordAudioCtx || !recordDest || !audioTrack?.getMediaStreamTrack) return;
+        try {
+            const remoteStream = new MediaStream([audioTrack.getMediaStreamTrack()]);
+            recordAudioCtx.createMediaStreamSource(remoteStream).connect(recordDest);
+        } catch (e) {}
+    }
+
+    function stopRecordingAndUpload(callId) {
+        if (!mediaRecorder || mediaRecorder.state === 'inactive') { cleanupRecording(); return Promise.resolve(); }
+        return new Promise((resolve) => {
+            mediaRecorder.onstop = async () => {
+                try {
+                    const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    if (blob.size > 2000) {
+                        const fd = new FormData();
+                        fd.append('recording', blob, `call_${callId}.webm`);
+                        await fetch(`/company/calls/${callId}/recording`, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '' },
+                            body: fd,
+                        });
+                    }
+                } catch (e) { console.warn('Upload enregistrement échoué', e); }
+                cleanupRecording();
+                resolve();
+            };
+            try { mediaRecorder.stop(); } catch (e) { cleanupRecording(); resolve(); }
+        });
+    }
+
+    function cleanupRecording() {
+        mediaRecorder = null; recordedChunks = [];
+        try { recordAudioCtx?.close(); } catch (e) {}
+        recordAudioCtx = null; recordDest = null;
+    }
+
+    // ── Filet de secours "raccroché des deux côtés" (voir explication côté
+    // admin-call-widget.blade.php : le Pusher event "call.ended" doit
+    // normalement raccrocher instantanément l'autre partie, mais s'il échoue
+    // silencieusement, on interroge le statut réel de l'appel en secours).
+    function startStatusPolling(callId) {
+        stopStatusPolling();
+        statusPollInterval = setInterval(async () => {
+            if (!currentCallId) { stopStatusPolling(); return; }
+            try {
+                const res = await fetch(`/company/calls/${callId}/status`, { headers: headers() });
+                const data = await res.json();
+                if (data.success && (data.status === 'ended' || data.status === 'missed')) {
+                    endCallLocally(callId);
+                }
+            } catch (e) {}
+        }, 4000);
+    }
+    function stopStatusPolling() {
+        if (statusPollInterval) { clearInterval(statusPollInterval); statusPollInterval = null; }
+    }
+
+    /** Termine l'appel côté navigateur (audio + timer + panel + upload de
+     *  l'enregistrement), que ce soit parce que NOUS raccrochons ou parce que
+     *  l'AUTRE partie a raccroché (Pusher ou filet de secours). */
+    async function endCallLocally(id) {
+        if (String(id) !== String(currentCallId)) return;
+        currentCallId = null;
+        stopRing();
+        stopStatusPolling();
+        stopTimer();
+        document.getElementById('tt-call-incoming').style.display = 'none';
+        document.getElementById('tt-call-active').style.display = 'none';
+        await stopRecordingAndUpload(id);
+        await leaveChannel();
+    }
+
+    let currentCallerName = null;
+
+    window.TTCall = {
+        showIncoming(callId, callerName) {
+            currentCallId = callId;
+            currentCallerName = callerName || 'Appel entrant';
+            document.getElementById('tt-call-caller-name').textContent = currentCallerName;
+            document.getElementById('tt-call-caller-avatar').textContent = currentCallerName.trim().charAt(0).toUpperCase() || '?';
+            document.getElementById('tt-call-incoming').style.display = 'block';
+            ring();
+        },
+
+        async accept() {
+            stopRing();
+            document.getElementById('tt-call-incoming').style.display = 'none';
+            try {
+                const res = await fetch(`/company/calls/${currentCallId}/answer`, { method: 'POST', headers: headers() });
+                const data = await res.json();
+                if (data.success && data.agora) await joinChannel(data.agora);
+            } catch (e) { console.warn('call answer error', e); }
+            document.getElementById('tt-call-active-label').textContent = currentCallerName || 'Appel en cours';
+            document.getElementById('tt-call-avatar').textContent = (currentCallerName || '?').trim().charAt(0).toUpperCase() || '?';
+            document.getElementById('tt-call-active').style.display = 'block';
+            startTimer();
+            startStatusPolling(currentCallId);
+        },
+
+        async decline() {
+            stopRing();
+            document.getElementById('tt-call-incoming').style.display = 'none';
+            const id = currentCallId;
+            currentCallId = null;
+            try { await fetch(`/company/calls/${id}/missed`, { method: 'POST', headers: headers() }); } catch (e) {}
+        },
+
+        /** Appeler le support depuis le panel société. */
+        async callSupport() {
+            try {
+                const res = await fetch('/company/calls/initiate', { method: 'POST', headers: headers(), body: '{}' });
+                const data = await res.json();
+                if (!data.success) { alert(data.message || 'Appel impossible.'); return; }
+                currentCallId = data.call.id;
+                if (data.agora) await joinChannel(data.agora);
+                document.getElementById('tt-call-active-label').textContent = 'Support TopTopGo';
+                document.getElementById('tt-call-avatar').textContent = '🛠';
+                document.getElementById('tt-call-active').style.display = 'block';
+                startTimer();
+                startStatusPolling(currentCallId);
+            } catch (e) { console.warn('callSupport error', e); alert('Erreur réseau.'); }
+        },
+
+        async hangup() {
+            if (!currentCallId) return;
+            const id = currentCallId;
+            await endCallLocally(id);
+            try { await fetch(`/company/calls/${id}/end`, { method: 'POST', headers: headers() }); } catch (e) {}
+        },
+
+        async toggleMute() {
+            if (!localAudioTrack) return;
+            const muted = !localAudioTrack.muted;
+            await localAudioTrack.setMuted(muted);
+            const btn = document.getElementById('tt-call-mute-btn');
+            if (btn) { btn.textContent = muted ? '🔇' : '🎙️'; btn.classList.toggle('tt-on', muted); }
+        },
+
+        toggleSpeaker() {
+            speakerOn = !speakerOn;
+            remoteAudioTracks.forEach(t => t.setVolume(speakerOn ? 200 : 100));
+            const btn = document.getElementById('tt-call-speaker-btn');
+            if (btn) { btn.textContent = speakerOn ? '🔊' : '🔈'; btn.classList.toggle('tt-on', speakerOn); }
+        },
+    };
+
+    // Souscription au channel personnel de la société — sonne quelle que
+    // soit la page du panel société ouverte.
+    try {
+        const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', {
+            cluster: '{{ env("PUSHER_APP_CLUSTER", "eu") }}', forceTLS: true,
+        });
+        {{-- ✅ auth('company')->id() renvoie null pour un agent connecté (guard
+             "company_agent"), ce qui produisait un channel malformé
+             "company." qui ne correspondait jamais au channel diffusé côté
+             serveur ("company.{id}") — l'appel ne sonnait donc jamais quand
+             un AGENT société était connecté. On résout l'id via
+             CompanyContext, qui gère les deux cas (compte principal + agent). --}}
+        const channel = pusher.subscribe('company.{{ \App\Support\CompanyContext::company()->id }}');
+
+        channel.bind('call.incoming', function (data) {
+            window.TTCall.showIncoming(data.call_id, data.caller_name || 'Appel entrant');
+        });
+
+        channel.bind('call.ended', function (data) {
+            endCallLocally(data.call_id);
+        });
+    } catch (e) { console.warn('Pusher init (call widget) failed', e); }
+
+    // ✅ Filet de sécurité : si le push Pusher échoue silencieusement (ex:
+    // identifiants invalides côté serveur), rien ne sonnait jamais côté
+    // société. On interroge périodiquement le serveur pour rattraper un
+    // appel entrant que le temps réel n'aurait pas signalé.
+    async function pollPending() {
+        try {
+            const res = await fetch('/company/calls/pending', { headers: headers() });
+            const data = await res.json();
+            if (!data.success || !data.call) return;
+            if (!currentCallId) {
+                window.TTCall.showIncoming(data.call.call_id, data.call.caller_name);
+            }
+        } catch (e) { /* silencieux : simple filet de secours */ }
+    }
+    pollPending();
+    setInterval(pollPending, 4000);
+
+    // ✅ Si la société ferme/quitte l'onglet en plein appel (répondu ou pas
+    // encore), on prévient le serveur pour ne pas laisser l'appel "actif"
+    // bloquer indéfiniment les tentatives suivantes entre les deux parties.
+    window.addEventListener('pagehide', function () {
+        if (currentCallId) {
+            try {
+                fetch(`/company/calls/${currentCallId}/end`, { method: 'POST', headers: headers(), keepalive: true });
+            } catch (e) {}
+        }
+    });
+})();
+</script>

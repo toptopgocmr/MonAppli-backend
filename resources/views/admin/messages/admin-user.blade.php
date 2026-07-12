@@ -226,4 +226,40 @@
                         <div class="flex-1">
                             <textarea name="content" rows="2"
                                 placeholder="Écrire un message à {{ $user->first_name }}..."
-                                class="w-full border border-gray-300 rounded-xl px-4 py-2
+                                class="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm resize-none
+                                       focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                required></textarea>
+                        </div>
+                        <button type="submit"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-medium transition flex-shrink-0">
+                            Envoyer </button>
+                    </form>
+                </div>
+
+            @else
+                {{-- Aucune conversation sélectionnée --}}
+                <div class="flex-1 flex items-center justify-center text-gray-400">
+                    <div class="text-center">
+                        <div class="text-6xl mb-4"></div>
+                        <p class="text-lg font-medium text-gray-500">Sélectionnez un utilisateur</p>
+                        <p class="text-sm mt-1">Cliquez sur n'importe quel utilisateur dans la liste pour lui écrire</p>
+                    </div>
+                </div>
+            @endif
+
+        </div>
+    </div>
+
+</div>{{-- /page wrapper --}}
+@endsection
+
+@push('scripts')
+<script>
+    const box = document.getElementById('messagesBox');
+    if (box) box.scrollTop = box.scrollHeight;
+
+    @if(isset($user))
+    setInterval(() => location.reload(), 10000);
+    @endif
+</script>
+@endpush
