@@ -160,7 +160,7 @@
                     @forelse($payments as $payment)
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3 font-mono text-xs text-gray-400">
-                            {{ Str::limit($payment->transaction_ref, 12) ?? '—' }}
+                            {{ \Illuminate\Support\Str::limit($payment->transaction_ref, 12) ?? '—' }}
                         </td>
                         <td class="px-4 py-3 text-gray-500 text-xs">
                             {{ ($payment->paid_at ?? $payment->created_at)?->format('d/m/Y H:i') }}

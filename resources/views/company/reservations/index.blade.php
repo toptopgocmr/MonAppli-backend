@@ -56,9 +56,9 @@
                     </td>
                     <td>
                         <span style="font-size:13px;color:var(--aws-header)">
-                            {{ Str::limit($trip->departure ?? '—', 22) }}
+                            {{ \Illuminate\Support\Str::limit($trip->departure ?? '—', 22) }}
                             <span style="color:var(--aws-sub);margin:0 3px">→</span>
-                            {{ Str::limit($trip->destination ?? '—', 22) }}
+                            {{ \Illuminate\Support\Str::limit($trip->destination ?? '—', 22) }}
                         </span>
                     </td>
                     <td style="font-weight:700;color:#0073bb">{{ number_format($trip->amount ?? 0, 0, ',', ' ') }} FCFA</td>

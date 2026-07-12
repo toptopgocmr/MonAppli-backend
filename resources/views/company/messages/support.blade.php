@@ -56,7 +56,7 @@
                         <div style="font-size:11px;color:var(--aws-sub)">{{ $user->phone ?? $user->email }}</div>
                         @if($user->supportMessages->isNotEmpty())
                         <div style="font-size:11px;color:var(--aws-sub);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px">
-                            {{ Str::limit($user->supportMessages->first()?->content, 36) }}
+                            {{ \Illuminate\Support\Str::limit($user->supportMessages->first()?->content, 36) }}
                         </div>
                         @endif
                     </div>

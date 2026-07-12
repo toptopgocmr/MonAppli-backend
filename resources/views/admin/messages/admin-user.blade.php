@@ -93,7 +93,7 @@
 
                                 @if($lastMsg)
                                     <div class="text-xs text-gray-500 mt-0.5 truncate">
-                                        {{ Str::limit($lastMsg->content, 38) }}
+                                        {{ \Illuminate\Support\Str::limit($lastMsg->content, 38) }}
                                     </div>
                                     <div class="text-xs text-gray-300">
                                         {{ $lastMsg->created_at->diffForHumans() }}
