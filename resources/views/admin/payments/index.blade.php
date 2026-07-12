@@ -80,8 +80,12 @@
                             @endif
                             {{ $g['label'] }}
                             @if($key === 'peex')
-                                <span style="font-size:10px;font-weight:600;color:#94a3b8;border:1px solid #e2e8f0;border-radius:6px;padding:1px 6px">
-                                    sandbox
+                                @php $peexSandbox = (bool) config('payments.peex.sandbox', true); @endphp
+                                <span style="font-size:10px;font-weight:600;border-radius:6px;padding:1px 6px;
+                                    {{ $peexSandbox
+                                        ? 'color:#94a3b8;border:1px solid #e2e8f0'
+                                        : 'color:#1d8102;border:1px solid #b7e0a0;background:#f0f9ec' }}">
+                                    {{ $peexSandbox ? 'sandbox' : 'production' }}
                                 </span>
                             @endif
                         </td>
