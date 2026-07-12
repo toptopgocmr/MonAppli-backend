@@ -34,7 +34,13 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
+            // ✅ 'stderr' ajouté : Railway ne montre dans son onglet "Logs" que
+            // la sortie stdout/stderr du conteneur — jamais le contenu de
+            // storage/logs/laravel.log (fichier interne au conteneur). Sans
+            // ça, aucune erreur PHP n'était visible dans Railway, quel que
+            // soit l'onglet consulté, d'où l'impossibilité de diagnostiquer
+            // les erreurs 500 depuis l'interface Railway.
+            'channels' => ['single', 'stderr'],
             'ignore_exceptions' => false,
         ],
 
