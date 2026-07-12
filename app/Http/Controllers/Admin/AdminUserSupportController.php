@@ -40,9 +40,17 @@ class AdminUserSupportController extends Controller
         $users = $query->paginate(20);
 
         $totalConversations = User::whereHas('supportMessages')->count();
-        $totalMessages      = SupportMessage::where('recipient_type', \App\Models\User\User::class)->count();
-        $unreadMessages     = SupportMessage::where('recipient_type', \App\Models\User\User::class)
-                                ->where('is_read', false)->count();
+        // ✅ FIX : compter les 2 sens (avant : uniquement admin → client,
+        // sous-comptait de moitié). unreadMessages ne compte que les
+        // messages client → admin non lus (ceux qui attendent une réponse).
+        $totalMessages = SupportMessage::where(function ($q) {
+            $q->where('sender_type', \App\Models\User\User::class)->where('recipient_type', \App\Models\Admin\AdminUser::class);
+        })->orWhere(function ($q) {
+            $q->where('sender_type', \App\Models\Admin\AdminUser::class)->where('recipient_type', \App\Models\User\User::class);
+        })->count();
+        $unreadMessages = SupportMessage::where('sender_type', \App\Models\User\User::class)
+            ->where('recipient_type', \App\Models\Admin\AdminUser::class)
+            ->where('is_read', false)->count();
 
         return view('admin.messages.admin-user', compact(
             'users', 'totalConversations', 'totalMessages', 'unreadMessages'
@@ -56,15 +64,27 @@ class AdminUserSupportController extends Controller
     {
         $user = User::findOrFail($userId);
 
-        $messages = SupportMessage::where('recipient_type', \App\Models\User\User::class)
-            ->where('recipient_id', $userId)
+        // ✅ FIX : avant, on ne lisait que les messages admin → client
+        // (recipient_type=User), donc les réponses envoyées par le client
+        // au support (sender_type=User) n'apparaissaient JAMAIS côté admin.
+        // Symétrique à AdminDriverSupportController/AdminCompanySupportController.
+        $messages = SupportMessage::where(function ($q) use ($userId) {
+                $q->where('recipient_type', \App\Models\User\User::class)
+                  ->where('recipient_id', $userId)
+                  ->where('sender_type', \App\Models\Admin\AdminUser::class);
+            })->orWhere(function ($q) use ($userId) {
+                $q->where('sender_type', \App\Models\User\User::class)
+                  ->where('sender_id', $userId)
+                  ->where('recipient_type', \App\Models\Admin\AdminUser::class);
+            })
             ->with('admin')
             ->oldest()
             ->get();
 
-        // Marquer comme lus
-        SupportMessage::where('recipient_type', \App\Models\User\User::class)
-            ->where('recipient_id', $userId)
+        // Marquer comme lus les messages envoyés par le client au support.
+        SupportMessage::where('sender_type', \App\Models\User\User::class)
+            ->where('sender_id', $userId)
+            ->where('recipient_type', \App\Models\Admin\AdminUser::class)
             ->where('is_read', false)
             ->update(['is_read' => true, 'read_at' => now()]);
 
@@ -93,9 +113,17 @@ class AdminUserSupportController extends Controller
         $users = $query->paginate(20);
 
         $totalConversations = User::whereHas('supportMessages')->count();
-        $totalMessages      = SupportMessage::where('recipient_type', \App\Models\User\User::class)->count();
-        $unreadMessages     = SupportMessage::where('recipient_type', \App\Models\User\User::class)
-                                ->where('is_read', false)->count();
+        // ✅ FIX : compter les 2 sens (avant : uniquement admin → client,
+        // sous-comptait de moitié). unreadMessages ne compte que les
+        // messages client → admin non lus (ceux qui attendent une réponse).
+        $totalMessages = SupportMessage::where(function ($q) {
+            $q->where('sender_type', \App\Models\User\User::class)->where('recipient_type', \App\Models\Admin\AdminUser::class);
+        })->orWhere(function ($q) {
+            $q->where('sender_type', \App\Models\Admin\AdminUser::class)->where('recipient_type', \App\Models\User\User::class);
+        })->count();
+        $unreadMessages = SupportMessage::where('sender_type', \App\Models\User\User::class)
+            ->where('recipient_type', \App\Models\Admin\AdminUser::class)
+            ->where('is_read', false)->count();
 
         return view('admin.messages.admin-user', compact(
             'user', 'users', 'messages',

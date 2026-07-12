@@ -40,6 +40,18 @@ class SupportMessage extends Model
     }
 
     /**
+     * Alias de adminSender() — requis par admin-user.blade.php
+     * ($message->admin->name) et AdminUserSupportController (->with('admin')).
+     * Sans cette relation, ->with('admin') levait un BadMethodCallException
+     * ("Call to undefined relationship [admin]") et faisait planter la page
+     * de conversation admin ↔ client à chaque ouverture.
+     */
+    public function admin()
+    {
+        return $this->adminSender();
+    }
+
+    /**
      * Si le destinataire est un Admin, on récupère l'AdminUser
      */
     public function adminRecipient()

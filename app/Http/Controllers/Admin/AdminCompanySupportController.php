@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\SupportMessage;
 use App\Models\Company;
+use App\Models\Admin\AdminUser;
 use App\Services\Realtime\PusherBroadcaster;
 
 /**
@@ -47,9 +48,17 @@ class AdminCompanySupportController extends Controller
         $companies = $query->paginate(20);
 
         $totalConversations = Company::whereHas('supportMessages')->count();
-        $totalMessages      = SupportMessage::where('recipient_type', Company::class)->count();
-        $unreadMessages     = SupportMessage::where('recipient_type', Company::class)
-                                ->where('is_read', false)->count();
+        // ✅ FIX : compter les 2 sens (avant : uniquement admin → société,
+        // sous-comptait de moitié). unreadMessages ne compte que les
+        // messages société → admin non lus (ceux qui attendent une réponse).
+        $totalMessages = SupportMessage::where(function ($q) {
+            $q->where('sender_type', Company::class)->where('recipient_type', AdminUser::class);
+        })->orWhere(function ($q) {
+            $q->where('sender_type', AdminUser::class)->where('recipient_type', Company::class);
+        })->count();
+        $unreadMessages = SupportMessage::where('sender_type', Company::class)
+            ->where('recipient_type', AdminUser::class)
+            ->where('is_read', false)->count();
 
         return view('admin.messages.admin-company', compact(
             'companies', 'totalConversations', 'totalMessages', 'unreadMessages'
@@ -63,14 +72,26 @@ class AdminCompanySupportController extends Controller
     {
         $company = Company::findOrFail($companyId);
 
-        $messages = SupportMessage::where('recipient_type', Company::class)
-            ->where('recipient_id', $companyId)
+        // ✅ FIX : avant, on ne lisait que les messages admin → société
+        // (recipient_type=Company), donc les réponses envoyées par la
+        // société au support (sender_type=Company) n'apparaissaient
+        // JAMAIS côté admin. Symétrique à AdminDriverSupportController.
+        $messages = SupportMessage::where(function ($q) use ($companyId) {
+                $q->where('recipient_type', Company::class)
+                  ->where('recipient_id', $companyId)
+                  ->where('sender_type', AdminUser::class);
+            })->orWhere(function ($q) use ($companyId) {
+                $q->where('sender_type', Company::class)
+                  ->where('sender_id', $companyId)
+                  ->where('recipient_type', AdminUser::class);
+            })
             ->oldest()
             ->get();
 
-        // Marquer comme lus
-        SupportMessage::where('recipient_type', Company::class)
-            ->where('recipient_id', $companyId)
+        // Marquer comme lus les messages envoyés par la société au support.
+        SupportMessage::where('sender_type', Company::class)
+            ->where('sender_id', $companyId)
+            ->where('recipient_type', AdminUser::class)
             ->where('is_read', false)
             ->update(['is_read' => true, 'read_at' => now()]);
 
@@ -97,9 +118,17 @@ class AdminCompanySupportController extends Controller
         $companies = $query->paginate(20);
 
         $totalConversations = Company::whereHas('supportMessages')->count();
-        $totalMessages      = SupportMessage::where('recipient_type', Company::class)->count();
-        $unreadMessages     = SupportMessage::where('recipient_type', Company::class)
-                                ->where('is_read', false)->count();
+        // ✅ FIX : compter les 2 sens (avant : uniquement admin → société,
+        // sous-comptait de moitié). unreadMessages ne compte que les
+        // messages société → admin non lus (ceux qui attendent une réponse).
+        $totalMessages = SupportMessage::where(function ($q) {
+            $q->where('sender_type', Company::class)->where('recipient_type', AdminUser::class);
+        })->orWhere(function ($q) {
+            $q->where('sender_type', AdminUser::class)->where('recipient_type', Company::class);
+        })->count();
+        $unreadMessages = SupportMessage::where('sender_type', Company::class)
+            ->where('recipient_type', AdminUser::class)
+            ->where('is_read', false)->count();
 
         return view('admin.messages.admin-company', compact(
             'company', 'companies', 'messages',

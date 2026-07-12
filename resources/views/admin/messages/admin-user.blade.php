@@ -163,26 +163,39 @@
                 {{-- Liste messages --}}
                 <div class="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50" id="messagesBox">
                     @forelse($messages as $message)
-                        <div class="flex justify-end items-end gap-2">
+                        @php $isFromUser = $message->sender_type === \App\Models\User\User::class; @endphp
+                        <div class="flex {{ $isFromUser ? 'justify-start' : 'justify-end' }} items-end gap-2">
+                            @if($isFromUser)
+                            <div class="w-8 h-8 rounded-full bg-gray-300 text-gray-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                {{ strtoupper(substr($user->first_name ?? 'C', 0, 1)) }}
+                            </div>
+                            @endif
                             <div class="max-w-xs lg:max-w-md">
-                                <div class="text-xs text-gray-400 mb-1 text-right">
-                                    {{ $message->admin->name ?? session('admin_name', 'Admin') }}
+                                <div class="text-xs text-gray-400 mb-1 {{ $isFromUser ? 'text-left' : 'text-right' }}">
+                                    {{ $isFromUser ? trim(($user->first_name ?? '').' '.($user->last_name ?? '')) : ($message->admin->name ?? session('admin_name', 'Admin')) }}
                                 </div>
-                                <div class="px-4 py-2.5 rounded-2xl rounded-tr-none text-sm leading-relaxed bg-blue-600 text-white shadow-sm">
+                                <div class="px-4 py-2.5 text-sm leading-relaxed shadow-sm
+                                    {{ $isFromUser
+                                        ? 'bg-white border border-gray-200 text-gray-800 rounded-2xl rounded-tl-none'
+                                        : 'bg-blue-600 text-white rounded-2xl rounded-tr-none' }}">
                                     {{ $message->content }}
                                 </div>
-                                <div class="text-xs text-gray-400 mt-1 text-right">
+                                <div class="text-xs text-gray-400 mt-1 {{ $isFromUser ? 'text-left' : 'text-right' }}">
                                     {{ $message->created_at->format('d/m H:i') }}
-                                    @if($message->is_read)
-                                        <span class="text-blue-400 ml-1">Lu</span>
-                                    @else
-                                        <span class="text-gray-300 ml-1">Envoyé</span>
+                                    @if(!$isFromUser)
+                                        @if($message->is_read)
+                                            <span class="text-blue-400 ml-1">Lu</span>
+                                        @else
+                                            <span class="text-gray-300 ml-1">Envoyé</span>
+                                        @endif
                                     @endif
                                 </div>
                             </div>
+                            @if(!$isFromUser)
                             <div class="w-8 h-8 rounded-full bg-yellow-400 text-black flex items-center justify-center text-xs font-bold flex-shrink-0">
                                 {{ strtoupper(substr(session('admin_name', 'A'), 0, 1)) }}
                             </div>
+                            @endif
                         </div>
                     @empty
                         <div class="text-center text-gray-400 py-10">
