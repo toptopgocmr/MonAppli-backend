@@ -123,7 +123,7 @@
                                         data-flag-url="{{ $c['flag_url'] }}"
                                         data-operators='@json($c['operators'] ?? [])'
                                         {{ old('country') === $c['code'] ? 'selected' : '' }}>
-                                    {{ $c['name'] }}{{ !empty($c['dial']) ? ' ('.$c['dial'].')' : '' }}
+                                    {{ $c['name'] }}
                                 </option>
                             @endforeach
                         </select>

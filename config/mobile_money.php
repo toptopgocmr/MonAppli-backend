@@ -35,6 +35,19 @@ return [
             ['name' => 'Airtel Gabon', 'color' => '#E4002B'],
             ['name' => 'Moov Africa',  'color' => '#0072CE'],
         ]],
+        // Reste de la zone CEMAC (Peex opère aussi sur ces pays).
+        'TD' => ['name' => 'Tchad', 'dial' => '+235', 'operators' => [
+            ['name' => 'Airtel Tchad',      'color' => '#E4002B'],
+            ['name' => 'Moov Africa Tchad', 'color' => '#0072CE'],
+        ]],
+        'CF' => ['name' => 'Centrafrique', 'dial' => '+236', 'operators' => [
+            ['name' => 'Orange Centrafrique', 'color' => '#FF7900'],
+            ['name' => 'Telecel Centrafrique','color' => '#1E3A8A'],
+        ]],
+        'GQ' => ['name' => 'Guinée équatoriale', 'dial' => '+240', 'operators' => [
+            ['name' => 'Orange GE', 'color' => '#FF7900'],
+            ['name' => 'GETESA',    'color' => '#0072CE'],
+        ]],
         'CI' => ['name' => "Côte d'Ivoire", 'dial' => '+225', 'operators' => [
             ['name' => 'Orange CI',   'color' => '#FF7900'],
             ['name' => 'MTN CI',      'color' => '#FFCB05'],
@@ -120,6 +133,7 @@ return [
     // Nombre de chiffres attendus après l'indicatif, par indicatif (miroir de kPhoneDigits).
     'phone_digits' => [
         '+242' => 9, '+243' => 9, '+237' => 9, '+241' => 8,
+        '+235' => 8, '+236' => 8, '+240' => 9,
         '+225' => 10, '+221' => 9, '+212' => 9, '+213' => 9,
         '+33' => 9, '+1' => 10,
     ],

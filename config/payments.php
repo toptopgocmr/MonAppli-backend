@@ -39,10 +39,11 @@ return [
 
         // Per https://peex-api-docs.peexit.com/collect the public docs only
         // mention Cameroon; widened to include Congo Brazzaville per written
-        // confirmation from Peex support. Any other country falls back to
-        // Flutterwave (collect) / manual payout (disbursement) automatically.
-        'collect_countries' => array_filter(explode(',', env('PEEX_COLLECT_COUNTRIES', 'CM,CG'))),
-        'disbursement_countries' => array_filter(explode(',', env('PEEX_DISBURSEMENT_COUNTRIES', 'CM,CG'))),
+        // confirmation from Peex support, puis à toute la zone CEMAC (CM, CG,
+        // GA, TD, CF, GQ) confirmé par le client. Any other country falls
+        // back to Flutterwave (collect) / manual payout (disbursement).
+        'collect_countries' => array_filter(explode(',', env('PEEX_COLLECT_COUNTRIES', 'CM,CG,GA,TD,CF,GQ'))),
+        'disbursement_countries' => array_filter(explode(',', env('PEEX_DISBURSEMENT_COUNTRIES', 'CM,CG,GA,TD,CF,GQ'))),
     ],
 
     /*
@@ -146,6 +147,9 @@ return [
         'CD' => ['peex', 'airtel_money'], // Congo Kinshasa
         'GA' => ['peex', 'airtel_money'], // Gabon
         'CM' => ['peex', 'mtn_momo'], // Cameroon
+        'TD' => ['peex'], // Tchad (zone CEMAC)
+        'CF' => ['peex'], // Centrafrique (zone CEMAC)
+        'GQ' => ['peex'], // Guinée équatoriale (zone CEMAC)
         'INTERNATIONAL' => ['stripe'], // International
     ],
 
