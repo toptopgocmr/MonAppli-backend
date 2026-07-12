@@ -173,7 +173,12 @@
                     <input type="hidden" name="phone_number" id="w-phone-hidden" value="{{ old('phone_number', $company->phone ?? '') }}">
                 </div>
 
-                <button type="submit" class="aws-btn aws-btn-primary" style="width:100%" {{ $availableBalance < 1000 ? 'disabled' : '' }}>Envoyer la demande</button>
+                <button type="submit" class="aws-btn aws-btn-primary" style="width:100%;justify-content:center" {{ $availableBalance < 1000 ? 'disabled' : '' }}>Envoyer la demande</button>
+                @if($availableBalance < 1000)
+                <p class="aws-hint" style="color:#d13212;margin-top:8px">
+                    Solde insuffisant pour demander un retrait (minimum 1 000 FCFA, solde actuel : {{ number_format($availableBalance, 0, ',', ' ') }} FCFA).
+                </p>
+                @endif
                 </form>
             </div>
         </div>

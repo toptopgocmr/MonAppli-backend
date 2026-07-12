@@ -120,6 +120,12 @@
     .aws-btn-normal:hover { background: var(--aws-bg); }
     .aws-btn-danger { background: #fff; border-color: var(--aws-red); color: var(--aws-red); }
     .aws-btn-danger:hover { background: #fdf3f1; }
+    /* ✅ FIX : aucun style :disabled n'existait — un bouton désactivé (ex:
+       solde insuffisant sur le formulaire de retrait) avait exactement la
+       même apparence qu'un bouton actif, donnant l'impression que le clic
+       ne faisait "aucun effet" alors qu'il était en fait bloqué. */
+    .aws-btn:disabled, .aws-btn[disabled] { background: #e9ebed !important; border-color: #d5dbdb !important; color: #8b979c !important; cursor: not-allowed; opacity: .8; }
+    .aws-btn:disabled:hover, .aws-btn[disabled]:hover { background: #e9ebed !important; }
 
     /* ── BADGES ── */
     .aws-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 3px; }
