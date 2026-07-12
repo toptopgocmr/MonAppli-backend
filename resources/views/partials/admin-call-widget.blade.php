@@ -14,14 +14,43 @@
      ligne.
      ══════════════════════════════════════════════════════════════════ --}}
 
+<style>
+    @keyframes tt-pulse-blue { 0%{box-shadow:0 0 0 0 rgba(29,161,242,.55);} 70%{box-shadow:0 0 0 14px rgba(29,161,242,0);} 100%{box-shadow:0 0 0 0 rgba(29,161,242,0);} }
+    @keyframes tt-pop-in     { from{transform:translateY(16px);opacity:0;} to{transform:translateY(0);opacity:1;} }
+    @keyframes tt-blink      { 0%,100%{opacity:1;} 50%{opacity:.25;} }
+    .tt-call-card, #tt-call-active { animation: tt-pop-in .25s ease-out; font-family:'Inter',sans-serif; }
+    .tt-avatar { width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,#1DA1F2,#0d6ba8);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#fff;flex-shrink:0; }
+    .tt-avatar.tt-ringing { animation: tt-pulse-blue 1.4s infinite; }
+    .tt-live-dot { width:7px;height:7px;border-radius:50%;background:#22c55e;display:inline-block;animation:tt-blink 1.4s infinite; }
+    .tt-ctrl-btn { width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.1);color:#fff;border:none;cursor:pointer;font-size:16px;transition:.15s; }
+    .tt-ctrl-btn:hover { background:rgba(255,255,255,.2); }
+    .tt-ctrl-btn.tt-on { background:#1DA1F2; }
+    .tt-hangup-btn { width:50px;height:50px;border-radius:50%;background:#D13212;color:#fff;border:none;cursor:pointer;font-size:18px;box-shadow:0 4px 14px rgba(209,50,18,.45);transition:.15s; }
+    .tt-hangup-btn:hover { background:#b82a0f; transform:scale(1.06); }
+    .tt-answer-btn  { flex:1;background:#1E8449;color:#fff;border:none;border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s; }
+    .tt-answer-btn:hover { background:#196b3a; }
+    .tt-decline-btn { flex:1;background:rgba(255,255,255,.08);color:#fff;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:9px;font-weight:700;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px;transition:.15s; }
+    .tt-decline-btn:hover { background:rgba(209,50,18,.25); border-color:rgba(209,50,18,.5); }
+</style>
+
 <div id="tt-call-queue" style="display:none;position:fixed;top:16px;right:16px;z-index:9998;flex-direction:column;gap:10px;max-width:300px"></div>
 
-<div id="tt-call-active" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:'Inter',sans-serif;align-items:center;gap:10px">
-    <span style="font-size:13px;font-weight:600" id="tt-call-active-label">🎙️ Appel en cours</span>
-    <span id="tt-call-timer" style="font-size:12px;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;min-width:38px">00:00</span>
-    <button id="tt-call-mute-btn" onclick="TTCall.toggleMute()" title="Muet" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">🎙️</button>
-    <button id="tt-call-speaker-btn" onclick="TTCall.toggleSpeaker()" title="Haut-parleur" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">🔈</button>
-    <button onclick="TTCall.hangup()" style="background:#D13212;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600">Raccrocher</button>
+<div id="tt-call-active" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:linear-gradient(160deg,#132030,#0B141C);border:1px solid rgba(29,161,242,.35);border-radius:16px;padding:16px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5);color:#fff;min-width:250px">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">
+        <div class="tt-avatar" id="tt-call-avatar">🎙️</div>
+        <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#22c55e;font-weight:700;text-transform:uppercase;letter-spacing:.04em">
+                <span class="tt-live-dot"></span> En ligne
+            </div>
+            <div id="tt-call-active-label" style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px">Appel en cours</div>
+        </div>
+        <div id="tt-call-timer" style="font-size:14px;font-weight:600;color:rgba(255,255,255,.75);font-variant-numeric:tabular-nums">00:00</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:16px">
+        <button id="tt-call-mute-btn" class="tt-ctrl-btn" onclick="TTCall.toggleMute()" title="Muet">🎙️</button>
+        <button onclick="TTCall.hangup()" class="tt-hangup-btn" title="Raccrocher"><span style="display:inline-block;transform:rotate(135deg)">📞</span></button>
+        <button id="tt-call-speaker-btn" class="tt-ctrl-btn" onclick="TTCall.toggleSpeaker()" title="Haut-parleur">🔈</button>
+    </div>
 </div>
 
 <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
@@ -103,8 +132,10 @@
         try { await client?.leave(); } catch (e) {}
         client = null; localAudioTrack = null;
         remoteAudioTracks = []; speakerOn = false;
-        const btn = document.getElementById('tt-call-speaker-btn');
-        if (btn) btn.textContent = '🔈';
+        const speakerBtn = document.getElementById('tt-call-speaker-btn');
+        if (speakerBtn) { speakerBtn.textContent = '🔈'; speakerBtn.classList.remove('tt-on'); }
+        const muteBtn = document.getElementById('tt-call-mute-btn');
+        if (muteBtn) { muteBtn.textContent = '🎙️'; muteBtn.classList.remove('tt-on'); }
     }
 
     function refreshQueueInteractivity() {
@@ -120,13 +151,19 @@
         const box = document.createElement('div');
         box.className = 'tt-call-card';
         box.id = 'tt-call-card-' + callId;
-        box.style = 'background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:"Inter",sans-serif';
+        box.style = 'background:linear-gradient(160deg,#132030,#0B141C);border:1px solid rgba(29,161,242,.4);border-radius:14px;padding:14px 16px;box-shadow:0 10px 34px rgba(0,0,0,.45);color:#fff;font-family:"Inter",sans-serif';
+        const initial = (callerName || '?').trim().charAt(0).toUpperCase() || '?';
         box.innerHTML = `
-            <div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px">${QUEUE_LABELS[queueType] || '📞 Appel entrant'}</div>
-            <div style="font-size:14px;font-weight:700;margin-bottom:10px">${callerName || 'Appel entrant'}</div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+                <div class="tt-avatar tt-ringing">${initial}</div>
+                <div style="flex:1;min-width:0">
+                    <div style="font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.04em;font-weight:600">${QUEUE_LABELS[queueType] || '📞 Appel entrant'}</div>
+                    <div style="font-size:14.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${callerName || 'Appel entrant'}</div>
+                </div>
+            </div>
             <div style="display:flex;gap:8px">
-                <button class="tt-call-answer" style="flex:1;background:#1E8449;color:#fff;border:none;border-radius:6px;padding:7px;font-weight:600;cursor:pointer;font-size:13px">Répondre</button>
-                <button class="tt-call-decline" style="flex:1;background:#D13212;color:#fff;border:none;border-radius:6px;padding:7px;font-weight:600;cursor:pointer;font-size:13px">Refuser</button>
+                <button class="tt-call-answer tt-answer-btn">📞 Répondre</button>
+                <button class="tt-call-decline tt-decline-btn">✕ Refuser</button>
             </div>`;
         box.querySelector('.tt-call-answer').addEventListener('click', () => window.TTCall.accept(callId));
         box.querySelector('.tt-call-decline').addEventListener('click', () => window.TTCall.decline(callId));
@@ -167,8 +204,9 @@
                 }
                 currentCallId = callId;
                 if (data.agora) await joinChannel(data.agora);
-                document.getElementById('tt-call-active-label').textContent = '🎙️ ' + (info?.callerName || 'Appel en cours');
-                document.getElementById('tt-call-active').style.display = 'flex';
+                document.getElementById('tt-call-active-label').textContent = info?.callerName || 'Appel en cours';
+                document.getElementById('tt-call-avatar').textContent = (info?.callerName || '?').trim().charAt(0).toUpperCase() || '?';
+                document.getElementById('tt-call-active').style.display = 'block';
                 startTimer();
                 refreshQueueInteractivity();
             } catch (e) { console.warn('call answer error', e); }
@@ -192,8 +230,9 @@
                 if (!data.success) { alert(data.message || 'Appel impossible.'); return; }
                 currentCallId = data.call.id;
                 if (data.agora) await joinChannel(data.agora);
-                document.getElementById('tt-call-active-label').textContent = '🎙️ Appel en cours';
-                document.getElementById('tt-call-active').style.display = 'flex';
+                document.getElementById('tt-call-active-label').textContent = 'Appel en cours';
+                document.getElementById('tt-call-avatar').textContent = '🎙️';
+                document.getElementById('tt-call-active').style.display = 'block';
                 startTimer();
                 refreshQueueInteractivity();
             } catch (e) { console.warn('startCall error', e); alert('Erreur réseau.'); }
@@ -214,14 +253,15 @@
             if (!localAudioTrack) return;
             const muted = !localAudioTrack.muted;
             await localAudioTrack.setMuted(muted);
-            document.getElementById('tt-call-mute-btn').textContent = muted ? '🔇' : '🎙️';
+            const btn = document.getElementById('tt-call-mute-btn');
+            if (btn) { btn.textContent = muted ? '🔇' : '🎙️'; btn.classList.toggle('tt-on', muted); }
         },
 
         toggleSpeaker() {
             speakerOn = !speakerOn;
             remoteAudioTracks.forEach(t => t.setVolume(speakerOn ? 200 : 100));
             const btn = document.getElementById('tt-call-speaker-btn');
-            if (btn) btn.textContent = speakerOn ? '🔊' : '🔈';
+            if (btn) { btn.textContent = speakerOn ? '🔊' : '🔈'; btn.classList.toggle('tt-on', speakerOn); }
         },
     };
 
