@@ -300,7 +300,9 @@ class AdminCallController extends Controller
      * POST /admin/calls/{callId}/recording — upload de l'enregistrement
      * audio (micro admin + audio distant reçu, mixés côté navigateur via
      * MediaRecorder — voir admin-call-widget.blade.php). Stocké sur le
-     * disque `local` (privé), jamais exposé en URL publique directe.
+     * disque `backblaze` (S3-compatible) : le disque `local` de Railway est
+     * un filesystem éphémère, remis à zéro à chaque déploiement — un
+     * enregistrement stocké en `local` disparaît donc au push suivant.
      */
     public function storeRecording(Request $request, $callId): JsonResponse
     {
@@ -314,7 +316,7 @@ class AdminCallController extends Controller
         ]);
 
         $filename = 'call_recordings/' . $call->id . '/' . Str::uuid() . '.webm';
-        Storage::disk('local')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
+        Storage::disk('backblaze')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
 
         \App\Models\CallRecording::create([
             'call_id'           => $call->id,
@@ -336,11 +338,11 @@ class AdminCallController extends Controller
     {
         $recording = \App\Models\CallRecording::where('call_id', $callId)->findOrFail($recordingId);
 
-        if (!Storage::disk('local')->exists($recording->path)) {
+        if (!Storage::disk('backblaze')->exists($recording->path)) {
             abort(404, 'Enregistrement introuvable.');
         }
 
-        return Storage::disk('local')->response($recording->path, 'appel_' . $callId . '.webm', [
+        return Storage::disk('backblaze')->response($recording->path, 'appel_' . $callId . '.webm', [
             'Content-Type' => 'audio/webm',
         ]);
     }
