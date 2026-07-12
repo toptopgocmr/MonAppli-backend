@@ -110,7 +110,16 @@ class AdminCallController extends Controller
 
         $calls = (clone $query)->orderByDesc('created_at')->paginate(25)->withQueryString();
 
-        $calls->getCollection()->transform(function ($c) {
+        // Mapping vers les valeurs attendues par TTCall.startCall() / initiate()
+        // (target_type: 'user'|'driver'|'company'), distinct de queue_type qui
+        // ne sert qu'à l'affichage ("client"/"chauffeur"/"societe").
+        $targetTypeMap = [
+            User::class    => 'user',
+            Driver::class  => 'driver',
+            Company::class => 'company',
+        ];
+
+        $calls->getCollection()->transform(function ($c) use ($targetTypeMap) {
             $isInbound = $c->receiver_type === AdminUser::class;
             $otherType = $isInbound ? $c->caller_type : $c->receiver_type;
             $otherId   = $isInbound ? $c->caller_id   : $c->receiver_id;
@@ -118,6 +127,10 @@ class AdminCallController extends Controller
             $c->direction    = $isInbound ? 'Entrant (vers support)' : 'Sortant (depuis support)';
             $c->other_name   = $this->displayName($otherType, (int) $otherId);
             $c->queue_type   = CallOrchestrator::queueTypeFor($isInbound ? $c->caller_type : $c->receiver_type);
+            // ✅ Pour le bouton "Rappeler" du journal — null si le type n'est
+            // pas rappelable ou si le compte source a été supprimé depuis.
+            $c->target_type  = $targetTypeMap[$otherType] ?? null;
+            $c->target_id    = $otherId;
             return $c;
         });
 

@@ -37,6 +37,7 @@
                     <th>Durée</th>
                     <th>Débuté le</th>
                     <th>Terminé le</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -62,9 +63,20 @@
                     <td style="color:#475569">{{ $call->duration_formatted }}</td>
                     <td style="font-size:12px;color:#64748b">{{ $call->created_at?->format('d/m/Y H:i:s') }}</td>
                     <td style="font-size:12px;color:#64748b">{{ $call->ended_at?->format('d/m/Y H:i:s') ?? '—' }}</td>
+                    <td>
+                        @if($call->target_type)
+                        <button type="button"
+                                onclick="TTCall.startCall('{{ $call->target_type }}', {{ $call->target_id }})"
+                                class="btn btn-sm btn-primary" style="white-space:nowrap">
+                            📞 Rappeler
+                        </button>
+                        @else
+                        <span style="color:#cbd5e1;font-size:12px">—</span>
+                        @endif
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" style="padding:40px;text-align:center;color:#94a3b8">Aucun appel enregistré.</td></tr>
+                <tr><td colspan="8" style="padding:40px;text-align:center;color:#94a3b8">Aucun appel enregistré.</td></tr>
                 @endforelse
             </tbody>
         </table>

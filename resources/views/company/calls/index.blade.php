@@ -22,6 +22,7 @@
                     <th>Durée</th>
                     <th>Débuté le</th>
                     <th>Terminé le</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -43,9 +44,19 @@
                     <td>{{ $call->duration_formatted }}</td>
                     <td style="font-size:12px;color:var(--aws-sub)">{{ $call->created_at?->format('d/m/Y H:i:s') }}</td>
                     <td style="font-size:12px;color:var(--aws-sub)">{{ $call->ended_at?->format('d/m/Y H:i:s') ?? '—' }}</td>
+                    <td>
+                        {{-- La société ne peut appeler que le support (un seul
+                             destinataire possible) — même action que le bouton
+                             "Appeler le support" du topbar, dupliquée ici pour
+                             éviter de remonter en haut de page. --}}
+                        <button type="button" onclick="TTCall.callSupport()"
+                                class="aws-btn aws-btn-primary" style="padding:6px 12px;font-size:12px;white-space:nowrap">
+                            📞 Rappeler
+                        </button>
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="6" style="padding:40px;text-align:center;color:var(--aws-sub)">Aucun appel enregistré.</td></tr>
+                <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--aws-sub)">Aucun appel enregistré.</td></tr>
                 @endforelse
             </tbody>
         </table>
