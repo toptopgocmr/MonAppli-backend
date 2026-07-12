@@ -62,6 +62,7 @@ Route::prefix('company')->name('company.')->group(function () {
         // Planning chauffeurs (calendrier)
         Route::middleware('company.permission:schedule')->group(function () {
             Route::get('/schedule', [ScheduleController::class, 'index'])->name('schedule.index');
+            Route::post('/schedule', [ScheduleController::class, 'store'])->name('schedule.store');
         });
 
         // Réservations / courses

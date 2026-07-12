@@ -16,9 +16,11 @@
 
 <div id="tt-call-queue" style="display:none;position:fixed;top:16px;right:16px;z-index:9998;flex-direction:column;gap:10px;max-width:300px"></div>
 
-<div id="tt-call-active" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:'Inter',sans-serif;align-items:center;gap:12px">
+<div id="tt-call-active" style="display:none;position:fixed;bottom:16px;right:16px;z-index:9998;background:#0F1923;border:1px solid rgba(29,161,242,.4);border-radius:10px;padding:14px 18px;box-shadow:0 8px 32px rgba(0,0,0,.4);color:#fff;font-family:'Inter',sans-serif;align-items:center;gap:10px">
     <span style="font-size:13px;font-weight:600" id="tt-call-active-label">🎙️ Appel en cours</span>
-    <button id="tt-call-mute-btn" onclick="TTCall.toggleMute()" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">🎙️</button>
+    <span id="tt-call-timer" style="font-size:12px;color:rgba(255,255,255,.7);font-variant-numeric:tabular-nums;min-width:38px">00:00</span>
+    <button id="tt-call-mute-btn" onclick="TTCall.toggleMute()" title="Muet" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">🎙️</button>
+    <button id="tt-call-speaker-btn" onclick="TTCall.toggleSpeaker()" title="Haut-parleur" style="background:rgba(255,255,255,.12);color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer">🔈</button>
     <button onclick="TTCall.hangup()" style="background:#D13212;color:#fff;border:none;border-radius:6px;padding:6px 10px;cursor:pointer;font-weight:600">Raccrocher</button>
 </div>
 
@@ -28,6 +30,28 @@
 (function () {
     let client = null, localAudioTrack = null, currentCallId = null, ringInterval = null;
     const pendingCalls = new Map(); // callId -> { callerName, queueType }
+    let remoteAudioTracks = [], speakerOn = false;
+    let callStartTime = null, timerInterval = null;
+
+    function startTimer() {
+        callStartTime = Date.now();
+        updateTimerDisplay();
+        timerInterval = setInterval(updateTimerDisplay, 1000);
+    }
+    function stopTimer() {
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        callStartTime = null;
+        const el = document.getElementById('tt-call-timer');
+        if (el) el.textContent = '00:00';
+    }
+    function updateTimerDisplay() {
+        if (!callStartTime) return;
+        const secs = Math.floor((Date.now() - callStartTime) / 1000);
+        const m = String(Math.floor(secs / 60)).padStart(2, '0');
+        const s = String(secs % 60).padStart(2, '0');
+        const el = document.getElementById('tt-call-timer');
+        if (el) el.textContent = `${m}:${s}`;
+    }
 
     const QUEUE_LABELS = { client: '📞 Appel Client', chauffeur: '📞 Appel Chauffeur', societe: '📞 Appel Société' };
 
@@ -63,7 +87,14 @@
         await client.publish([localAudioTrack]);
         client.on('user-published', async (user, mediaType) => {
             await client.subscribe(user, mediaType);
-            if (mediaType === 'audio') user.audioTrack.play();
+            if (mediaType === 'audio') {
+                user.audioTrack.play();
+                user.audioTrack.setVolume(speakerOn ? 200 : 100);
+                remoteAudioTracks.push(user.audioTrack);
+            }
+        });
+        client.on('user-unpublished', (user) => {
+            remoteAudioTracks = remoteAudioTracks.filter(t => t !== user.audioTrack);
         });
     }
 
@@ -71,6 +102,9 @@
         try { localAudioTrack?.close(); } catch (e) {}
         try { await client?.leave(); } catch (e) {}
         client = null; localAudioTrack = null;
+        remoteAudioTracks = []; speakerOn = false;
+        const btn = document.getElementById('tt-call-speaker-btn');
+        if (btn) btn.textContent = '🔈';
     }
 
     function refreshQueueInteractivity() {
@@ -135,6 +169,7 @@
                 if (data.agora) await joinChannel(data.agora);
                 document.getElementById('tt-call-active-label').textContent = '🎙️ ' + (info?.callerName || 'Appel en cours');
                 document.getElementById('tt-call-active').style.display = 'flex';
+                startTimer();
                 refreshQueueInteractivity();
             } catch (e) { console.warn('call answer error', e); }
         },
@@ -159,6 +194,7 @@
                 if (data.agora) await joinChannel(data.agora);
                 document.getElementById('tt-call-active-label').textContent = '🎙️ Appel en cours';
                 document.getElementById('tt-call-active').style.display = 'flex';
+                startTimer();
                 refreshQueueInteractivity();
             } catch (e) { console.warn('startCall error', e); alert('Erreur réseau.'); }
         },
@@ -168,6 +204,7 @@
             const id = currentCallId;
             currentCallId = null;
             await leaveChannel();
+            stopTimer();
             document.getElementById('tt-call-active').style.display = 'none';
             refreshQueueInteractivity();
             try { await fetch(`/admin/calls/${id}/end`, { method: 'POST', headers: headers() }); } catch (e) {}
@@ -178,6 +215,13 @@
             const muted = !localAudioTrack.muted;
             await localAudioTrack.setMuted(muted);
             document.getElementById('tt-call-mute-btn').textContent = muted ? '🔇' : '🎙️';
+        },
+
+        toggleSpeaker() {
+            speakerOn = !speakerOn;
+            remoteAudioTracks.forEach(t => t.setVolume(speakerOn ? 200 : 100));
+            const btn = document.getElementById('tt-call-speaker-btn');
+            if (btn) btn.textContent = speakerOn ? '🔊' : '🔈';
         },
     };
 
@@ -203,6 +247,7 @@
             const id = parseInt(data.call_id);
             if (pendingCalls.has(id)) removeFromQueue(id);
             if (id === currentCallId) {
+                stopTimer();
                 document.getElementById('tt-call-active').style.display = 'none';
                 leaveChannel();
                 currentCallId = null;
