@@ -300,9 +300,13 @@ class AdminCallController extends Controller
      * POST /admin/calls/{callId}/recording — upload de l'enregistrement
      * audio (micro admin + audio distant reçu, mixés côté navigateur via
      * MediaRecorder — voir admin-call-widget.blade.php). Stocké sur le
-     * disque `backblaze` (S3-compatible) : le disque `local` de Railway est
-     * un filesystem éphémère, remis à zéro à chaque déploiement — un
-     * enregistrement stocké en `local` disparaît donc au push suivant.
+     * disque `public` : c'est le seul disque de ce projet couvert par le
+     * volume persistant Railway (le disque `local`, jamais utilisé
+     * ailleurs dans l'app, ne l'est pas et perd son contenu à chaque
+     * déploiement — c'est ce qui causait le 404 sur les anciens
+     * enregistrements). Le fichier n'est jamais exposé via une URL
+     * publique directe : il n'est servi que par cette route, protégée par
+     * l'authentification admin.
      */
     public function storeRecording(Request $request, $callId): JsonResponse
     {
@@ -316,7 +320,7 @@ class AdminCallController extends Controller
         ]);
 
         $filename = 'call_recordings/' . $call->id . '/' . Str::uuid() . '.webm';
-        Storage::disk('backblaze')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
+        Storage::disk('public')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
 
         \App\Models\CallRecording::create([
             'call_id'           => $call->id,
@@ -338,11 +342,11 @@ class AdminCallController extends Controller
     {
         $recording = \App\Models\CallRecording::where('call_id', $callId)->findOrFail($recordingId);
 
-        if (!Storage::disk('backblaze')->exists($recording->path)) {
+        if (!Storage::disk('public')->exists($recording->path)) {
             abort(404, 'Enregistrement introuvable.');
         }
 
-        return Storage::disk('backblaze')->response($recording->path, 'appel_' . $callId . '.webm', [
+        return Storage::disk('public')->response($recording->path, 'appel_' . $callId . '.webm', [
             'Content-Type' => 'audio/webm',
         ]);
     }
