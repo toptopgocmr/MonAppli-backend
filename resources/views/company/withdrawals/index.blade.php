@@ -71,6 +71,9 @@
     <!-- Historique -->
     <div class="aws-panel">
         <div class="aws-panel-header"><span class="aws-panel-title">Historique des demandes</span></div>
+        <div class="aws-hint" style="padding:10px 20px 0">
+            ⏳ Chaque demande « En attente » est vérifiée manuellement par l'administration avant que le paiement soit envoyé — comptez 24h à 48h de traitement.
+        </div>
         <div style="overflow-x:auto">
             <table class="aws-table">
                 <thead>
