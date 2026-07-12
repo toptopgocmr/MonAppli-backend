@@ -16,8 +16,10 @@ class WithdrawalController extends Controller
     }
 
     // Pays vers lesquels un retrait peut être effectué (couverts par Peex Disbursement/Remittance).
-    // Enrichi avec drapeau/indicatif/opérateurs (config/mobile_money.php, miroir
-    // de kCountries côté app mobile) pour le sélecteur "Numéro Mobile Money".
+    // Enrichi avec indicatif/opérateurs (config/mobile_money.php, miroir de
+    // kCountries côté app mobile) + une URL de drapeau (flagcdn.com — les
+    // drapeaux emoji ne s'affichent pas correctement sous Windows/Chrome,
+    // qui montre le code pays en boîte au lieu du drapeau).
     private function payoutCountries(): array
     {
         $codes = config('payments.peex.disbursement_countries', ['CM', 'CG']);
@@ -28,9 +30,9 @@ class WithdrawalController extends Controller
             ->filter(fn ($c) => in_array($c['code'], $codes, true))
             ->map(function ($c) use ($meta) {
                 $m = $meta[$c['code']] ?? null;
-                $c['flag']      = $m['flag'] ?? '';
                 $c['dial']      = $m['dial'] ?? '';
                 $c['operators'] = $m['operators'] ?? [];
+                $c['flag_url']  = 'https://flagcdn.com/w40/' . strtolower($c['code']) . '.png';
                 return $c;
             })
             ->values()

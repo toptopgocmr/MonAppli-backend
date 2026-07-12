@@ -112,18 +112,22 @@
 
                 <div class="aws-field">
                     <label class="aws-label">Pays du retrait</label>
-                    <select name="country" id="w-country" required class="aws-input">
-                        <option value="">— Choisir —</option>
-                        @foreach($payoutCountries as $c)
-                            <option value="{{ $c['code'] }}"
-                                    data-dial="{{ $c['dial'] ?? '' }}"
-                                    data-flag="{{ $c['flag'] ?? '' }}"
-                                    data-operators="{{ implode('|', $c['operators'] ?? []) }}"
-                                    {{ old('country') === $c['code'] ? 'selected' : '' }}>
-                                {{ $c['flag'] ?? '' }} {{ $c['name'] }}{{ !empty($c['dial']) ? ' ('.$c['dial'].')' : '' }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <img id="w-country-flag" src="" alt=""
+                             style="width:28px;height:20px;border-radius:2px;object-fit:cover;border:1px solid var(--aws-border);display:none;flex-shrink:0">
+                        <select name="country" id="w-country" required class="aws-input" style="flex:1">
+                            <option value="">— Choisir —</option>
+                            @foreach($payoutCountries as $c)
+                                <option value="{{ $c['code'] }}"
+                                        data-dial="{{ $c['dial'] ?? '' }}"
+                                        data-flag-url="{{ $c['flag_url'] }}"
+                                        data-operators='@json($c['operators'] ?? [])'
+                                        {{ old('country') === $c['code'] ? 'selected' : '' }}>
+                                    {{ $c['name'] }}{{ !empty($c['dial']) ? ' ('.$c['dial'].')' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     @if(empty($payoutCountries))
                     <p class="aws-hint">Aucun pays de retrait n'est actuellement disponible.</p>
                     @endif
@@ -131,13 +135,17 @@
 
                 <div class="aws-field" id="w-phone-field">
                     <label class="aws-label">Opérateur Mobile Money</label>
-                    <select name="operator" id="w-operator" class="aws-input">
-                        <option value="">— Choisir un pays d'abord —</option>
-                    </select>
+                    <div id="w-operator-chips" style="display:flex;flex-wrap:wrap;gap:8px">
+                        <span style="font-size:12px;color:var(--aws-sub)">— Choisir un pays d'abord —</span>
+                    </div>
+                    <input type="hidden" name="operator" id="w-operator-hidden" value="{{ old('operator') }}">
 
                     <label class="aws-label" style="margin-top:10px">Numéro Mobile Money</label>
                     <div style="display:flex;gap:8px;align-items:center">
-                        <span id="w-dial-code" class="aws-badge aws-badge-gray" style="padding:8px 10px;font-size:14px;white-space:nowrap">—</span>
+                        <span id="w-dial-code" class="aws-badge aws-badge-gray" style="display:flex;align-items:center;gap:6px;padding:8px 10px;font-size:14px;white-space:nowrap">
+                            <img id="w-dial-flag" src="" alt="" style="width:20px;height:14px;border-radius:2px;object-fit:cover;display:none">
+                            <span id="w-dial-text">—</span>
+                        </span>
                         <input type="text" id="w-phone-local" value="{{ old('phone_local') }}" class="aws-input" placeholder="Ex: 6XXXXXXXX" style="flex:1">
                     </div>
                     <p class="aws-hint">Saisissez le numéro sans l'indicatif — il est ajouté automatiquement.</p>
@@ -189,14 +197,17 @@
 @push('scripts')
 <script>
 (function () {
-    const methodSelect  = document.getElementById('w-method');
-    const phoneField    = document.getElementById('w-phone-field');
-    const countrySelect = document.getElementById('w-country');
-    const operatorSelect = document.getElementById('w-operator');
-    const dialCodeLabel = document.getElementById('w-dial-code');
-    const phoneLocal    = document.getElementById('w-phone-local');
-    const phoneHidden   = document.getElementById('w-phone-hidden');
-    const form          = phoneHidden ? phoneHidden.closest('form') : null;
+    const methodSelect   = document.getElementById('w-method');
+    const phoneField     = document.getElementById('w-phone-field');
+    const countrySelect  = document.getElementById('w-country');
+    const countryFlagImg = document.getElementById('w-country-flag');
+    const chipsContainer = document.getElementById('w-operator-chips');
+    const operatorHidden = document.getElementById('w-operator-hidden');
+    const dialFlagImg    = document.getElementById('w-dial-flag');
+    const dialText       = document.getElementById('w-dial-text');
+    const phoneLocal     = document.getElementById('w-phone-local');
+    const phoneHidden    = document.getElementById('w-phone-hidden');
+    const form           = phoneHidden ? phoneHidden.closest('form') : null;
     if (!methodSelect || !phoneField) return;
 
     function togglePhone() {
@@ -205,37 +216,74 @@
     methodSelect.addEventListener('change', togglePhone);
     togglePhone();
 
-    // ✅ Met à jour l'indicatif affiché + la liste des opérateurs (issue de
-    // config/mobile_money.php, exposée via les data-attributes des <option>)
-    // dès qu'un pays est choisi.
+    function initials(name) {
+        return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+    }
+
+    function renderOperatorChips(ops, preselect) {
+        if (!chipsContainer) return;
+        chipsContainer.innerHTML = '';
+
+        if (!ops.length) {
+            chipsContainer.innerHTML = '<span style="font-size:12px;color:var(--aws-sub)">— Choisir un pays d\'abord —</span>';
+            if (operatorHidden) operatorHidden.value = '';
+            return;
+        }
+
+        // Si l'opérateur précédemment choisi n'existe plus pour ce pays, on repart à vide.
+        const stillValid = ops.some(op => op.name === preselect);
+        if (operatorHidden) operatorHidden.value = stillValid ? preselect : '';
+
+        ops.forEach(op => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.dataset.value = op.name;
+            const active = stillValid && op.name === preselect;
+            chip.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px 6px 6px;'
+                + 'border-radius:20px;cursor:pointer;background:#fff;'
+                + 'border:2px solid ' + (active ? op.color : 'var(--aws-border)') + ';'
+                + (active ? 'box-shadow:0 0 0 2px ' + op.color + '22;' : '');
+            chip.innerHTML =
+                '<span style="width:22px;height:22px;border-radius:50%;background:' + op.color + ';'
+                + 'color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+                + initials(op.name) + '</span>'
+                + '<span style="font-size:13px;font-weight:' + (active ? '700' : '500') + '">' + op.name + '</span>';
+
+            chip.addEventListener('click', () => {
+                if (operatorHidden) operatorHidden.value = op.name;
+                renderOperatorChips(ops, op.name);
+            });
+
+            chipsContainer.appendChild(chip);
+        });
+    }
+
+    // ✅ Met à jour le drapeau + l'indicatif + les "logos" (badges colorés)
+    // d'opérateurs (issus de config/mobile_money.php via les data-attributes
+    // des <option>) dès qu'un pays est choisi.
     function refreshCountryMeta() {
         if (!countrySelect) return;
         const opt = countrySelect.options[countrySelect.selectedIndex];
         const dial = opt ? (opt.dataset.dial || '') : '';
-        const flag = opt ? (opt.dataset.flag || '') : '';
-        const ops  = opt && opt.dataset.operators ? opt.dataset.operators.split('|').filter(Boolean) : [];
+        const flagUrl = opt ? (opt.dataset.flagUrl || '') : '';
+        let ops = [];
+        try { ops = opt && opt.dataset.operators ? JSON.parse(opt.dataset.operators) : []; } catch (e) { ops = []; }
 
-        if (dialCodeLabel) dialCodeLabel.textContent = dial ? (flag + ' ' + dial) : '—';
-
-        if (operatorSelect) {
-            const current = operatorSelect.value;
-            operatorSelect.innerHTML = '';
-            if (!ops.length) {
-                operatorSelect.appendChild(new Option('— Choisir un pays d\'abord —', ''));
-            } else {
-                operatorSelect.appendChild(new Option('— Choisir —', ''));
-                ops.forEach(op => operatorSelect.appendChild(new Option(op, op)));
-                // Restaure la sélection précédente si elle existe toujours (ex: erreur de validation, old()).
-                if (ops.includes(current)) operatorSelect.value = current;
-            }
+        if (countryFlagImg) {
+            if (flagUrl) { countryFlagImg.src = flagUrl; countryFlagImg.style.display = ''; }
+            else { countryFlagImg.style.display = 'none'; }
         }
+        if (dialFlagImg) {
+            if (flagUrl) { dialFlagImg.src = flagUrl; dialFlagImg.style.display = ''; }
+            else { dialFlagImg.style.display = 'none'; }
+        }
+        if (dialText) dialText.textContent = dial || '—';
+
+        renderOperatorChips(ops, operatorHidden ? operatorHidden.value : '');
     }
     if (countrySelect) {
         countrySelect.addEventListener('change', refreshCountryMeta);
         refreshCountryMeta();
-        @if(old('operator'))
-            operatorSelect.value = @json(old('operator'));
-        @endif
     }
 
     // Recompose le numéro complet (indicatif + local) dans le champ caché
