@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminProfileController;
 use App\Http\Controllers\Admin\AdminMessageController;
 use App\Http\Controllers\Admin\AdminUserSupportController;
 use App\Http\Controllers\Admin\AdminDriverSupportController;
+use App\Http\Controllers\Admin\AdminCompanySupportController;
 use App\Http\Controllers\Admin\AdminCallController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\CommissionRateController;
@@ -160,6 +161,15 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('support/drivers', [AdminDriverSupportController::class, 'index'])->name('support.drivers.index');
         Route::get('support/drivers/{driver}', [AdminDriverSupportController::class, 'show'])->name('support.drivers.show');
         Route::post('support/drivers/{driver}/send', [AdminDriverSupportController::class, 'send'])->name('support.drivers.send');
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUPPORT ADMIN ↔ SOCIÉTÉS
+        |--------------------------------------------------------------------------
+        */
+        Route::get('support/companies', [AdminCompanySupportController::class, 'index'])->name('support.companies.index');
+        Route::get('support/companies/{company}', [AdminCompanySupportController::class, 'show'])->name('support.companies.show');
+        Route::post('support/companies/{company}/send', [AdminCompanySupportController::class, 'send'])->name('support.companies.send');
 
         /*
         |--------------------------------------------------------------------------

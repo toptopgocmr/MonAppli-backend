@@ -9,6 +9,7 @@ use App\Http\Controllers\Company\RevenueController;
 use App\Http\Controllers\Company\ItineraryController;
 use App\Http\Controllers\Company\CompanyMessageController;
 use App\Http\Controllers\Company\CompanyCallController;
+use App\Http\Controllers\Company\CompanySupportController;
 use App\Http\Controllers\Company\ScheduleController;
 use App\Http\Controllers\Company\PricingGridController;
 use App\Http\Controllers\Company\WithdrawalController;
@@ -121,6 +122,12 @@ Route::prefix('company')->name('company.')->group(function () {
             Route::get('/messages',         [CompanyMessageController::class, 'index'])->name('messages.index');
             Route::get('/messages/support', [CompanyMessageController::class, 'support'])->name('messages.support');
             Route::get('/messages/{trip}',  [CompanyMessageController::class, 'show'])->name('messages.show');
+        });
+
+        // Chat Société ↔ Support TopTopGo (texte, distinct de l'appel vocal)
+        Route::middleware('company.permission:messages')->group(function () {
+            Route::get('/support',       [CompanySupportController::class, 'index'])->name('support.index');
+            Route::post('/support/send', [CompanySupportController::class, 'send'])->name('support.send');
         });
 
         // Agents de la société (comptable, RH, DG, flotte, marketing, commercial)

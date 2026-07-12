@@ -214,6 +214,15 @@ class PaymentPartnerController extends Controller
             ->whereBetween('created_at', [$startDate, $endDate])
             ->count();
 
+        // ✅ Récap CA brut / commission TopTopGo / solde réel PAR chauffeur,
+        // pour que l'admin voie d'un coup d'œil si le montant demandé est
+        // cohérent avec le solde réellement disponible avant d'approuver
+        // (même logique que pour les retraits société).
+        $recapByDriver = [];
+        foreach ($withdrawals->getCollection()->pluck('driver')->filter()->unique('id') as $driver) {
+            $recapByDriver[$driver->id] = $driver->withdrawalRecap();
+        }
+
         return view('admin.payments.withdrawals', compact(
             'withdrawals',
             'pendingCount',
@@ -222,6 +231,7 @@ class PaymentPartnerController extends Controller
             'paidCount',
             'paidAmount',
             'rejectedCount',
+            'recapByDriver',
             'period'
         ));
     }

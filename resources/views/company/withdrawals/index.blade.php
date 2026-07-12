@@ -19,17 +19,33 @@
 @endif
 
 <!-- KPI -->
-<div class="aws-stat-grid" style="grid-template-columns:repeat(2,1fr);margin-bottom:16px">
-    <div class="aws-stat-card" style="border-top:3px solid #1d8102">
-        <div class="aws-stat-label">Solde disponible au retrait</div>
-        <div class="aws-stat-value" style="font-size:22px">{{ number_format($availableBalance, 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
-        <div class="aws-stat-sub">Net de commission, après retraits déjà demandés</div>
+<div class="aws-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
+    <div class="aws-stat-card" style="border-top:3px solid #687078">
+        <div class="aws-stat-label">Chiffre d'affaires brut</div>
+        <div class="aws-stat-value" style="font-size:20px">{{ number_format($recap['gross_revenue'], 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
+        <div class="aws-stat-sub">Courses terminées, avant commission</div>
+    </div>
+    <div class="aws-stat-card" style="border-top:3px solid #d13212">
+        <div class="aws-stat-label">Commission TopTopGo prélevée</div>
+        <div class="aws-stat-value" style="font-size:20px;color:#d13212">− {{ number_format($recap['commission_taken'], 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
+        <div class="aws-stat-sub">{{ number_format($company->commission_rate ?? 0, 2) }} % du CA brut</div>
     </div>
     <div class="aws-stat-card" style="border-top:3px solid #0073bb">
-        <div class="aws-stat-label">Revenu net total (historique)</div>
-        <div class="aws-stat-value" style="font-size:22px">{{ number_format($totalNetRevenue, 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
-        <div class="aws-stat-sub">Courses terminées, commission déduite</div>
+        <div class="aws-stat-label">Déjà retiré (payé)</div>
+        <div class="aws-stat-value" style="font-size:20px">{{ number_format($recap['withdrawals_paid'], 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
+        <div class="aws-stat-sub">Retraits déjà versés par l'administration</div>
     </div>
+    <div class="aws-stat-card" style="border-top:3px solid #1d8102">
+        <div class="aws-stat-label">Solde réel disponible</div>
+        <div class="aws-stat-value" style="font-size:20px;color:#1d8102">{{ number_format($availableBalance, 0, ',', ' ') }}<span style="font-size:12px;font-weight:400;margin-left:4px">FCFA</span></div>
+        <div class="aws-stat-sub">Net de commission, après retraits déjà demandés</div>
+    </div>
+</div>
+
+<div class="aws-hint" style="margin:-8px 0 16px">
+    Revenu net total (historique) : <strong>{{ number_format($totalNetRevenue, 0, ',', ' ') }} FCFA</strong>
+    = CA brut ({{ number_format($recap['gross_revenue'], 0, ',', ' ') }}) − commission TopTopGo ({{ number_format($recap['commission_taken'], 0, ',', ' ') }}).
+    Solde réel = revenu net − retraits déjà demandés (payés + en attente : {{ number_format($recap['withdrawals_committed'], 0, ',', ' ') }} FCFA).
 </div>
 
 <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px">

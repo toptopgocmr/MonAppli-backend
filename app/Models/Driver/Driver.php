@@ -126,6 +126,59 @@ class Driver extends Authenticatable
         return $this->morphMany(SupportMessage::class, 'recipient');
     }
 
+    public function withdrawals()
+    {
+        return $this->hasMany(\App\Models\Withdrawal::class);
+    }
+
+    // ── Récap gains / commission / solde (page admin "Retraits chauffeurs") ─
+    // Même logique que Company::totalGrossRevenue() : basée sur les courses
+    // terminées, pas sur les transactions wallet (qui ne stockent que le net).
+    public function totalGrossRevenue(): float
+    {
+        return (float) Trip::where('driver_id', $this->id)->where('status', 'completed')->sum('amount');
+    }
+
+    // Commission TopTopGo — 10% flat, cf. App\Listeners\CreditDriverWallet.
+    public function totalCommissionTaken(): float
+    {
+        return round($this->totalGrossRevenue() * 0.10, 2);
+    }
+
+    public function totalNetRevenue(): float
+    {
+        return round($this->totalGrossRevenue() - $this->totalCommissionTaken(), 2);
+    }
+
+    public function withdrawalsPaid(): float
+    {
+        return (float) $this->withdrawals()->where('status', 'success')->sum('amount');
+    }
+
+    // Solde réel disponible = solde du wallet (déjà net de commission ET déjà
+    // décrémenté des retraits en attente/payés, cf. WalletService::debit()
+    // appelé dès la DEMANDE de retrait, pas seulement à l'approbation).
+    public function availableBalance(): float
+    {
+        return (float) ($this->wallet?->balance ?? 0);
+    }
+
+    /**
+     * Récapitulatif complet pour les pages de retrait (admin "Retraits
+     * chauffeurs") : CA brut, commission TopTopGo déjà prélevée, déjà payé,
+     * et solde réel disponible côté wallet chauffeur.
+     */
+    public function withdrawalRecap(): array
+    {
+        return [
+            'gross_revenue'    => $this->totalGrossRevenue(),
+            'commission_taken' => $this->totalCommissionTaken(),
+            'net_revenue'      => $this->totalNetRevenue(),
+            'withdrawals_paid' => $this->withdrawalsPaid(),
+            'available_balance' => $this->availableBalance(),
+        ];
+    }
+
     // ✅ Relation inverse manquante : provoquait un crash ("Server Error")
     // sur toute requête eager-loadant driver.company (ex: GET /user/trips)
     // car Eloquent appelle cette méthode pour résoudre la relation.

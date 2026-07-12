@@ -33,6 +33,7 @@ class WithdrawalController extends Controller
 
         $availableBalance = $company->availableBalance();
         $totalNetRevenue  = $company->totalNetRevenue();
+        $recap            = $company->withdrawalRecap();
 
         $withdrawals = CompanyWithdrawal::where('company_id', $company->id)
                                         ->orderBy('created_at', 'desc')
@@ -42,7 +43,7 @@ class WithdrawalController extends Controller
         $payoutCountries = $this->payoutCountries();
 
         return view('company.withdrawals.index', compact(
-            'company', 'availableBalance', 'totalNetRevenue', 'withdrawals', 'hasBankInfo', 'payoutCountries'
+            'company', 'availableBalance', 'totalNetRevenue', 'recap', 'withdrawals', 'hasBankInfo', 'payoutCountries'
         ));
     }
 

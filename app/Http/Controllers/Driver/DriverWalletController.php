@@ -27,6 +27,11 @@ class DriverWalletController extends Controller
         $totalWithdrawn = $transactions->where('type', 'debit')->sum('amount');
         $pendingBalance = $wallet->withdrawals()->where('status', 'pending')->sum('amount');
 
+        // ✅ Récap basé sur les courses (CA brut / commission), demandé pour
+        // que le chauffeur voie la répartition complète — pas seulement le
+        // solde net déjà stocké dans le wallet.
+        $recap = $request->user()->withdrawalRecap();
+
         // Détail des 20 dernières transactions avec commission visible
         $history = $transactions->take(20)->map(function ($tx) {
             return [
@@ -50,6 +55,13 @@ class DriverWalletController extends Controller
                 'total_withdrawn' => (float) $totalWithdrawn,
                 'currency'        => $wallet->currency ?? 'XAF',
                 'commission_rate' => 10, // % ToptopGo
+                // ✅ Récap complet (courses terminées) : CA brut avant
+                // commission, commission TopTopGo déjà prélevée, et solde
+                // réel disponible au retrait (= wallet.balance).
+                'gross_earned'      => $recap['gross_revenue'],
+                'commission_taken'  => $recap['commission_taken'],
+                'withdrawals_paid'  => $recap['withdrawals_paid'],
+                'available_balance' => $recap['available_balance'],
             ],
             'transactions' => $history,
             'withdrawals'  => $wallet->withdrawals()

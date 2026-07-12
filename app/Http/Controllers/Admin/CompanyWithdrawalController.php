@@ -28,7 +28,17 @@ class CompanyWithdrawalController extends Controller
         $pendingCount  = CompanyWithdrawal::where('status', 'pending')->count();
         $pendingAmount = CompanyWithdrawal::where('status', 'pending')->sum('amount');
 
-        return view('admin.company-withdrawals.index', compact('withdrawals', 'pendingCount', 'pendingAmount'));
+        // ✅ Récap CA brut / commission TopTopGo / solde réel PAR société, pour
+        // que l'admin voie d'un coup d'œil si le montant demandé est cohérent
+        // avec le solde réellement disponible avant d'approuver.
+        $recapByCompany = [];
+        foreach ($withdrawals->getCollection()->pluck('company')->filter()->unique('id') as $company) {
+            $recapByCompany[$company->id] = $company->withdrawalRecap();
+        }
+
+        return view('admin.company-withdrawals.index', compact(
+            'withdrawals', 'pendingCount', 'pendingAmount', 'recapByCompany'
+        ));
     }
 
     /**

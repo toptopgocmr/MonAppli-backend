@@ -79,6 +79,7 @@
                 <thead>
                     <tr>
                         <th>Chauffeur</th>
+                        <th>Récap chauffeur (CA brut / commission / solde réel)</th>
                         <th>Pays véhicule</th>
                         <th>Méthode</th>
                         <th>Téléphone</th>
@@ -94,10 +95,25 @@
                         $country = strtoupper($w->driver->vehicle_country ?? '');
                         $peexCovered = in_array($country, array_map('strtoupper', config('payments.peex.disbursement_countries', ['CM'])), true);
                         $isLate = $w->status === 'pending' && $w->created_at->diffInHours(now()) >= 24;
+                        $recap = optional($w->driver) ? ($recapByDriver[$w->driver->id] ?? null) : null;
+                        $overBalance = $recap && $w->status === 'pending' && $w->amount > $recap['available_balance'];
                     @endphp
                     <tr>
                         <td class="px-4 py-3 font-medium">
                             {{ optional($w->driver)->first_name }} {{ optional($w->driver)->last_name }}
+                            @if($overBalance)
+                            <div style="font-size:10px;color:#dc2626;font-weight:700">⚠️ dépasse le solde réel</div>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3" style="font-size:11px;color:#475569;line-height:1.6">
+                            @if($recap)
+                                CA brut : <strong>{{ number_format($recap['gross_revenue'], 0, ',', ' ') }}</strong><br>
+                                Commission TopTopGo : <strong style="color:#dc2626">− {{ number_format($recap['commission_taken'], 0, ',', ' ') }}</strong><br>
+                                Déjà payé : <strong>{{ number_format($recap['withdrawals_paid'], 0, ',', ' ') }}</strong><br>
+                                Solde réel (wallet) : <strong style="color:{{ $overBalance ? '#dc2626' : '#16a34a' }}">{{ number_format($recap['available_balance'], 0, ',', ' ') }}</strong>
+                            @else
+                                —
+                            @endif
                         </td>
                         <td class="px-4 py-3 text-xs">
                             {{ $country ?: '—' }}
@@ -150,7 +166,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8" class="text-center text-gray-400 py-10">Aucun retrait</td>
+                        <td colspan="9" class="text-center text-gray-400 py-10">Aucun retrait</td>
                     </tr>
                     @endforelse
                 </tbody>

@@ -305,6 +305,13 @@
                 </svg>
                 Journal des appels
             </a>
+            <a href="{{ route('company.support.index') }}"
+               class="aws-nav-item {{ request()->routeIs('company.support.index') ? 'active' : '' }}">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m-3.536-3.536a4 4 0 010-5.656M9 12a1 1 0 11-2 0 1 1 0 012 0zm4 0a1 1 0 11-2 0 1 1 0 012 0z"/>
+                </svg>
+                Support TopTopGo
+            </a>
             @endif
 
             @if($ctx::can('withdrawals') || $ctx::can('revenus'))

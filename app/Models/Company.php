@@ -51,16 +51,35 @@ class Company extends Authenticatable
         return $this->hasMany(CompanyWithdrawal::class);
     }
 
+    // Chat texte Admin (support) ↔ Société — cf. AdminCompanySupportController
+    // / CompanySupportController. Manquait totalement avant : seul un appel
+    // vocal (CompanyCallController) existait entre société et support.
+    public function supportMessages()
+    {
+        return $this->morphMany(SupportMessage::class, 'recipient');
+    }
+
     // ── Retraits mensuels ──────────────────────────────────────────
+    // Chiffre d'affaires brut = somme des courses terminées des chauffeurs
+    // de la société, AVANT déduction de la commission plateforme.
+    public function totalGrossRevenue(): float
+    {
+        $driverIds = Driver::where('company_id', $this->id)->pluck('id');
+        return (float) Trip::whereIn('driver_id', $driverIds)->where('status', 'completed')->sum('amount');
+    }
+
+    // Commission TopTopGo déjà prélevée sur l'ensemble des courses terminées.
+    public function totalCommissionTaken(): float
+    {
+        $rate = (float) ($this->commission_rate ?? 0);
+        return round($this->totalGrossRevenue() * $rate / 100, 2);
+    }
+
     // Revenu net = somme des courses terminées des chauffeurs de la société,
     // moins la commission plateforme (commission_rate %).
     public function totalNetRevenue(): float
     {
-        $driverIds = Driver::where('company_id', $this->id)->pluck('id');
-        $gross = (float) Trip::whereIn('driver_id', $driverIds)->where('status', 'completed')->sum('amount');
-        $rate  = (float) ($this->commission_rate ?? 0);
-
-        return round($gross * (1 - $rate / 100), 2);
+        return round($this->totalGrossRevenue() - $this->totalCommissionTaken(), 2);
     }
 
     // Retraits déjà demandés (en attente ou payés) : à déduire du solde disponible.
@@ -69,9 +88,33 @@ class Company extends Authenticatable
         return (float) $this->withdrawals()->whereIn('status', ['pending', 'success'])->sum('amount');
     }
 
+    // Retraits déjà PAYÉS (status success uniquement) — utile pour le récap
+    // "déjà retiré" distinct des demandes encore en attente.
+    public function withdrawalsPaid(): float
+    {
+        return (float) $this->withdrawals()->where('status', 'success')->sum('amount');
+    }
+
     public function availableBalance(): float
     {
         return max(0, round($this->totalNetRevenue() - $this->withdrawalsCommitted(), 2));
+    }
+
+    /**
+     * Récapitulatif complet pour les pages de retrait (société ET admin) :
+     * CA brut, commission TopTopGo déjà prélevée, déjà retiré (payé),
+     * en attente de retrait, et solde réel disponible à retirer.
+     */
+    public function withdrawalRecap(): array
+    {
+        return [
+            'gross_revenue'     => $this->totalGrossRevenue(),
+            'commission_taken'  => $this->totalCommissionTaken(),
+            'net_revenue'       => $this->totalNetRevenue(),
+            'withdrawals_paid'  => $this->withdrawalsPaid(),
+            'withdrawals_committed' => $this->withdrawalsCommitted(),
+            'available_balance' => $this->availableBalance(),
+        ];
     }
 
     // ── Helpers ──────────────────────────────────────────────────

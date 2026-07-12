@@ -43,7 +43,8 @@
             <thead>
                 <tr style="background:#f9fafb;text-align:left">
                     <th style="padding:10px 16px">Société</th>
-                    <th style="padding:10px 16px">Montant</th>
+                    <th style="padding:10px 16px">Montant demandé</th>
+                    <th style="padding:10px 16px">Récap société (CA brut / commission / solde réel)</th>
                     <th style="padding:10px 16px">Méthode</th>
                     <th style="padding:10px 16px">Statut</th>
                     <th style="padding:10px 16px">Demandé le</th>
@@ -57,10 +58,27 @@
                     $stMap = ['pending'=>['#fef3c7;color:#92400e','En attente'],'success'=>['#dcfce7;color:#166534','Payé'],'failed'=>['#fee2e2;color:#991b1b','Rejeté']];
                     $sc = $stMap[$w->status] ?? ['#f3f4f6;color:#374151', $w->status];
                     $methodLabel = ['mobile_money'=>'Mobile Money','bank'=>'Virement bancaire','manual'=>'Manuel'][$w->method] ?? ($w->method ?? '—');
+                    $recap = $recapByCompany[$w->company_id] ?? null;
+                    $overBalance = $recap && $w->status === 'pending' && $w->amount > $recap['available_balance'];
                 @endphp
                 <tr style="border-top:1px solid #f0f0f0">
                     <td style="padding:10px 16px;font-weight:600">{{ $w->company->name ?? '—' }}</td>
-                    <td style="padding:10px 16px">{{ number_format($w->amount, 0, ',', ' ') }} FCFA</td>
+                    <td style="padding:10px 16px">
+                        {{ number_format($w->amount, 0, ',', ' ') }} FCFA
+                        @if($overBalance)
+                        <div style="font-size:10px;color:#dc2626;font-weight:700">⚠️ dépasse le solde réel</div>
+                        @endif
+                    </td>
+                    <td style="padding:10px 16px;font-size:11px;color:#374151;line-height:1.6">
+                        @if($recap)
+                            CA brut : <strong>{{ number_format($recap['gross_revenue'], 0, ',', ' ') }}</strong><br>
+                            Commission TopTopGo : <strong style="color:#dc2626">− {{ number_format($recap['commission_taken'], 0, ',', ' ') }}</strong><br>
+                            Déjà payé : <strong>{{ number_format($recap['withdrawals_paid'], 0, ',', ' ') }}</strong><br>
+                            Solde réel dispo : <strong style="color:{{ $overBalance ? '#dc2626' : '#16a34a' }}">{{ number_format($recap['available_balance'], 0, ',', ' ') }}</strong>
+                        @else
+                            —
+                        @endif
+                    </td>
                     <td style="padding:10px 16px">
                         {{ $methodLabel }}
                         @if($w->country)<div style="font-size:11px;color:#6b7280">{{ $w->country }}{{ $w->phone_number ? ' · '.$w->phone_number : '' }}</div>@endif
@@ -86,7 +104,7 @@
                     </td>
                 </tr>
                 @empty
-                <tr><td colspan="7" style="text-align:center;padding:30px;color:#9ca3af">Aucune demande de retrait société.</td></tr>
+                <tr><td colspan="8" style="text-align:center;padding:30px;color:#9ca3af">Aucune demande de retrait société.</td></tr>
                 @endforelse
             </tbody>
         </table>
