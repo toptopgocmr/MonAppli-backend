@@ -216,6 +216,15 @@ Route::prefix('driver')->name('api.driver.')->middleware(['auth:sanctum'])->grou
     Route::get('messages/{trip_id}',  [DriverMessageController::class, 'show'])->name('messages.show');
     Route::post('messages/{trip_id}', [DriverMessageController::class, 'store'])->name('messages.store');
 
+    // ── ✅ NOUVEAU — Appel chauffeur → support (réutilise answer/end/missed/token
+    // ci-dessous) — ⚠️ DOIT être déclarée AVANT 'calls/{tripId}/initiate' :
+    // Laravel matche les routes dans l'ordre de déclaration, et {tripId} est
+    // un joker qui matchait "support" avant ce fix, envoyant silencieusement
+    // TOUS les appels chauffeur → support vers DriverCallController::initiate
+    // avec tripId="support" (jamais un trajet valide) → 404 "Trajet
+    // introuvable ou non autorisé." à chaque tentative d'appel au support.
+    Route::post('calls/support/initiate', [DriverSupportCallController::class, 'initiate'])->name('calls.support.initiate');
+
     // ── ✅ NOUVEAU — Appels voix in-app ───────────────────────────
     Route::post('calls/{tripId}/initiate', [DriverCallController::class, 'initiate'])->name('calls.initiate');
     Route::post('calls/{callId}/answer',   [DriverCallController::class, 'answer'])->name('calls.answer');
@@ -223,9 +232,6 @@ Route::prefix('driver')->name('api.driver.')->middleware(['auth:sanctum'])->grou
     Route::post('calls/{callId}/missed',   [DriverCallController::class, 'missed'])->name('calls.missed');
     Route::get('calls/{callId}/token',     [DriverCallController::class, 'token'])->name('calls.token');
     Route::get('calls/{tripId}',           [DriverCallController::class, 'history'])->name('calls.history');
-
-    // ── ✅ NOUVEAU — Appel chauffeur → support (réutilise answer/end/missed/token ci-dessus) ──
-    Route::post('calls/support/initiate', [DriverSupportCallController::class, 'initiate'])->name('calls.support.initiate');
 
     // ── Support & Documents ───────────────────────────────────────
     Route::get('support',  [DriverSupportController::class, 'index'])->name('support.index');
@@ -275,6 +281,13 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     Route::get('messages/{trip_id}',  [UserMessageController::class, 'show'])->name('messages.show');
     Route::post('messages/{trip_id}', [UserMessageController::class, 'store'])->name('messages.store');
 
+    // ── ✅ NOUVEAU — Appel client → support ou société (réutilise answer/end/missed/token
+    // ci-dessous) — ⚠️ DOIT être déclarée AVANT 'calls/{tripId}/initiate' :
+    // même bug d'ordre de routes que côté chauffeur (voir commentaire
+    // équivalent plus haut dans ce fichier) — {tripId} matchait "outbound"
+    // en premier, empêchant tout appel client → support/société d'aboutir.
+    Route::post('calls/outbound/initiate', [UserOutboundCallController::class, 'initiate'])->name('calls.outbound.initiate');
+
     // ── ✅ NOUVEAU — Appels voix in-app ───────────────────────────
     Route::post('calls/{tripId}/initiate', [UserCallController::class, 'initiate'])->name('calls.initiate');
     Route::post('calls/{callId}/answer',   [UserCallController::class, 'answer'])->name('calls.answer');
@@ -282,9 +295,6 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     Route::post('calls/{callId}/missed',   [UserCallController::class, 'missed'])->name('calls.missed');
     Route::get('calls/{callId}/token',     [UserCallController::class, 'token'])->name('calls.token');
     Route::get('calls/{tripId}',           [UserCallController::class, 'history'])->name('calls.history');
-
-    // ── ✅ NOUVEAU — Appel client → support ou société (réutilise answer/end/missed/token ci-dessus) ──
-    Route::post('calls/outbound/initiate', [UserOutboundCallController::class, 'initiate'])->name('calls.outbound.initiate');
 
     // ── Support & SOS ─────────────────────────────────────────────
     Route::get('support',  [UserSupportController::class, 'index'])->name('support.index');
