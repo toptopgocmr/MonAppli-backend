@@ -393,20 +393,4 @@ channel.bind('message.received', function(data) {
     if (Notification.permission === 'granted') {
         new Notification('Nouveau message de {{ $driver->first_name }}', {
             body: data.content,
-            icon: '/favicon.ico'
-        });
-    }
-});
-@endif
-</script>
-
-<style>
-.new-msg {
-    animation: fadeUp 0.3s ease;
-}
-@keyframes fadeUp {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-</style>
-@endpush
+          

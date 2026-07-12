@@ -135,6 +135,4 @@
     // Scroll auto en bas de la conversation
     const chatBody = document.getElementById('chat-body');
     if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
-</script>
-
-@endsection
+</s

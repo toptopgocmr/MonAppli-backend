@@ -124,6 +124,4 @@ class CompanyMessageController extends Controller
                 ->get();
         }
 
-        return view('company.messages.support', compact('users', 'selectedUser', 'conversation'));
-    }
-}
+        return view('company.messages.su

@@ -248,47 +248,4 @@ class UserMessageController extends Controller
                     'sender_type'    => get_class($user),  // App\Models\User\User
                     'sender_id'      => $user->id,
                     'receiver_type'  => \App\Models\Driver\Driver::class,
-                    'receiver_id'    => $trip->driver_id,
-                    'content'        => $content,
-                    'refused'        => true,
-                    'refused_reason' => $reason,
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'blocked' => true,
-                'reason'  => $reason,
-                'message' => 'Message refusé par la modération.',
-            ], 422);
-        }
-
-        // ── Sauvegarde ───────────────────────────────────────────────────
-        $message = Message::create([
-            'trip_id'       => $tripId,
-            'sender_type'   => get_class($user),  // App\Models\User\User
-            'sender_id'     => $user->id,
-            'receiver_type' => \App\Models\Driver\Driver::class,
-            'receiver_id'   => $trip->driver_id,
-            'content'       => $content,
-            'refused'       => false,
-        ]);
-
-        // ── Diffusion Pusher ──────────────────────────────────────────────
-        try {
-            broadcast(new MessageSent($message))->toOthers();
-        } catch (\Exception $e) {
-            Log::warning('Pusher broadcast error: ' . $e->getMessage());
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => [
-                'id'         => $message->id,
-                'content'    => $message->content,
-                'sender'     => 'client',
-                'created_at' => $message->created_at?->toIso8601String(),
-            ],
-        ], 201);
-    }
-}
+   

@@ -97,33 +97,4 @@ class UserSupportController extends Controller
             'sender_id'      => $user->id,
             'recipient_type' => AdminUser::class,
             'recipient_id'   => $admin?->id ?? 1,
-            'content'        => $content,
-            'is_read'        => false,
-        ]);
-
-        // ✅ broadcast() (Events Laravel) est silencieusement inopérant sur ce
-        // projet — BROADCAST_DRIVER=log en .env. On déclenche directement
-        // via Pusher, même pattern que UserCallController/DriverCallController.
-        PusherBroadcaster::trigger('admin-support', 'message.received', [
-            'id'             => $msg->id,
-            'content'        => $msg->content,
-            'sender_type'    => $msg->sender_type,
-            'sender_id'      => $msg->sender_id,
-            'recipient_type' => $msg->recipient_type,
-            'recipient_id'   => $msg->recipient_id,
-            'created_at'     => $msg->created_at->format('d/m H:i'),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Message envoyé au support.',
-            'data'    => [
-                'id'          => $msg->id,
-                'body'        => $msg->content,
-                'sender_type' => 'user',
-                'is_mine'     => true,
-                'created_at'  => $msg->created_at?->toIso8601String(),
-            ],
-        ]);
-    }
-}
+            'cont

@@ -94,28 +94,4 @@ class UserOutboundCallController extends Controller
 
             [$call, $agora, $alreadyActive] = $this->calls->initiate(
                 User::class, $user->id, $callerName, $callerPhoto,
-                Company::class, $company->id,
-                $tripId
-            );
-        }
-
-        if (!$call) {
-            return response()->json(['success' => false, 'message' => 'Appel impossible pour le moment.'], 503);
-        }
-
-        if ($alreadyActive) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Un appel est déjà en cours.',
-                'call_id' => $call->id,
-            ], 409);
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Appel initié.',
-            'call'    => ['id' => $call->id, 'trip_id' => $call->trip_id],
-            'agora'   => $agora,
-        ]);
-    }
-}
+                Company

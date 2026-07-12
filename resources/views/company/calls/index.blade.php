@@ -49,29 +49,4 @@
                              destinataire possible) — même action que le bouton
                              "Appeler le support" du topbar, dupliquée ici pour
                              éviter de remonter en haut de page. --}}
-                        <button type="button" onclick="TTCall.callSupport()"
-                                class="aws-btn aws-btn-primary" style="padding:6px 12px;font-size:12px;white-space:nowrap">
-                            📞 Rappeler
-                        </button>
-                        @foreach($call->recordings as $rec)
-                        <a href="{{ route('company.calls.recording.play', [$call->id, $rec->id]) }}" target="_blank"
-                           class="aws-btn" style="padding:6px 10px;font-size:12px;white-space:nowrap;margin-left:4px" title="Écouter l'enregistrement">
-                            🎧
-                        </a>
-                        @endforeach
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="7" style="padding:40px;text-align:center;color:var(--aws-sub)">Aucun appel enregistré.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-    @if($calls->hasPages())
-    <div style="padding:16px 20px;border-top:1px solid var(--aws-border)">
-        {{ $calls->links() }}
-    </div>
-    @endif
-</div>
-
-@endsection
+                       

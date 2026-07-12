@@ -475,26 +475,4 @@ class PeexService implements PaymentProviderInterface
     }
 
     /**
-     * Phone numbers must be E.164 (e.g. +237677777777), no spaces/dashes.
-     */
-    protected function normalizePhone(string $phone): string
-    {
-        $phone = trim($phone);
-        $digits = preg_replace('/[^0-9+]/', '', $phone);
-
-        if (!str_starts_with($digits, '+')) {
-            $digits = '+' . ltrim($digits, '0');
-        }
-
-        return $digits;
-    }
-
-    /**
-     * Peex's Remittance/Disbursement payloads require a sender_mobile_phone.
-     * Use a configured platform number as the "sender" identity for payouts.
-     */
-    protected function secretSenderPhone(): string
-    {
-        return config('payments.peex.sender_phone', '+237600000000');
-    }
-}
+     * Phone numbers must be E.164 (e.g. +237

@@ -177,6 +177,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
         |--------------------------------------------------------------------------
         */
         Route::get('calls',                  [AdminCallController::class, 'index'])->name('calls.index');
+        Route::get('calls/recordings',        [AdminCallController::class, 'recordings'])->name('calls.recordings.index');
         Route::get('calls/pending',          [AdminCallController::class, 'pending'])->name('calls.pending');
         Route::post('calls/initiate',       [AdminCallController::class, 'initiate'])->name('calls.initiate');
         Route::post('calls/{callId}/answer', [AdminCallController::class, 'answer'])->name('calls.answer');
@@ -264,13 +265,4 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('company-withdrawals/{withdrawal}/approve', [CompanyWithdrawalController::class, 'approve'])->name('company-withdrawals.approve');
         Route::post('company-withdrawals/{withdrawal}/reject',  [CompanyWithdrawalController::class, 'reject'])->name('company-withdrawals.reject');
 
-        Route::prefix('vehicle-types')->name('vehicle-types.')->group(function () {
-            Route::get('/',                  [VehicleTypeController::class, 'index'])->name('index');
-            Route::post('/',                 [VehicleTypeController::class, 'store'])->name('store');
-            Route::post('/{vehicleType}/toggle', [VehicleTypeController::class, 'toggle'])->name('toggle');
-            Route::delete('/{vehicleType}',  [VehicleTypeController::class, 'destroy'])->name('destroy');
-        });
-
-    });
-
-});
+        Route::prefix('vehicl

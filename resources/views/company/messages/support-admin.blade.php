@@ -62,8 +62,4 @@
 
 <script>
     const chatBody = document.getElementById('chat-body');
-    if (chatBody) chatBody.scrollTop = chatBody.scrollHeight;
-    setInterval(() => location.reload(), 10000);
-</script>
-
-@endsection
+    if (chatBody) chatBody.scrollTop = ch

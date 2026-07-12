@@ -259,6 +259,11 @@
                 <span class="nav-label">Journal des appels</span>
             </a>
 
+            <a href="{{ route('admin.calls.recordings.index') }}" class="nav-item {{ request()->routeIs('admin.calls.recordings.index') ? 'active' : '' }}">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+                <span class="nav-label">Enregistrements</span>
+            </a>
+
             <a href="{{ route('admin.sos.index') }}" class="nav-item {{ request()->routeIs('admin.sos.*') ? 'active' : '' }}">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 <span class="nav-label">Alertes SOS</span>
@@ -412,17 +417,4 @@ function showToast(msg,type){
         ?'<svg width="16" height="16" fill="none" stroke="#067D49" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
         :'<svg width="16" height="16" fill="none" stroke="#D13212" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
     t.innerHTML=icon+'<span>'+msg+'</span>';
-    document.getElementById('toast-container').appendChild(t);
-    requestAnimationFrame(function(){requestAnimationFrame(function(){t.classList.add('show')})});
-    setTimeout(function(){t.classList.remove('show');setTimeout(function(){t.remove()},300)},4000);
-}
-
-function previewImage(e,id){
-    var r=new FileReader();
-    r.onload=function(){var i=document.getElementById(id);i.src=r.result;i.classList.remove('hidden')};
-    r.readAsDataURL(e.target.files[0]);
-}
-</script>
-@stack('scripts')
-</body>
-</html>
+    document.getElementById('toast-

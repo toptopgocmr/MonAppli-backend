@@ -193,6 +193,4 @@ class UserTripController extends Controller
                         : url('storage/' . $driver->company->logo))
                     : null,
             ] : null,
-        ];
-    }
-}
+        
