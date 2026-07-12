@@ -12,6 +12,11 @@ class SupportMessage extends Model
         'sender_type', 'sender_id',
         'recipient_type', 'recipient_id',
         'content', 'is_read', 'read_at', 'trip_id',
+        'refused', 'refused_reason',
+    ];
+
+    protected $casts = [
+        'refused' => 'boolean',
     ];
 
     /**

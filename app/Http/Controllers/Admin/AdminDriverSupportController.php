@@ -9,6 +9,8 @@ use App\Models\Driver\Driver;
 use App\Models\Admin\AdminUser;
 use Illuminate\Support\Facades\Schema;
 use App\Services\Realtime\PusherBroadcaster;
+use App\Support\ContentModerator;
+use Illuminate\Support\Facades\Log;
 
 class AdminDriverSupportController extends Controller
 {
@@ -19,7 +21,7 @@ class AdminDriverSupportController extends Controller
                   ->where('is_read', false);
             }])
             ->with(['supportMessages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('refused', false)->latest()->limit(1);
             }]);
 
         if ($request->filled('search')) {
@@ -73,6 +75,7 @@ class AdminDriverSupportController extends Controller
                   ->where('sender_id', $driverId)
                   ->where('recipient_type', AdminUser::class);
             })
+            ->where('refused', false)
             ->with('sender', 'recipient')
             ->oldest()
             ->get();
@@ -91,7 +94,7 @@ class AdminDriverSupportController extends Controller
                   ->where('is_read', false);
             }])
             ->with(['supportMessages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('refused', false)->latest()->limit(1);
             }])
             ->orderBy('first_name')
             ->paginate(20);
@@ -131,6 +134,27 @@ class AdminDriverSupportController extends Controller
 
         if (!$adminId) {
             return back()->withErrors(['error' => 'Admin introuvable, reconnectez-vous.']);
+        }
+
+        // ✅ Modération — bloque les messages offensants/haineux/sexuels avant
+        // qu'ils n'atteignent le chauffeur (voir ContentModerator).
+        $reason = ContentModerator::moderateOffensive($request->content);
+        if ($reason) {
+            Log::warning('🚫 Message admin→chauffeur bloqué', [
+                'driver_id' => $driverId, 'reason' => $reason,
+                'content' => substr($request->content, 0, 80),
+            ]);
+            SupportMessage::create([
+                'sender_type'    => AdminUser::class,
+                'sender_id'      => $adminId,
+                'recipient_type' => Driver::class,
+                'recipient_id'   => $driverId,
+                'content'        => $request->content,
+                'is_read'        => false,
+                'refused'        => true,
+                'refused_reason' => $reason,
+            ]);
+            return back()->withErrors(['content' => 'Message refusé : contenu inapproprié (' . $reason . ').']);
         }
 
         $message = SupportMessage::create([

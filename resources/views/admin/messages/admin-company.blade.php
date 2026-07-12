@@ -210,6 +210,11 @@
 
                 {{-- Formulaire envoi --}}
                 <div class="p-4 border-t border-gray-100 bg-white">
+                    @error('content')
+                        <div class="mb-3 px-4 py-2.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
+                            {{ $message }}
+                        </div>
+                    @enderror
                     <form method="POST" action="{{ route('admin.support.companies.send', $company->id) }}"
                           class="flex gap-3 items-end">
                         @csrf

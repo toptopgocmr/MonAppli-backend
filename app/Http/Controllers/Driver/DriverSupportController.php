@@ -8,6 +8,8 @@ use App\Models\SupportMessage;
 use App\Models\Driver\Driver;
 use App\Models\Admin\AdminUser;
 use App\Services\Realtime\PusherBroadcaster;
+use App\Support\ContentModerator;
+use Illuminate\Support\Facades\Log;
 
 class DriverSupportController extends Controller
 {
@@ -28,6 +30,7 @@ class DriverSupportController extends Controller
                   ->where('sender_id', $driverId)
                   ->where('recipient_type', AdminUser::class);
             })
+            ->where('refused', false)
             ->with('sender', 'recipient')
             ->oldest()
             ->get();
@@ -56,6 +59,31 @@ class DriverSupportController extends Controller
         $driverId = auth()->id();
 
         $admin = AdminUser::firstOrFail();
+
+        // ✅ Modération — bloque les messages offensants/haineux/sexuels avant
+        // qu'ils n'atteignent le support (voir ContentModerator).
+        $reason = ContentModerator::moderateOffensive($request->content);
+        if ($reason) {
+            Log::warning('🚫 Message chauffeur→support bloqué', [
+                'driver_id' => $driverId, 'reason' => $reason,
+                'content' => substr($request->content, 0, 80),
+            ]);
+            SupportMessage::create([
+                'sender_type'    => Driver::class,
+                'sender_id'      => $driverId,
+                'recipient_type' => AdminUser::class,
+                'recipient_id'   => $admin->id,
+                'content'        => $request->content,
+                'is_read'        => false,
+                'refused'        => true,
+                'refused_reason' => $reason,
+            ]);
+            return response()->json([
+                'status'  => 'blocked',
+                'message' => 'Message refusé par la modération.',
+                'reason'  => $reason,
+            ], 422);
+        }
 
         $message = SupportMessage::create([
             'sender_type'    => Driver::class,

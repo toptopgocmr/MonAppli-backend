@@ -12,6 +12,10 @@
 <div class="aws-alert aws-alert-success">✓ {{ session('success') }}</div>
 @endif
 
+@error('content')
+<div class="aws-alert aws-alert-error">✗ {{ $message }}</div>
+@enderror
+
 <div class="aws-panel" style="margin-bottom:0">
     <div class="aws-panel-header">
         <span class="aws-panel-title">Discussion avec le support</span>

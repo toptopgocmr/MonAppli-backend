@@ -7,7 +7,9 @@ use App\Models\Admin\AdminUser;
 use App\Models\Company;
 use App\Models\SupportMessage;
 use App\Services\Realtime\PusherBroadcaster;
+use App\Support\ContentModerator;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * CompanySupportController — chat Société ↔ Support TopTopGo (panel web).
@@ -40,6 +42,7 @@ class CompanySupportController extends Controller
             ->orWhere(function ($q) use ($company) {
                 $q->where('recipient_type', Company::class)->where('recipient_id', $company->id);
             })
+            ->where('refused', false)
             ->oldest()
             ->get();
 
@@ -63,6 +66,27 @@ class CompanySupportController extends Controller
 
         $company = $this->company();
         $admin   = AdminUser::first();
+
+        // ✅ Modération — bloque les messages offensants/haineux/sexuels avant
+        // qu'ils n'atteignent le support (voir ContentModerator).
+        $reason = ContentModerator::moderateOffensive($request->content);
+        if ($reason) {
+            Log::warning('🚫 Message société→admin bloqué', [
+                'company_id' => $company->id, 'reason' => $reason,
+                'content' => substr($request->content, 0, 80),
+            ]);
+            SupportMessage::create([
+                'sender_type'    => Company::class,
+                'sender_id'      => $company->id,
+                'recipient_type' => AdminUser::class,
+                'recipient_id'   => $admin?->id ?? 1,
+                'content'        => $request->content,
+                'is_read'        => false,
+                'refused'        => true,
+                'refused_reason' => $reason,
+            ]);
+            return back()->withErrors(['content' => 'Message refusé : contenu inapproprié (' . $reason . ').']);
+        }
 
         $message = SupportMessage::create([
             'sender_type'    => Company::class,

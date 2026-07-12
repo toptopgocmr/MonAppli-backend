@@ -87,7 +87,7 @@ class CompanyMessageController extends Controller
 
         $query = User::whereIn('id', $userIds)
             ->withCount(['supportMessages as unread_count' => fn ($q) => $q->where('is_read', false)])
-            ->with(['supportMessages' => fn ($q) => $q->latest()->limit(1)])
+            ->with(['supportMessages' => fn ($q) => $q->where('refused', false)->latest()->limit(1)])
             ->having('unread_count', '>=', 0);
 
         if ($request->filled('search')) {
@@ -119,6 +119,7 @@ class CompanyMessageController extends Controller
                 ->orWhere(function ($q) use ($selectedUser) {
                     $q->where('recipient_type', User::class)->where('recipient_id', $selectedUser->id);
                 })
+                ->where('refused', false)
                 ->oldest()
                 ->get();
         }

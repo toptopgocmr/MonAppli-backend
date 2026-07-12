@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use App\Models\SupportMessage;
 use App\Models\User\User;
 use App\Services\Realtime\PusherBroadcaster;
+use App\Support\ContentModerator;
+use Illuminate\Support\Facades\Log;
 
 class AdminUserSupportController extends Controller
 {
@@ -19,7 +21,7 @@ class AdminUserSupportController extends Controller
                 $q->where('is_read', false);
             }])
             ->with(['supportMessages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('refused', false)->latest()->limit(1);
             }]);
 
         if ($request->filled('search')) {
@@ -77,6 +79,7 @@ class AdminUserSupportController extends Controller
                   ->where('sender_id', $userId)
                   ->where('recipient_type', \App\Models\Admin\AdminUser::class);
             })
+            ->where('refused', false)
             ->with('admin')
             ->oldest()
             ->get();
@@ -93,7 +96,7 @@ class AdminUserSupportController extends Controller
                 $q->where('is_read', false);
             }])
             ->with(['supportMessages' => function ($q) {
-                $q->latest()->limit(1);
+                $q->where('refused', false)->latest()->limit(1);
             }]);
 
         if ($request->filled('search')) {
@@ -141,6 +144,27 @@ class AdminUserSupportController extends Controller
         ]);
 
         $user = User::findOrFail($userId);
+
+        // ✅ Modération — bloque les messages offensants/haineux/sexuels avant
+        // qu'ils n'atteignent le client (voir ContentModerator).
+        $reason = ContentModerator::moderateOffensive($request->content);
+        if ($reason) {
+            Log::warning('🚫 Message admin→client bloqué', [
+                'user_id' => $userId, 'reason' => $reason,
+                'content' => substr($request->content, 0, 80),
+            ]);
+            SupportMessage::create([
+                'sender_type'    => \App\Models\Admin\AdminUser::class,
+                'sender_id'      => session('admin_id'),
+                'recipient_type' => \App\Models\User\User::class,
+                'recipient_id'   => $userId,
+                'content'        => $request->content,
+                'is_read'        => false,
+                'refused'        => true,
+                'refused_reason' => $reason,
+            ]);
+            return back()->withErrors(['content' => 'Message refusé : contenu inapproprié (' . $reason . ').']);
+        }
 
         $message = SupportMessage::create([
             'sender_type'    => \App\Models\Admin\AdminUser::class,
