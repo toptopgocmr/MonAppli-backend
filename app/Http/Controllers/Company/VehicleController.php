@@ -51,8 +51,9 @@ class VehicleController extends Controller
     public function create()
     {
         $countries = config('geo.countries', []);
+        $citiesByCountry = config('geo.cities', []);
         $vehicleTypes = VehicleType::activeNames();
-        return view('company.vehicles.create', compact('countries', 'vehicleTypes'));
+        return view('company.vehicles.create', compact('countries', 'citiesByCountry', 'vehicleTypes'));
     }
 
     public function store(Request $request)
@@ -116,8 +117,9 @@ class VehicleController extends Controller
         $company = $this->company();
         $vehicle = Vehicle::where('company_id', $company->id)->findOrFail($id);
         $countries = config('geo.countries', []);
+        $citiesByCountry = config('geo.cities', []);
         $vehicleTypes = VehicleType::activeNames();
-        return view('company.vehicles.edit', compact('vehicle', 'countries', 'vehicleTypes'));
+        return view('company.vehicles.edit', compact('vehicle', 'countries', 'citiesByCountry', 'vehicleTypes'));
     }
 
     public function update(Request $request, $id)

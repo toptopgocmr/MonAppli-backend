@@ -204,4 +204,34 @@ return [
         ['name' => 'Zambie', 'code' => 'ZM'],
         ['name' => 'Zimbabwe', 'code' => 'ZW'],
     ],
+
+    // Villes principales par pays (miroir de kCountries côté app mobile), pour
+    // afficher directement une liste au lieu d'attendre que l'utilisateur tape
+    // (autocomplétion Nominatim conservée en repli pour les pays sans liste
+    // ci-dessous — voir company/vehicles/create|edit.blade.php).
+    'cities' => [
+        'CG' => ['Brazzaville', 'Pointe-Noire', 'Dolisie', 'Nkayi', 'Impfondo', 'Ouesso', 'Sibiti', 'Gamboma'],
+        'CD' => ['Kinshasa', 'Lubumbashi', 'Mbuji-Mayi', 'Kisangani', 'Goma', 'Bukavu', 'Matadi', 'Kolwezi'],
+        'CM' => ['Yaoundé', 'Douala', 'Bamenda', 'Maroua', 'Bafoussam', 'Ngaoundéré'],
+        'GA' => ['Libreville', 'Port-Gentil', 'Franceville', 'Oyem', 'Moanda', 'Mouila'],
+        'TD' => ['N\'Djamena', 'Moundou', 'Sarh', 'Abéché'],
+        'CF' => ['Bangui', 'Bimbo', 'Berbérati'],
+        'GQ' => ['Malabo', 'Bata'],
+        'CI' => ['Abidjan', 'Bouaké', 'Daloa', 'Korhogo', 'Yamoussoukro'],
+        'SN' => ['Dakar', 'Thiès', 'Kaolack', 'Saint-Louis', 'Ziguinchor', 'Touba'],
+        'ML' => ['Bamako', 'Sikasso', 'Mopti', 'Koutiala', 'Kayes'],
+        'BF' => ['Ouagadougou', 'Bobo-Dioulasso', 'Koudougou'],
+        'NE' => ['Niamey', 'Zinder', 'Maradi', 'Agadez'],
+        'TG' => ['Lomé', 'Sokodé', 'Kara', 'Atakpamé'],
+        'MA' => ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir'],
+        'DZ' => ['Alger', 'Oran', 'Constantine', 'Annaba', 'Blida'],
+        'FR' => ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Bordeaux'],
+        'BE' => ['Bruxelles', 'Anvers', 'Gand', 'Liège', 'Bruges', 'Namur', 'Charleroi'],
+        'CA' => ['Montréal', 'Toronto', 'Vancouver', 'Ottawa', 'Calgary', 'Québec'],
+        'CH' => ['Genève', 'Zurich', 'Bâle', 'Lausanne', 'Berne'],
+        'PT' => ['Lisbonne', 'Porto', 'Braga', 'Coimbra', 'Amadora'],
+        'US' => ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Miami'],
+        'DE' => ['Berlin', 'Munich', 'Hambourg', 'Cologne', 'Francfort'],
+        'ES' => ['Madrid', 'Barcelone', 'Valence', 'Séville', 'Bilbao'],
+    ],
 ];

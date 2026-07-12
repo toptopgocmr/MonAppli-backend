@@ -64,7 +64,9 @@
                     <select name="country" id="country" class="aws-input">
                         <option value="">— Choisir —</option>
                         @foreach($countries as $c)
-                            <option value="{{ $c['name'] }}" data-code="{{ $c['code'] }}" {{ old('country') === $c['name'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
+                            <option value="{{ $c['name'] }}" data-code="{{ $c['code'] }}"
+                                data-cities='@json($citiesByCountry[$c['code']] ?? [])'
+                                {{ old('country') === $c['name'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -128,9 +130,62 @@
         return opt ? opt.dataset.code : '';
     }
 
+    // ✅ Liste de villes toute prête pour le pays choisi (config/geo.php),
+    // pour les pays courants — sans ça, il fallait taper au moins 2
+    // caractères avant qu'une seule suggestion apparaisse.
+    function selectedCountryCities() {
+        const opt = countrySelect.options[countrySelect.selectedIndex];
+        if (!opt || !opt.dataset.cities) return [];
+        try { return JSON.parse(opt.dataset.cities); } catch (e) { return []; }
+    }
+
+    function renderCityList(cities) {
+        if (!cities.length) { dropdown.className = 'city-dropdown'; return; }
+        dropdown.className = 'city-dropdown open';
+        dropdown.innerHTML = cities.map(city => `
+            <div class="city-item" data-city="${city}">
+                <svg width="12" height="14" viewBox="0 0 12 16" fill="none" style="flex-shrink:0">
+                    <path d="M6 0C3.24 0 1 2.24 1 5c0 3.75 5 11 5 11s5-7.25 5-11c0-2.76-2.24-5-5-5zm0 6.5C5.17 6.5 4.5 5.83 4.5 5S5.17 3.5 6 3.5 7.5 4.17 7.5 5 6.83 6.5 6 6.5z" fill="#ec7211"/>
+                </svg>
+                <div class="city-name">${city}</div>
+            </div>`).join('');
+        dropdown.querySelectorAll('.city-item').forEach(el => {
+            el.addEventListener('click', function () {
+                cityInput.value = this.dataset.city;
+                dropdown.className = 'city-dropdown';
+            });
+        });
+    }
+
+    // Dès qu'un pays est choisi, affiche directement toutes ses villes
+    // connues (pas besoin de taper) — repli sur la recherche Nominatim si
+    // aucune liste n'existe pour ce pays.
+    countrySelect.addEventListener('change', function () {
+        const cities = selectedCountryCities();
+        if (cities.length) renderCityList(cities);
+        else dropdown.className = 'city-dropdown';
+    });
+
+    cityInput.addEventListener('focus', function () {
+        if (this.value.trim()) return;
+        const cities = selectedCountryCities();
+        if (cities.length) renderCityList(cities);
+    });
+
     cityInput.addEventListener('input', function () {
         const q = this.value.trim();
         clearTimeout(timer);
+
+        const cities = selectedCountryCities();
+        if (cities.length) {
+            // Liste connue pour ce pays : filtrage instantané, pas d'appel réseau.
+            const filtered = q.length
+                ? cities.filter(c => c.toLowerCase().includes(q.toLowerCase()))
+                : cities;
+            renderCityList(filtered);
+            return;
+        }
+
         if (q.length < 2) { dropdown.className = 'city-dropdown'; return; }
         dropdown.className = 'city-dropdown open';
         dropdown.innerHTML = '<div class="city-loading">Recherche…</div>';
