@@ -11,18 +11,22 @@ return [
 
     // ── Cloud Recording (enregistrement serveur des appels client↔chauffeur,
     // qui n'ont aucune jambe web pour enregistrer via MediaRecorder comme les
-    // appels support). Console Agora > Project Management > RESTful API :
+    // appels support). Console Agora > Developer Hub > RESTful API :
     // Customer Key/Secret DIFFÉRENTS de app_id/app_certificate ci-dessus.
-    // Bucket S3 dédié recommandé (peut être un bucket AWS S3 séparé du
-    // Backblaze déjà utilisé pour les photos — Agora Cloud Recording ne
-    // supporte pas Backblaze nativement, vendor=1 = AWS S3 uniquement testé).
+    //
+    // ✅ Vendor 11 = "S3 compatible storage" — Backblaze B2 est compatible S3,
+    // donc PAS BESOIN d'AWS : on utilise un bucket Backblaze DÉDIÉ (séparé de
+    // celui des photos, pour garder les enregistrements privés — voir
+    // 'backblaze' dans config/filesystems.php pour le bucket photos public).
+    // Nécessite le endpoint S3 du bucket (ex: https://s3.us-west-004.backblazeb2.com).
     'cloud_recording' => [
         'customer_key'    => env('AGORA_CUSTOMER_KEY'),
         'customer_secret' => env('AGORA_CUSTOMER_SECRET'),
-        'storage_vendor'  => (int) env('AGORA_RECORDING_STORAGE_VENDOR', 1), // 1 = AWS S3
-        'storage_region'  => (int) env('AGORA_RECORDING_STORAGE_REGION', 0), // 0 = us-east-1
+        'storage_vendor'  => (int) env('AGORA_RECORDING_STORAGE_VENDOR', 11), // 11 = S3-compatible (Backblaze)
+        'storage_region'  => (int) env('AGORA_RECORDING_STORAGE_REGION', 0),  // ignoré par Agora pour vendor 11, mais requis par l'API — 0 est sûr
         'bucket'          => env('AGORA_RECORDING_BUCKET'),
         'access_key'      => env('AGORA_RECORDING_ACCESS_KEY'),
         'secret_key'      => env('AGORA_RECORDING_SECRET_KEY'),
+        'endpoint'        => env('AGORA_RECORDING_ENDPOINT'), // requis pour vendor=11, ex: https://s3.us-west-004.backblazeb2.com
     ],
 ];

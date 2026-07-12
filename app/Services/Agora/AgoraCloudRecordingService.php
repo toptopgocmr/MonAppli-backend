@@ -44,12 +44,45 @@ class AgoraCloudRecordingService
 
     public static function isConfigured(): bool
     {
-        return AgoraTokenService::isConfigured()
+        $configured = AgoraTokenService::isConfigured()
             && filled(config('agora.cloud_recording.customer_key'))
             && filled(config('agora.cloud_recording.customer_secret'))
             && filled(config('agora.cloud_recording.bucket'))
             && filled(config('agora.cloud_recording.access_key'))
             && filled(config('agora.cloud_recording.secret_key'));
+
+        // vendor 11 (S3-compatible, ex: Backblaze B2) exige un endpoint —
+        // les vendors natifs (1=AWS S3, etc.) n'en ont pas besoin.
+        if ((int) config('agora.cloud_recording.storage_vendor') === 11) {
+            $configured = $configured && filled(config('agora.cloud_recording.endpoint'));
+        }
+
+        return $configured;
+    }
+
+    /**
+     * storageConfig envoyé à l'API start() — inclut extensionParams.endpoint
+     * uniquement pour le vendor 11 (S3-compatible : Backblaze B2 et
+     * équivalents), ignoré/absent pour les vendors natifs (AWS S3, etc.).
+     */
+    private static function storageConfig(int $callId): array
+    {
+        $vendor = (int) config('agora.cloud_recording.storage_vendor', 11);
+
+        $config = [
+            'vendor'         => $vendor,
+            'region'         => (int) config('agora.cloud_recording.storage_region', 0),
+            'bucket'         => config('agora.cloud_recording.bucket'),
+            'accessKey'      => config('agora.cloud_recording.access_key'),
+            'secretKey'      => config('agora.cloud_recording.secret_key'),
+            'fileNamePrefix' => ['call_recordings', (string) $callId],
+        ];
+
+        if ($vendor === 11) {
+            $config['extensionParams'] = ['endpoint' => config('agora.cloud_recording.endpoint')];
+        }
+
+        return $config;
     }
 
     public static function recordingUidFor(int $callId): int
@@ -129,14 +162,7 @@ class AgoraCloudRecordingService
                         'recordingFileConfig' => [
                             'avFileType' => ['mp4'],
                         ],
-                        'storageConfig' => [
-                            'vendor'         => (int) config('agora.cloud_recording.storage_vendor', 1),
-                            'region'         => (int) config('agora.cloud_recording.storage_region', 0),
-                            'bucket'         => config('agora.cloud_recording.bucket'),
-                            'accessKey'      => config('agora.cloud_recording.access_key'),
-                            'secretKey'      => config('agora.cloud_recording.secret_key'),
-                            'fileNamePrefix' => ['call_recordings', (string) $callId],
-                        ],
+                        'storageConfig' => self::storageConfig($callId),
                     ],
                 ]
             );
