@@ -16,13 +16,23 @@ class WithdrawalController extends Controller
     }
 
     // Pays vers lesquels un retrait peut être effectué (couverts par Peex Disbursement/Remittance).
+    // Enrichi avec drapeau/indicatif/opérateurs (config/mobile_money.php, miroir
+    // de kCountries côté app mobile) pour le sélecteur "Numéro Mobile Money".
     private function payoutCountries(): array
     {
         $codes = config('payments.peex.disbursement_countries', ['CM', 'CG']);
         $all   = config('geo.countries', []);
+        $meta  = config('mobile_money.countries', []);
 
         return collect($all)
             ->filter(fn ($c) => in_array($c['code'], $codes, true))
+            ->map(function ($c) use ($meta) {
+                $m = $meta[$c['code']] ?? null;
+                $c['flag']      = $m['flag'] ?? '';
+                $c['dial']      = $m['dial'] ?? '';
+                $c['operators'] = $m['operators'] ?? [];
+                return $c;
+            })
             ->values()
             ->all();
     }
@@ -57,6 +67,7 @@ class WithdrawalController extends Controller
             'amount'       => 'required|numeric|min:1000|max:' . max(1000, $available),
             'method'       => 'required|in:mobile_money,bank',
             'country'      => 'required|in:' . implode(',', $allowedCountryCodes ?: ['CM']),
+            'operator'     => 'required_if:method,mobile_money|nullable|string|max:60',
             'phone_number' => 'required_if:method,mobile_money|nullable|string|max:20',
         ], [
             'amount.max' => 'Le montant demandé dépasse votre solde disponible (' . number_format($available, 0, ',', ' ') . ' FCFA).',
@@ -75,6 +86,7 @@ class WithdrawalController extends Controller
             'amount'       => $request->amount,
             'method'       => $request->method,
             'country'      => $request->country,
+            'operator'     => $request->method === 'mobile_money' ? $request->operator : null,
             'phone_number' => $request->method === 'mobile_money' ? $request->phone_number : null,
             'status'       => 'pending',
         ]);

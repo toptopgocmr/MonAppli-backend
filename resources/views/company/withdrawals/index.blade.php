@@ -67,7 +67,7 @@
                     @endphp
                     <tr>
                         <td style="font-weight:600">{{ number_format($w->amount, 0, ',', ' ') }} FCFA</td>
-                        <td>{{ $methodLabel }}{{ $w->country ? ' · '.$w->country : '' }}</td>
+                        <td>{{ $methodLabel }}{{ $w->operator ? ' · '.$w->operator : '' }}{{ $w->country ? ' · '.$w->country : '' }}</td>
                         <td><span class="aws-badge {{ $sc[0] }}">{{ $sc[1] }}</span></td>
                         <td>{{ $w->transaction_ref ?? '—' }}</td>
                         <td>{{ $w->created_at->format('d/m/Y H:i') }}</td>
@@ -112,10 +112,16 @@
 
                 <div class="aws-field">
                     <label class="aws-label">Pays du retrait</label>
-                    <select name="country" required class="aws-input">
+                    <select name="country" id="w-country" required class="aws-input">
                         <option value="">— Choisir —</option>
                         @foreach($payoutCountries as $c)
-                            <option value="{{ $c['code'] }}" {{ old('country') === $c['code'] ? 'selected' : '' }}>{{ $c['name'] }}</option>
+                            <option value="{{ $c['code'] }}"
+                                    data-dial="{{ $c['dial'] ?? '' }}"
+                                    data-flag="{{ $c['flag'] ?? '' }}"
+                                    data-operators="{{ implode('|', $c['operators'] ?? []) }}"
+                                    {{ old('country') === $c['code'] ? 'selected' : '' }}>
+                                {{ $c['flag'] ?? '' }} {{ $c['name'] }}{{ !empty($c['dial']) ? ' ('.$c['dial'].')' : '' }}
+                            </option>
                         @endforeach
                     </select>
                     @if(empty($payoutCountries))
@@ -124,8 +130,18 @@
                 </div>
 
                 <div class="aws-field" id="w-phone-field">
-                    <label class="aws-label">Numéro Mobile Money</label>
-                    <input type="text" name="phone_number" value="{{ old('phone_number', $company->phone ?? '') }}" class="aws-input" placeholder="Ex: 06XXXXXXXX">
+                    <label class="aws-label">Opérateur Mobile Money</label>
+                    <select name="operator" id="w-operator" class="aws-input">
+                        <option value="">— Choisir un pays d'abord —</option>
+                    </select>
+
+                    <label class="aws-label" style="margin-top:10px">Numéro Mobile Money</label>
+                    <div style="display:flex;gap:8px;align-items:center">
+                        <span id="w-dial-code" class="aws-badge aws-badge-gray" style="padding:8px 10px;font-size:14px;white-space:nowrap">—</span>
+                        <input type="text" id="w-phone-local" value="{{ old('phone_local') }}" class="aws-input" placeholder="Ex: 6XXXXXXXX" style="flex:1">
+                    </div>
+                    <p class="aws-hint">Saisissez le numéro sans l'indicatif — il est ajouté automatiquement.</p>
+                    <input type="hidden" name="phone_number" id="w-phone-hidden" value="{{ old('phone_number', $company->phone ?? '') }}">
                 </div>
 
                 <button type="submit" class="aws-btn aws-btn-primary" style="width:100%" {{ $availableBalance < 1000 ? 'disabled' : '' }}>Envoyer la demande</button>
@@ -173,8 +189,14 @@
 @push('scripts')
 <script>
 (function () {
-    const methodSelect = document.getElementById('w-method');
+    const methodSelect  = document.getElementById('w-method');
     const phoneField    = document.getElementById('w-phone-field');
+    const countrySelect = document.getElementById('w-country');
+    const operatorSelect = document.getElementById('w-operator');
+    const dialCodeLabel = document.getElementById('w-dial-code');
+    const phoneLocal    = document.getElementById('w-phone-local');
+    const phoneHidden   = document.getElementById('w-phone-hidden');
+    const form          = phoneHidden ? phoneHidden.closest('form') : null;
     if (!methodSelect || !phoneField) return;
 
     function togglePhone() {
@@ -182,6 +204,51 @@
     }
     methodSelect.addEventListener('change', togglePhone);
     togglePhone();
+
+    // ✅ Met à jour l'indicatif affiché + la liste des opérateurs (issue de
+    // config/mobile_money.php, exposée via les data-attributes des <option>)
+    // dès qu'un pays est choisi.
+    function refreshCountryMeta() {
+        if (!countrySelect) return;
+        const opt = countrySelect.options[countrySelect.selectedIndex];
+        const dial = opt ? (opt.dataset.dial || '') : '';
+        const flag = opt ? (opt.dataset.flag || '') : '';
+        const ops  = opt && opt.dataset.operators ? opt.dataset.operators.split('|').filter(Boolean) : [];
+
+        if (dialCodeLabel) dialCodeLabel.textContent = dial ? (flag + ' ' + dial) : '—';
+
+        if (operatorSelect) {
+            const current = operatorSelect.value;
+            operatorSelect.innerHTML = '';
+            if (!ops.length) {
+                operatorSelect.appendChild(new Option('— Choisir un pays d\'abord —', ''));
+            } else {
+                operatorSelect.appendChild(new Option('— Choisir —', ''));
+                ops.forEach(op => operatorSelect.appendChild(new Option(op, op)));
+                // Restaure la sélection précédente si elle existe toujours (ex: erreur de validation, old()).
+                if (ops.includes(current)) operatorSelect.value = current;
+            }
+        }
+    }
+    if (countrySelect) {
+        countrySelect.addEventListener('change', refreshCountryMeta);
+        refreshCountryMeta();
+        @if(old('operator'))
+            operatorSelect.value = @json(old('operator'));
+        @endif
+    }
+
+    // Recompose le numéro complet (indicatif + local) dans le champ caché
+    // juste avant l'envoi, pour stocker un numéro exploitable par Peex.
+    if (form) {
+        form.addEventListener('submit', function () {
+            const dial  = countrySelect ? (countrySelect.options[countrySelect.selectedIndex]?.dataset.dial || '') : '';
+            const local = (phoneLocal ? phoneLocal.value : '').replace(/\D/g, '').replace(/^0+/, '');
+            if (methodSelect.value === 'mobile_money' && dial && local) {
+                phoneHidden.value = dial + local;
+            }
+        });
+    }
 })();
 </script>
 @endpush

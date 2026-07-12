@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class CompanyWithdrawal extends Model
 {
     protected $fillable = [
-        'company_id', 'amount', 'method', 'country', 'phone_number', 'status',
+        'company_id', 'amount', 'method', 'country', 'operator', 'phone_number', 'status',
         'transaction_ref', 'notes', 'processed_at',
     ];
 
