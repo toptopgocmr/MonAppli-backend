@@ -159,29 +159,82 @@
         });
     }
 
-    // Dès qu'un pays est choisi, affiche directement toutes ses villes
-    // connues — repli sur la recherche Nominatim si aucune liste n'existe.
+    // ✅ Pour un pays SANS liste courte codée en dur, on récupère TOUTES ses
+    // villes/communes via Overpass (OpenStreetMap) dès qu'il est choisi.
+    // Résultat mis en cache par pays pour ne l'interroger qu'une fois.
+    const overpassCache = {};
+    let activeCityList = [];
+    let activeCityListCode = null;
+
+    async function fetchAllCitiesForCountry(code) {
+        const query = `[out:json][timeout:25];area["ISO3166-1"="${code}"][admin_level=2]->.a;(node["place"~"^(city|town)$"](area.a););out body 400;`;
+        const res  = await fetch('https://overpass-api.de/api/interpreter', {
+            method: 'POST', body: 'data=' + encodeURIComponent(query),
+        });
+        const data = await res.json();
+        const names = new Set();
+        (data.elements || []).forEach(el => { if (el.tags && el.tags.name) names.add(el.tags.name); });
+        return Array.from(names).sort((a, b) => a.localeCompare(b, 'fr'));
+    }
+
+    function loadCitiesForSelectedCountry(openDropdown) {
+        const code = selectedCountryCode();
+        const curated = selectedCountryCities();
+
+        if (curated.length) {
+            activeCityList = curated; activeCityListCode = code;
+            if (openDropdown) renderCityList(activeCityList);
+            return;
+        }
+
+        if (!code) { activeCityList = []; activeCityListCode = null; return; }
+
+        if (overpassCache[code]) {
+            activeCityList = overpassCache[code]; activeCityListCode = code;
+            if (openDropdown && activeCityList.length) renderCityList(activeCityList);
+            return;
+        }
+
+        activeCityList = []; activeCityListCode = code;
+        if (openDropdown) {
+            dropdown.className = 'city-dropdown open';
+            dropdown.innerHTML = '<div class="city-loading">Chargement des villes…</div>';
+        }
+        fetchAllCitiesForCountry(code).then(list => {
+            overpassCache[code] = list;
+            if (selectedCountryCode() !== code) return;
+            activeCityList = list;
+            if (!openDropdown) return;
+            if (list.length) renderCityList(list);
+            else dropdown.innerHTML = '<div class="city-loading">Aucune ville trouvée — tapez pour rechercher</div>';
+        }).catch(() => {
+            if (selectedCountryCode() !== code || !openDropdown) return;
+            dropdown.innerHTML = '<div class="city-loading">Chargement impossible — tapez pour rechercher</div>';
+        });
+    }
+
+    // Dès qu'un pays est choisi, affiche directement toutes ses villes.
     countrySelect.addEventListener('change', function () {
-        const cities = selectedCountryCities();
-        if (cities.length) renderCityList(cities);
-        else dropdown.className = 'city-dropdown';
+        loadCitiesForSelectedCountry(true);
     });
 
     cityInput.addEventListener('focus', function () {
         if (this.value.trim()) return;
-        const cities = selectedCountryCities();
-        if (cities.length) renderCityList(cities);
+        if (activeCityList.length && activeCityListCode === selectedCountryCode()) {
+            renderCityList(activeCityList);
+        } else {
+            loadCitiesForSelectedCountry(true);
+        }
     });
 
     cityInput.addEventListener('input', function () {
         const q = this.value.trim();
         clearTimeout(timer);
 
-        const cities = selectedCountryCities();
-        if (cities.length) {
+        if (activeCityList.length && activeCityListCode === selectedCountryCode()) {
             const filtered = q.length
-                ? cities.filter(c => c.toLowerCase().includes(q.toLowerCase()))
-                : cities;
+                ? activeCityList.filter(c => c.toLowerCase().includes(q.toLowerCase()))
+                : activeCityList;
             renderCityList(filtered);
             return;
         }
@@ -243,6 +296,10 @@
             dropdown.innerHTML = '<div class="city-loading">Erreur de connexion</div>';
         }
     }
+
+    // Pré-charge silencieusement (sans ouvrir le menu) : sur la page de
+    // modification, un pays est déjà sélectionné au chargement.
+    if (countrySelect.value) loadCitiesForSelectedCountry(false);
 })();
 
 (function () {
