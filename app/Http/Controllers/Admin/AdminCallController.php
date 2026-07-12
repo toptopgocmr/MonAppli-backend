@@ -342,12 +342,18 @@ class AdminCallController extends Controller
     {
         $recording = \App\Models\CallRecording::where('call_id', $callId)->findOrFail($recordingId);
 
-        if (!Storage::disk('public')->exists($recording->path)) {
+        // ✅ 'browser' (admin/société, MediaRecorder) → disque `public`.
+        // 'cloud' (client↔chauffeur, Agora Cloud Recording) → bucket S3 dédié
+        // `agora_recordings`. Voir CallRecording::$source / AgoraCloudRecordingService.
+        $disk = $recording->storage_disk ?: 'public';
+        $ext  = $disk === 'agora_recordings' ? '.mp4' : '.webm';
+
+        if (!Storage::disk($disk)->exists($recording->path)) {
             abort(404, 'Enregistrement introuvable.');
         }
 
-        return Storage::disk('public')->response($recording->path, 'appel_' . $callId . '.webm', [
-            'Content-Type' => 'audio/webm',
+        return Storage::disk($disk)->response($recording->path, 'appel_' . $callId . $ext, [
+            'Content-Type' => $disk === 'agora_recordings' ? 'audio/mp4' : 'audio/webm',
         ]);
     }
 
@@ -360,10 +366,21 @@ class AdminCallController extends Controller
      */
     public function recordings(Request $request)
     {
+        // ✅ Inclut désormais aussi les appels client↔chauffeur (trajet) —
+        // enregistrés côté serveur via Agora Cloud Recording (aucune jambe
+        // web pour ces appels, voir AgoraCloudRecordingService), en plus des
+        // appels support (client/chauffeur/société ↔ admin) enregistrés côté
+        // navigateur.
         $query = \App\Models\CallRecording::with(['call'])
             ->whereHas('call', function ($q) {
                 $q->where('receiver_type', AdminUser::class)
-                  ->orWhere('caller_type', AdminUser::class);
+                  ->orWhere('caller_type', AdminUser::class)
+                  ->orWhere(function ($q2) {
+                      $q2->where('caller_type', User::class)->where('receiver_type', Driver::class);
+                  })
+                  ->orWhere(function ($q2) {
+                      $q2->where('caller_type', Driver::class)->where('receiver_type', User::class);
+                  });
             });
 
         if ($request->filled('queue_type')) {
@@ -372,8 +389,15 @@ class AdminCallController extends Controller
                 'chauffeur' => Driver::class,
                 'societe'   => Company::class,
             ];
-            $filterType = $typeMap[$request->queue_type] ?? null;
-            if ($filterType) {
+            if ($request->queue_type === 'trajet') {
+                $query->whereHas('call', function ($q) {
+                    $q->where(function ($q2) {
+                        $q2->where('caller_type', User::class)->where('receiver_type', Driver::class);
+                    })->orWhere(function ($q2) {
+                        $q2->where('caller_type', Driver::class)->where('receiver_type', User::class);
+                    });
+                });
+            } elseif ($filterType = $typeMap[$request->queue_type] ?? null) {
                 $query->whereHas('call', function ($q) use ($filterType) {
                     $q->where(function ($q2) use ($filterType) {
                         $q2->where('caller_type', $filterType)->where('receiver_type', AdminUser::class);
@@ -388,7 +412,12 @@ class AdminCallController extends Controller
 
         $recordings->getCollection()->transform(function ($rec) {
             $call = $rec->call;
-            if ($call) {
+            if (!$call) {
+                $rec->other_name = 'Appel supprimé';
+                $rec->direction  = '—';
+                $rec->queue_type = null;
+            } elseif ($call->caller_type === AdminUser::class || $call->receiver_type === AdminUser::class) {
+                // Appel support (client/chauffeur/société ↔ admin) — enregistré navigateur.
                 $isInbound       = $call->receiver_type === AdminUser::class;
                 $otherType       = $isInbound ? $call->caller_type : $call->receiver_type;
                 $otherId         = $isInbound ? $call->caller_id   : $call->receiver_id;
@@ -396,11 +425,16 @@ class AdminCallController extends Controller
                 $rec->direction  = $isInbound ? 'Entrant (vers support)' : 'Sortant (depuis support)';
                 $rec->queue_type = CallOrchestrator::queueTypeFor($isInbound ? $call->caller_type : $call->receiver_type);
             } else {
-                $rec->other_name = 'Appel supprimé';
-                $rec->direction  = '—';
-                $rec->queue_type = null;
+                // Appel direct client↔chauffeur (trajet) — enregistré Cloud Recording.
+                $clientName        = $this->displayName(User::class, (int) ($call->caller_type === User::class ? $call->caller_id : $call->receiver_id));
+                $driverName        = $this->displayName(Driver::class, (int) ($call->caller_type === Driver::class ? $call->caller_id : $call->receiver_id));
+                $rec->other_name   = "{$clientName} ↔ {$driverName}";
+                $rec->direction    = 'Trajet (client ↔ chauffeur)';
+                $rec->queue_type   = 'trajet';
             }
-            $rec->recorded_by_name = $this->displayName($rec->recorded_by_type, (int) $rec->recorded_by_id);
+            $rec->recorded_by_name = $rec->source === 'cloud'
+                ? 'Agora Cloud Recording'
+                : $this->displayName($rec->recorded_by_type, (int) $rec->recorded_by_id);
             return $rec;
         });
 

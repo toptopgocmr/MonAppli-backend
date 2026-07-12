@@ -231,6 +231,7 @@ Route::prefix('driver')->name('api.driver.')->middleware(['auth:sanctum'])->grou
     Route::post('calls/{callId}/end',      [DriverCallController::class, 'end'])->name('calls.end');
     Route::post('calls/{callId}/missed',   [DriverCallController::class, 'missed'])->name('calls.missed');
     Route::get('calls/{callId}/token',     [DriverCallController::class, 'token'])->name('calls.token');
+    Route::get('calls/{callId}/status',    [DriverCallController::class, 'status'])->name('calls.status');
     Route::get('calls/{tripId}',           [DriverCallController::class, 'history'])->name('calls.history');
 
     // ── Support & Documents ───────────────────────────────────────
@@ -294,6 +295,7 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     Route::post('calls/{callId}/end',      [UserCallController::class, 'end'])->name('calls.end');
     Route::post('calls/{callId}/missed',   [UserCallController::class, 'missed'])->name('calls.missed');
     Route::get('calls/{callId}/token',     [UserCallController::class, 'token'])->name('calls.token');
+    Route::get('calls/{callId}/status',    [UserCallController::class, 'status'])->name('calls.status');
     Route::get('calls/{tripId}',           [UserCallController::class, 'history'])->name('calls.history');
 
     // ── Support & SOS ─────────────────────────────────────────────

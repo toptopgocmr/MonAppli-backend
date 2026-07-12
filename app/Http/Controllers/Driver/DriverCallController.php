@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
 use App\Models\Call;
+use App\Models\CallRecording;
 use App\Models\Trip;
+use App\Services\Agora\AgoraCloudRecordingService;
 use App\Services\Agora\AgoraTokenService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -190,6 +192,22 @@ class DriverCallController extends Controller
         $channel = AgoraTokenService::channelForCall($call->id);
         $agora   = AgoraTokenService::generate($channel, AgoraTokenService::uidForDriver($driver->id));
 
+        // 🎙️ Démarrage de l'enregistrement Cloud Recording : à ce stade les
+        // DEUX parties sont dans le canal (l'appelant l'a rejoint dès
+        // initiate(), le destinataire vient de recevoir son token ci-dessus).
+        // Best-effort : ne bloque jamais la réponse à l'appel si Agora Cloud
+        // Recording n'est pas configuré ou échoue.
+        if (!$call->recording_resource_id) {
+            $recording = AgoraCloudRecordingService::start($call->id, $channel);
+            if ($recording) {
+                $call->update([
+                    'recording_resource_id' => $recording['resourceId'],
+                    'recording_sid'         => $recording['sid'],
+                    'recording_uid'         => $recording['uid'],
+                ]);
+            }
+        }
+
         return response()->json(['success' => true, 'message' => 'Appel décroché.', 'agora' => $agora]);
     }
 
@@ -217,15 +235,15 @@ class DriverCallController extends Controller
             'ended_at'         => now(),
         ]);
 
-        try {
-            $this->pusher()->trigger("user.{$call->receiver_id}", 'call.ended', [
-                'call_id'  => $call->id,
-                'trip_id'  => $call->trip_id,
-                'duration' => $duration,
-            ]);
-        } catch (\Exception $e) {
-            Log::warning('Pusher call.ended error: ' . $e->getMessage());
-        }
+        $this->stopCloudRecording($call);
+
+        // ✅ FIX : "user.{$call->receiver_id}" supposait à tort que le client
+        // est toujours receiver — faux si c'est LUI qui avait initié l'appel
+        // (caller_type=User). On notifie les DEUX channels (caller + receiver)
+        // comme le fait CallOrchestrator::notifyOtherParty() pour les autres
+        // types d'appels — sans effet néfaste, celui qui a raccroché lui-même
+        // ignore simplement l'event côté client.
+        $this->notifyBothParties($call, 'call.ended', ['duration' => $duration]);
 
         Log::info('📵 Appel terminé par chauffeur', [
             'call_id'  => $call->id,
@@ -252,17 +270,101 @@ class DriverCallController extends Controller
 
         $call->update(['status' => 'missed', 'ended_at' => now()]);
 
-        try {
-            $this->pusher()->trigger("user.{$call->receiver_id}", 'call.ended', [
-                'call_id' => $call->id,
-                'trip_id' => $call->trip_id,
-                'missed'  => true,
-            ]);
-        } catch (\Exception $e) {
-            Log::warning('Pusher call.ended error: ' . $e->getMessage());
-        }
+        $this->notifyBothParties($call, 'call.ended', ['missed' => true]);
 
         return response()->json(['success' => true, 'message' => 'Appel marqué manqué.']);
+    }
+
+    /**
+     * GET /driver/calls/{callId}/status — polling de secours : si l'event
+     * Pusher "call.ended" échoue silencieusement (identifiants Pusher
+     * potentiellement invalides), l'app appelante interroge ce endpoint
+     * pendant un appel actif pour rattraper la fin d'appel côté serveur.
+     * Même pattern que AdminCallController::status()/CompanyCallController::status().
+     */
+    public function status(Request $request, $callId): JsonResponse
+    {
+        $call = Call::find($callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        return response()->json(['success' => true, 'status' => $call->status]);
+    }
+
+    /**
+     * Arrête l'enregistrement Cloud Recording (s'il a été démarré à la
+     * réponse) et enregistre le fichier produit dans `call_recordings`
+     * (source='cloud', disque `agora_recordings`) — visible dans la liste
+     * admin des enregistrements au même titre que les appels support.
+     * Sans effet si Cloud Recording n'était pas configuré/démarré pour cet
+     * appel (les champs recording_* sont alors null).
+     */
+    private function stopCloudRecording(Call $call): void
+    {
+        if (!$call->recording_resource_id || !$call->recording_sid) {
+            return;
+        }
+
+        // Best-effort total : ne doit JAMAIS empêcher le raccroché de se
+        // terminer normalement, quelle que soit l'erreur (réseau Agora,
+        // contrainte DB, etc.).
+        try {
+            $channel = AgoraTokenService::channelForCall($call->id);
+            $files = AgoraCloudRecordingService::stop(
+                $call->id, $channel, $call->recording_resource_id, $call->recording_sid, (int) $call->recording_uid
+            );
+
+            foreach ($files as $filePath) {
+                CallRecording::create([
+                    'call_id'          => $call->id,
+                    'source'           => 'cloud',
+                    // Valeurs neutres non-null : un enregistrement Cloud
+                    // Recording n'est "enregistré par" aucune personne
+                    // précise (contrairement aux enregistrements navigateur
+                    // admin/société) — recorded_by_type/id restent
+                    // fonctionnellement vides même si la colonne DB n'a pas
+                    // pu être rendue nullable (doctrine/dbal absent).
+                    'recorded_by_type' => 'system',
+                    'recorded_by_id'   => 0,
+                    'path'             => $filePath,
+                    'storage_disk'     => 'agora_recordings',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('stopCloudRecording error: ' . $e->getMessage(), ['call_id' => $call->id]);
+        }
+    }
+
+    /**
+     * Notifie les DEUX channels (caller + receiver) qu'un appel vient de se
+     * terminer — on ne sait pas ici qui a raccroché en premier, donc les deux
+     * sont notifiés ; celui qui a lui-même déclenché l'action ignore
+     * simplement l'event côté client. Évite le bug où seul le receiver
+     * "supposé" (toujours le client) était notifié, cassant le raccroché
+     * automatique quand c'est le client qui avait initié l'appel.
+     */
+    private function notifyBothParties(Call $call, string $event, array $extra = []): void
+    {
+        $payload = array_merge([
+            'call_id' => $call->id,
+            'trip_id' => $call->trip_id,
+        ], $extra);
+
+        $channels = [
+            $call->caller_type === \App\Models\Driver\Driver::class
+                ? "driver.{$call->caller_id}" : "user.{$call->caller_id}",
+            $call->receiver_type === \App\Models\Driver\Driver::class
+                ? "driver.{$call->receiver_id}" : "user.{$call->receiver_id}",
+        ];
+
+        foreach (array_unique($channels) as $channel) {
+            try {
+                $this->pusher()->trigger($channel, $event, $payload);
+            } catch (\Exception $e) {
+                Log::warning('Pusher ' . $event . ' error: ' . $e->getMessage());
+            }
+        }
     }
 
     /**

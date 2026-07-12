@@ -47,6 +47,22 @@ return [
             'use_path_style_endpoint' => true,
         ],
 
+        // ✅ Bucket AWS S3 dédié où Agora Cloud Recording dépose directement
+        // les enregistrements des appels client↔chauffeur (mobile↔mobile,
+        // voir AgoraCloudRecordingService). Mêmes identifiants que
+        // config('agora.cloud_recording'), utilisés ici pour RELIRE les
+        // fichiers (Storage::disk('agora_recordings')->response(...)) via la
+        // route authentifiée admin, sans jamais exposer le bucket en public.
+        'agora_recordings' => [
+            'driver'     => 's3',
+            'key'        => env('AGORA_RECORDING_ACCESS_KEY'),
+            'secret'     => env('AGORA_RECORDING_SECRET_KEY'),
+            'region'     => env('AGORA_RECORDING_S3_REGION', 'us-east-1'),
+            'bucket'     => env('AGORA_RECORDING_BUCKET'),
+            'visibility' => 'private',
+            'throw'      => false,
+        ],
+
     ],
 
     /*

@@ -24,6 +24,9 @@ class Call extends Model
         'duration_seconds',
         'started_at',
         'ended_at',
+        'recording_resource_id',
+        'recording_sid',
+        'recording_uid',
     ];
 
     protected $casts = [

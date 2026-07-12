@@ -8,7 +8,7 @@
 <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px">
     <div>
         <h1 class="page-title">🎧 Enregistrements des appels</h1>
-        <p class="page-sub">Tous les appels support (client, chauffeur, société ↔ admin) enregistrés côté navigateur — micro + audio distant mixés.</p>
+        <p class="page-sub">Appels support (client, chauffeur, société ↔ admin, enregistrés côté navigateur) et appels trajet (client ↔ chauffeur, enregistrés via Agora Cloud Recording).</p>
     </div>
     <a href="{{ route('admin.calls.index') }}" class="btn btn-gray">← Journal des appels</a>
 </div>
@@ -20,6 +20,7 @@
             <option value="client"    {{ request('queue_type')=='client'    ? 'selected' : '' }}>📞 Client</option>
             <option value="chauffeur" {{ request('queue_type')=='chauffeur' ? 'selected' : '' }}>📞 Chauffeur</option>
             <option value="societe"   {{ request('queue_type')=='societe'   ? 'selected' : '' }}>📞 Société</option>
+            <option value="trajet"    {{ request('queue_type')=='trajet'    ? 'selected' : '' }}>🚗 Trajet (client ↔ chauffeur)</option>
         </select>
         <button type="submit" class="btn btn-primary">Filtrer</button>
         <a href="{{ route('admin.calls.recordings.index') }}" class="btn btn-gray">Reset</a>
@@ -44,7 +45,7 @@
                 @forelse($recordings as $rec)
                 <tr>
                     <td>
-                        @php $qLabels = ['client'=>'📞 Client','chauffeur'=>'📞 Chauffeur','societe'=>'📞 Société']; @endphp
+                        @php $qLabels = ['client'=>'📞 Client','chauffeur'=>'📞 Chauffeur','societe'=>'📞 Société','trajet'=>'🚗 Trajet']; @endphp
                         <span class="badge badge-gray">{{ $qLabels[$rec->queue_type] ?? '—' }}</span>
                     </td>
                     <td style="font-weight:600;color:#0f172a">{{ $rec->other_name }}</td>
@@ -54,7 +55,7 @@
                     <td style="font-size:12px;color:#64748b">{{ $rec->created_at?->format('d/m/Y H:i:s') }}</td>
                     <td style="min-width:260px">
                         <audio controls preload="none" style="height:32px;width:240px">
-                            <source src="{{ route('admin.calls.recording.play', [$rec->call_id, $rec->id]) }}" type="audio/webm">
+                            <source src="{{ route('admin.calls.recording.play', [$rec->call_id, $rec->id]) }}" type="{{ $rec->source === 'cloud' ? 'audio/mp4' : 'audio/webm' }}">
                         </audio>
                     </td>
                 </tr>
