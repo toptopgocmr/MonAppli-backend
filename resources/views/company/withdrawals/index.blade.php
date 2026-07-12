@@ -122,6 +122,8 @@
                                         data-dial="{{ $c['dial'] ?? '' }}"
                                         data-flag-url="{{ $c['flag_url'] }}"
                                         data-operators='@json($c['operators'] ?? [])'
+                                        data-mm="{{ $c['mobile_money_ok'] ? '1' : '0' }}"
+                                        data-bank="{{ $c['bank_ok'] ? '1' : '0' }}"
                                         {{ old('country') === $c['code'] ? 'selected' : '' }}>
                                     {{ $c['name'] }}
                                 </option>
@@ -131,6 +133,7 @@
                     @if(empty($payoutCountries))
                     <p class="aws-hint">Aucun pays de retrait n'est actuellement disponible.</p>
                     @endif
+                    <p class="aws-hint" id="w-country-scope-hint"></p>
                 </div>
 
                 <div class="aws-field" id="w-phone-field">
@@ -207,14 +210,50 @@
     const dialText       = document.getElementById('w-dial-text');
     const phoneLocal     = document.getElementById('w-phone-local');
     const phoneHidden    = document.getElementById('w-phone-hidden');
+    const scopeHint      = document.getElementById('w-country-scope-hint');
     const form           = phoneHidden ? phoneHidden.closest('form') : null;
     if (!methodSelect || !phoneField) return;
 
     function togglePhone() {
         phoneField.style.display = methodSelect.value === 'mobile_money' ? '' : 'none';
     }
-    methodSelect.addEventListener('change', togglePhone);
+
+    // ✅ Peex ne couvre pas les mêmes pays selon le moyen de paiement :
+    // Mobile Money (Disbursement API) est limité à quelques pays confirmés
+    // par écrit (CM/CG), tandis que le virement bancaire (Remittance API)
+    // couvre toute la zone CEMAC. On filtre donc la liste des pays affichés
+    // selon le moyen choisi, pour ne jamais proposer un couple pays/méthode
+    // que Peex rejettera.
+    function filterCountriesByMethod() {
+        if (!countrySelect) return;
+        const isBank = methodSelect.value === 'bank';
+        const flag = isBank ? 'bank' : 'mm';
+        let selectedStillValid = false;
+
+        Array.from(countrySelect.options).forEach(opt => {
+            if (!opt.value) return; // "— Choisir —"
+            const ok = opt.dataset[flag] === '1';
+            opt.hidden = !ok;
+            opt.disabled = !ok;
+            if (opt.selected && ok) selectedStillValid = true;
+        });
+
+        if (!selectedStillValid) countrySelect.value = '';
+
+        if (scopeHint) {
+            scopeHint.textContent = isBank
+                ? 'Zone CEMAC disponible pour le virement bancaire.'
+                : 'Mobile Money actuellement limité aux pays confirmés par Peex.';
+        }
+    }
+
+    methodSelect.addEventListener('change', () => {
+        togglePhone();
+        filterCountriesByMethod();
+        refreshCountryMeta();
+    });
     togglePhone();
+    filterCountriesByMethod();
 
     function initials(name) {
         return name.split(' ').map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
@@ -243,10 +282,15 @@
                 + 'border-radius:20px;cursor:pointer;background:#fff;'
                 + 'border:2px solid ' + (active ? op.color : 'var(--aws-border)') + ';'
                 + (active ? 'box-shadow:0 0 0 2px ' + op.color + '22;' : '');
-            chip.innerHTML =
-                '<span style="width:22px;height:22px;border-radius:50%;background:' + op.color + ';'
-                + 'color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-                + initials(op.name) + '</span>'
+            // ✅ Vrai logo (Airtel/Orange/MTN) si disponible, sinon badge
+            // coloré avec initiales pour les autres opérateurs.
+            const badge = op.logo
+                ? '<img src="' + op.logo + '" alt="" style="width:22px;height:22px;border-radius:50%;'
+                    + 'object-fit:cover;flex-shrink:0;border:1px solid var(--aws-border)">'
+                : '<span style="width:22px;height:22px;border-radius:50%;background:' + op.color + ';'
+                    + 'color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+                    + initials(op.name) + '</span>';
+            chip.innerHTML = badge
                 + '<span style="font-size:13px;font-weight:' + (active ? '700' : '500') + '">' + op.name + '</span>';
 
             chip.addEventListener('click', () => {

@@ -15,28 +15,57 @@ class WithdrawalController extends Controller
         return \App\Support\CompanyContext::company();
     }
 
-    // Pays vers lesquels un retrait peut être effectué (couverts par Peex Disbursement/Remittance).
-    // Enrichi avec indicatif/opérateurs (config/mobile_money.php, miroir de
-    // kCountries côté app mobile) + une URL de drapeau (flagcdn.com — les
-    // drapeaux emoji ne s'affichent pas correctement sous Windows/Chrome,
-    // qui montre le code pays en boîte au lieu du drapeau).
+    // Pays vers lesquels un retrait peut être effectué.
+    // ⚠️ IMPORTANT : Peex expose 2 mécanismes différents avec des couvertures
+    // pays DIFFÉRENTES (vérifié sur https://peex-api-docs.peexit.com/) :
+    //   - Disbursement API (mobile money) : "Currently, the only active
+    //     country for disbursement is Cameroon (CM)." → CG ajouté par
+    //     confirmation écrite de Peex. Zone volontairement restreinte.
+    //   - Remittance API / virement bancaire (request_bank_payment) :
+    //     aucune restriction de pays documentée → on autorise toute la zone
+    //     CEMAC (payments.peex.bank_countries).
+    // Chaque pays porte donc 2 flags (mobile_money_ok / bank_ok) : le
+    // formulaire (JS) et la validation store() filtrent la liste affichée
+    // selon le moyen de paiement choisi pour ne jamais soumettre à Peex un
+    // couple pays/méthode qu'il rejettera.
     private function payoutCountries(): array
     {
-        $codes = config('payments.peex.disbursement_countries', ['CM', 'CG']);
+        $mmCodes   = config('payments.peex.disbursement_countries', ['CM']);
+        $bankCodes = config('payments.peex.bank_countries', ['CM']);
+        $allCodes  = array_unique(array_merge($mmCodes, $bankCodes));
         $all   = config('geo.countries', []);
         $meta  = config('mobile_money.countries', []);
 
         return collect($all)
-            ->filter(fn ($c) => in_array($c['code'], $codes, true))
-            ->map(function ($c) use ($meta) {
+            ->filter(fn ($c) => in_array($c['code'], $allCodes, true))
+            ->map(function ($c) use ($meta, $mmCodes, $bankCodes) {
                 $m = $meta[$c['code']] ?? null;
-                $c['dial']      = $m['dial'] ?? '';
-                $c['operators'] = $m['operators'] ?? [];
-                $c['flag_url']  = 'https://flagcdn.com/w40/' . strtolower($c['code']) . '.png';
+                $c['dial']             = $m['dial'] ?? '';
+                $c['operators']        = collect($m['operators'] ?? [])
+                    ->map(function ($op) {
+                        $op['logo'] = $this->operatorLogo($op['name'] ?? '');
+                        return $op;
+                    })->all();
+                $c['flag_url']         = 'https://flagcdn.com/w40/' . strtolower($c['code']) . '.png';
+                $c['mobile_money_ok']  = in_array($c['code'], $mmCodes, true);
+                $c['bank_ok']          = in_array($c['code'], $bankCodes, true);
                 return $c;
             })
             ->values()
             ->all();
+    }
+
+    // ✅ Vrai logo (fichier local public/images/operators/) pour les 3
+    // opérateurs demandés par le client (Airtel/Orange/MTN) — les autres
+    // (Vodacom, Africell, Moov, Telecel...) restent sur le badge coloré
+    // avec initiales (voir renderOperatorChips() dans la vue).
+    private function operatorLogo(string $operatorName): ?string
+    {
+        $n = strtolower($operatorName);
+        if (str_contains($n, 'airtel')) return asset('images/operators/airtel.png');
+        if (str_contains($n, 'orange')) return asset('images/operators/orange.png');
+        if (str_contains($n, 'mtn') || str_contains($n, 'mobicash')) return asset('images/operators/mtn.png');
+        return null;
     }
 
     public function index()
@@ -63,7 +92,12 @@ class WithdrawalController extends Controller
     {
         $company = $this->company();
         $available = $company->availableBalance();
-        $allowedCountryCodes = collect($this->payoutCountries())->pluck('code')->all();
+        $method = $request->input('method');
+        $countries = collect($this->payoutCountries());
+        $allowedCountryCodes = ($method === 'bank'
+            ? $countries->where('bank_ok', true)
+            : $countries->where('mobile_money_ok', true)
+        )->pluck('code')->all();
 
         $request->validate([
             'amount'       => 'required|numeric|min:1000|max:' . max(1000, $available),

@@ -97,6 +97,25 @@ class PeexService implements PaymentProviderInterface
         return in_array(strtoupper($countryCode), array_map('strtoupper', $this->supportedDisbursementCountries()), true);
     }
 
+    /**
+     * Countries supported for bank payouts (Remittance API, request_bank_payment).
+     * Unlike the Disbursement API, Peex's docs don't restrict `to_country` for
+     * bank payments — this list is intentionally wider (zone CEMAC).
+     */
+    public function supportedBankCountries(): array
+    {
+        return config('payments.peex.bank_countries', ['CM']);
+    }
+
+    public function supportsBankFor(?string $countryCode): bool
+    {
+        if (!$countryCode) {
+            return false;
+        }
+
+        return in_array(strtoupper($countryCode), array_map('strtoupper', $this->supportedBankCountries()), true);
+    }
+
     // =========================================================================
     // COLLECT API — GET /collection/me, /collection/get_fees,
     //               POST /collection/request_payment, GET /collection/all_requests

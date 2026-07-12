@@ -64,6 +64,10 @@ class CompanyWithdrawalController extends Controller
                 return back()->with('error', 'Coordonnées bancaires manquantes pour cette société. Impossible de traiter ce retrait par virement bancaire.');
             }
 
+            if (!$this->peex->supportsBankFor($country)) {
+                return back()->with('error', "Le pays choisi ($country) n'est pas couvert pour le virement bancaire.");
+            }
+
             $result = $this->peex->bankPayout([
                 'reference'     => $reference,
                 'bank_name'     => $company->bank_name,
