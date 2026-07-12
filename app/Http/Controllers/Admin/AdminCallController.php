@@ -10,6 +10,8 @@ use App\Models\User\User;
 use App\Services\Calls\CallOrchestrator;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * AdminCallController — appels vocaux in-app pour le panel Admin (support).
@@ -108,7 +110,7 @@ class AdminCallController extends Controller
             }
         }
 
-        $calls = (clone $query)->orderByDesc('created_at')->paginate(25)->withQueryString();
+        $calls = (clone $query)->with('recordings')->orderByDesc('created_at')->paginate(25)->withQueryString();
 
         // Mapping vers les valeurs attendues par TTCall.startCall() / initiate()
         // (target_type: 'user'|'driver'|'company'), distinct de queue_type qui
@@ -271,5 +273,75 @@ class AdminCallController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * GET /admin/calls/{callId}/status — filet de secours pour raccrocher
+     * automatiquement des DEUX côtés.
+     *
+     * Le Pusher event "call.ended" doit normalement le faire instantanément,
+     * mais si le push échoue silencieusement (mêmes identifiants Pusher
+     * potentiellement invalides que pour la sonnerie, voir pending()), le
+     * widget de la partie qui n'a PAS raccroché restait bloqué "en ligne"
+     * indéfiniment. Le widget interroge ce endpoint toutes les quelques
+     * secondes pendant un appel actif pour rattraper la fin d'appel.
+     */
+    public function status(Request $request, $callId): JsonResponse
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        return response()->json(['success' => true, 'status' => $call->status]);
+    }
+
+    /**
+     * POST /admin/calls/{callId}/recording — upload de l'enregistrement
+     * audio (micro admin + audio distant reçu, mixés côté navigateur via
+     * MediaRecorder — voir admin-call-widget.blade.php). Stocké sur le
+     * disque `local` (privé), jamais exposé en URL publique directe.
+     */
+    public function storeRecording(Request $request, $callId): JsonResponse
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        $request->validate([
+            'recording' => 'required|file|max:51200', // 50 Mo
+        ]);
+
+        $filename = 'call_recordings/' . $call->id . '/' . Str::uuid() . '.webm';
+        Storage::disk('local')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
+
+        \App\Models\CallRecording::create([
+            'call_id'           => $call->id,
+            'recorded_by_type'  => AdminUser::class,
+            'recorded_by_id'    => $this->adminId(),
+            'path'              => $filename,
+            'size_bytes'        => $request->file('recording')->getSize(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * GET /admin/calls/{callId}/recordings/{recordingId} — écoute d'un
+     * enregistrement (n'importe quel admin connecté peut écouter, comme pour
+     * le reste du support).
+     */
+    public function playRecording(Request $request, $callId, $recordingId)
+    {
+        $recording = \App\Models\CallRecording::where('call_id', $callId)->findOrFail($recordingId);
+
+        if (!Storage::disk('local')->exists($recording->path)) {
+            abort(404, 'Enregistrement introuvable.');
+        }
+
+        return Storage::disk('local')->response($recording->path, 'appel_' . $callId . '.webm', [
+            'Content-Type' => 'audio/webm',
+        ]);
     }
 }

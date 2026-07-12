@@ -116,6 +116,9 @@ Route::prefix('company')->name('company.')->group(function () {
             Route::post('/calls/{callId}/end',    [CompanyCallController::class, 'end'])->name('calls.end');
             Route::post('/calls/{callId}/missed', [CompanyCallController::class, 'missed'])->name('calls.missed');
             Route::get('/calls/{callId}/token',   [CompanyCallController::class, 'token'])->name('calls.token');
+            Route::get('/calls/{callId}/status',  [CompanyCallController::class, 'status'])->name('calls.status');
+            Route::post('/calls/{callId}/recording', [CompanyCallController::class, 'storeRecording'])->name('calls.recording.store');
+            Route::get('/calls/{callId}/recordings/{recordingId}', [CompanyCallController::class, 'playRecording'])->name('calls.recording.play');
         });
 
         // Messages

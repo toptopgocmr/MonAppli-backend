@@ -63,7 +63,7 @@
                     <td style="color:#475569">{{ $call->duration_formatted }}</td>
                     <td style="font-size:12px;color:#64748b">{{ $call->created_at?->format('d/m/Y H:i:s') }}</td>
                     <td style="font-size:12px;color:#64748b">{{ $call->ended_at?->format('d/m/Y H:i:s') ?? '—' }}</td>
-                    <td>
+                    <td style="white-space:nowrap">
                         @if($call->target_type)
                         <button type="button"
                                 onclick="TTCall.startCall('{{ $call->target_type }}', {{ $call->target_id }})"
@@ -73,6 +73,12 @@
                         @else
                         <span style="color:#cbd5e1;font-size:12px">—</span>
                         @endif
+                        @foreach($call->recordings as $rec)
+                        <a href="{{ route('admin.calls.recording.play', [$call->id, $rec->id]) }}" target="_blank"
+                           class="btn btn-sm btn-gray" style="white-space:nowrap;margin-left:4px" title="Écouter l'enregistrement">
+                            🎧
+                        </a>
+                        @endforeach
                     </td>
                 </tr>
                 @empty

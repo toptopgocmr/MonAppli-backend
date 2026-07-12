@@ -8,6 +8,8 @@ use App\Models\Company;
 use App\Services\Calls\CallOrchestrator;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * CompanyCallController — appels vocaux in-app pour le panel Société
@@ -99,6 +101,7 @@ class CompanyCallController extends Controller
             ->orWhere(function ($q) use ($company) {
                 $q->where('receiver_type', Company::class)->where('receiver_id', $company->id);
             })
+            ->with('recordings')
             ->orderByDesc('created_at')
             ->paginate(25);
 
@@ -209,5 +212,82 @@ class CompanyCallController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    private function isParticipant(\App\Models\Call $call): bool
+    {
+        $company = $this->company();
+        return ($call->caller_type === Company::class && (int) $call->caller_id === $company->id)
+            || ($call->receiver_type === Company::class && (int) $call->receiver_id === $company->id);
+    }
+
+    /**
+     * GET /company/calls/{callId}/status — filet de secours pour raccrocher
+     * automatiquement des DEUX côtés (voir AdminCallController::status()
+     * pour le détail du problème que ça corrige : Pusher qui échoue
+     * silencieusement laissait le widget "en ligne" indéfiniment).
+     */
+    public function status(Request $request, $callId): JsonResponse
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call || !$this->isParticipant($call)) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        return response()->json(['success' => true, 'status' => $call->status]);
+    }
+
+    /**
+     * POST /company/calls/{callId}/recording — upload de l'enregistrement
+     * audio (micro société + audio distant reçu, mixés côté navigateur —
+     * voir company-call-widget.blade.php). Stocké sur le disque `local`
+     * (privé), jamais exposé en URL publique directe.
+     */
+    public function storeRecording(Request $request, $callId): JsonResponse
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call || !$this->isParticipant($call)) {
+            return response()->json(['success' => false, 'message' => 'Appel introuvable.'], 404);
+        }
+
+        $request->validate([
+            'recording' => 'required|file|max:51200', // 50 Mo
+        ]);
+
+        $company  = $this->company();
+        $filename = 'call_recordings/' . $call->id . '/' . Str::uuid() . '.webm';
+        Storage::disk('local')->put($filename, file_get_contents($request->file('recording')->getRealPath()));
+
+        \App\Models\CallRecording::create([
+            'call_id'          => $call->id,
+            'recorded_by_type' => Company::class,
+            'recorded_by_id'   => $company->id,
+            'path'             => $filename,
+            'size_bytes'       => $request->file('recording')->getSize(),
+        ]);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * GET /company/calls/{callId}/recordings/{recordingId} — écoute d'un
+     * enregistrement, réservé aux appels dont la société fait partie.
+     */
+    public function playRecording(Request $request, $callId, $recordingId)
+    {
+        $call = \App\Models\Call::find($callId);
+        if (!$call || !$this->isParticipant($call)) {
+            abort(404, 'Appel introuvable.');
+        }
+
+        $recording = \App\Models\CallRecording::where('call_id', $callId)->findOrFail($recordingId);
+
+        if (!Storage::disk('local')->exists($recording->path)) {
+            abort(404, 'Enregistrement introuvable.');
+        }
+
+        return Storage::disk('local')->response($recording->path, 'appel_' . $callId . '.webm', [
+            'Content-Type' => 'audio/webm',
+        ]);
     }
 }

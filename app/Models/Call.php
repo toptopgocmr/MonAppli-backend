@@ -48,6 +48,12 @@ class Call extends Model
         return $this->morphTo();
     }
 
+    /** Enregistrements audio de cet appel (0, 1 ou 2 : un par côté). */
+    public function recordings()
+    {
+        return $this->hasMany(CallRecording::class);
+    }
+
     // ── Scopes ─────────────────────────────────────────────────────
 
     public function scopeForTrip($query, int $tripId)

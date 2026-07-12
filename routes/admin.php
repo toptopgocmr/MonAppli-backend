@@ -183,6 +183,9 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::post('calls/{callId}/end',    [AdminCallController::class, 'end'])->name('calls.end');
         Route::post('calls/{callId}/missed', [AdminCallController::class, 'missed'])->name('calls.missed');
         Route::get('calls/{callId}/token',   [AdminCallController::class, 'token'])->name('calls.token');
+        Route::get('calls/{callId}/status',  [AdminCallController::class, 'status'])->name('calls.status');
+        Route::post('calls/{callId}/recording', [AdminCallController::class, 'storeRecording'])->name('calls.recording.store');
+        Route::get('calls/{callId}/recordings/{recordingId}', [AdminCallController::class, 'playRecording'])->name('calls.recording.play');
 
         /*
         |--------------------------------------------------------------------------
