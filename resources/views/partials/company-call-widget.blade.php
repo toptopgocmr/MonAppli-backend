@@ -135,7 +135,7 @@
              serveur ("company.{id}") — l'appel ne sonnait donc jamais quand
              un AGENT société était connecté. On résout l'id via
              CompanyContext, qui gère les deux cas (compte principal + agent). --}}
-        const channel = pusher.subscribe('company.{{ \App\Support\CompanyContext::company()->id() }}');
+        const channel = pusher.subscribe('company.{{ \App\Support\CompanyContext::company()->id }}');
 
         channel.bind('call.incoming', function (data) {
             window.TTCall.showIncoming(data.call_id, data.caller_name || 'Appel entrant');
