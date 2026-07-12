@@ -29,14 +29,21 @@ class UserOutboundCallController extends Controller
 
     /**
      * POST /user/calls/outbound/initiate
-     * body: { target: 'support'|'company', trip_id?: int (requis pour 'company') }
+     * body: { target: 'support'|'company', trip_id?: int, company_id?: int }
+     * Pour 'company' : trip_id (trajet réservé) OU company_id (itinéraire
+     * publié pas encore réservé) — l'un des deux est requis.
      */
     public function initiate(Request $request)
     {
         $request->validate([
-            'target'  => 'required|in:support,company',
-            'trip_id' => 'required_if:target,company|nullable|integer',
+            'target'     => 'required|in:support,company',
+            'trip_id'    => 'nullable|integer',
+            'company_id' => 'nullable|integer',
         ]);
+
+        if ($request->target === 'company' && !$request->trip_id && !$request->company_id) {
+            return response()->json(['success' => false, 'message' => 'trip_id ou company_id requis.'], 422);
+        }
 
         /** @var User $user */
         $user = $request->user();
@@ -67,12 +74,20 @@ class UserOutboundCallController extends Controller
                 ], 503);
             }
         } else {
-            $trip = Trip::with('driver')->find($request->trip_id);
-            if (!$trip || !$trip->driver || !$trip->driver->company_id) {
-                return response()->json(['success' => false, 'message' => 'Société introuvable pour ce trajet.'], 404);
+            $tripId = null;
+
+            if ($request->trip_id) {
+                $trip = Trip::with('driver')->find($request->trip_id);
+                if (!$trip || !$trip->driver || !$trip->driver->company_id) {
+                    return response()->json(['success' => false, 'message' => 'Société introuvable pour ce trajet.'], 404);
+                }
+                $company = Company::find($trip->driver->company_id);
+                $tripId  = $trip->id;
+            } else {
+                // Itinéraire publié pas encore réservé : appel direct à la société.
+                $company = Company::find($request->company_id);
             }
 
-            $company = Company::find($trip->driver->company_id);
             if (!$company) {
                 return response()->json(['success' => false, 'message' => 'Société introuvable.'], 404);
             }
@@ -80,7 +95,7 @@ class UserOutboundCallController extends Controller
             [$call, $agora, $alreadyActive] = $this->calls->initiate(
                 User::class, $user->id, $callerName, $callerPhoto,
                 Company::class, $company->id,
-                $trip->id
+                $tripId
             );
         }
 

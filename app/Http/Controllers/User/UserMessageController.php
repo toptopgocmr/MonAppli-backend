@@ -41,9 +41,37 @@ class UserMessageController extends Controller
         'va te faire foutre', 'va te faire enculer',
     ];
 
+    // ✅ AJOUTÉ — contenu sensuel/romantique/drague (fusionné avec l'ancienne
+    // liste ROMANTIC, qui ne couvrait que "je t'aime" et le partage de numéro).
     private const ROMANTIC = [
         'je t\'aime', 'je taime', 'je vous aime', 'donne-moi ton numéro',
         'donne moi ton numero', 'ton whatsapp', 'viens chez moi',
+        'tu es belle', 'tu es beau', 'tu es sexy', 'tu me plais',
+        'tu me plait', 'on peut se voir', 'on se voit ce soir',
+        'rendez-vous amoureux', 'tu veux sortir avec moi', 'es-tu libre ce soir',
+        'je te trouve attirante', 'je te trouve attirant', 'mon coeur',
+        'ma chérie', 'mon chéri', 'bisous', 'je craque pour toi',
+        'tu me manques', 'petit ami', 'petite amie', 'sortir ensemble',
+        'câlin', 'calin',
+    ];
+
+    // ✅ AJOUTÉ — propos haineux/discriminatoires (racisme, xénophobie...).
+    private const HATEFUL = [
+        'sale race', 'sale étranger', 'sale etranger', 'rentre chez toi',
+        'rentre dans ton pays', 'retourne dans ton pays', 'sous-race',
+        'sous race', 'racaille', 'espèce de sous-race',
+        'sale noir', 'sale arabe', 'sale blanc', 'sale juif',
+        'nique ta race', 'nique ta religion',
+    ];
+
+    // ✅ AJOUTÉ — manque de respect / propos dégradants (distinct des
+    // insultes vulgaires déjà couvertes par INSULTS).
+    private const DISRESPECT = [
+        'ferme ta gueule', 'ta gueule', 'tais-toi', 'obéis', 'tu es nul',
+        'tu es nulle', 'tu ne sers à rien', 'tu ne sers a rien',
+        'moins que rien', 'bon à rien', 'bon a rien', 'incapable',
+        'tu es stupide', 'tu es débile', 'tu es debile', 'dégage',
+        'degage', 'sous-merde', 'sous merde', 'tu me fais perdre mon temps',
     ];
 
     private const OFF_PLATFORM = [
@@ -64,6 +92,8 @@ class UserMessageController extends Controller
 
         foreach (self::THREATS      as $w) { if (str_contains($t, $w)) return 'menace'; }
         foreach (self::INSULTS      as $w) { if (str_contains($t, $w)) return 'insulte'; }
+        foreach (self::HATEFUL      as $w) { if (str_contains($t, $w)) return 'propos haineux'; }
+        foreach (self::DISRESPECT   as $w) { if (str_contains($t, $w)) return 'manque de respect'; }
         foreach (self::ROMANTIC     as $w) { if (str_contains($t, $w)) return 'contenu inapproprié'; }
         foreach (self::OFF_PLATFORM as $w) { if (str_contains($t, $w)) return 'paiement hors plateforme'; }
 

@@ -184,9 +184,9 @@ class UserTripController extends Controller
                 'photo'        => $photo,
                 'company_id'   => $driver->company_id ?? null,
                 'company_name' => $driver->company?->name ?? null,
-                // Pour un trajet société ("Courses Sociétés"), le client contacte
-                // la société via son numéro professionnel — pas le chauffeur individuel.
-                'company_phone' => $driver->company?->phone ?? null,
+                // ⚠️ Numéro de la société volontairement absent : pour un trajet
+                // société ("Courses Sociétés"), le client contacte la société
+                // uniquement via l'appel in-app — aucun numéro brut n'est transmis.
                 'company_logo' => $driver->company?->logo
                     ? (str_starts_with($driver->company->logo, 'http')
                         ? $driver->company->logo

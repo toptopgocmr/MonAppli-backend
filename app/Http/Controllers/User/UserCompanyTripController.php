@@ -55,10 +55,11 @@ class UserCompanyTripController extends Controller
             'duration_min'    => $i->duration_min,
             'vehicle_type'    => $i->vehicle_type,
             'notes'           => $i->notes,
+            // ⚠️ Numéro de la société volontairement absent : le client contacte
+            // la société uniquement via l'appel in-app — aucun numéro brut transmis.
             'company'         => $company ? [
                 'id'    => $company->id,
                 'name'  => $company->name,
-                'phone' => $company->phone,
                 'logo'  => $company->logo
                     ? (str_starts_with($company->logo, 'http') ? $company->logo : url('storage/' . $company->logo))
                     : null,
