@@ -18,6 +18,24 @@
 </div>
 @endif
 
+{{-- ✅ Toast flottant en plus du bandeau ci-dessus : le bandeau est en
+     haut de page et peut passer inaperçu (formulaire de retrait tout en
+     bas de la colonne de droite). Le toast reste visible à l'écran
+     n'importe où on se trouve après l'envoi de la demande. --}}
+@if(session('success') || session('error') || $errors->any())
+<div id="w-toast" style="position:fixed;top:20px;right:20px;z-index:9999;max-width:360px;
+    padding:14px 18px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,.18);
+    {{ session('success') ? 'background:#1d8102;color:#fff;' : 'background:#d13212;color:#fff;' }}">
+    {{ session('success') ?? session('error') ?? $errors->first() }}
+</div>
+<script>
+    setTimeout(function () {
+        const t = document.getElementById('w-toast');
+        if (t) { t.style.transition = 'opacity .4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }
+    }, 4500);
+</script>
+@endif
+
 <!-- KPI -->
 <div class="aws-stat-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:16px">
     <div class="aws-stat-card" style="border-top:3px solid #687078">
