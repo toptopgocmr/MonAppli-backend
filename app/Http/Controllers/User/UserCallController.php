@@ -19,7 +19,7 @@ class UserCallController extends Controller
     private function pusher(): Pusher
     {
         return new Pusher(
-            env('PUSHER_APP_KEY',    'b936f5c8f1666939a7fa'),
+            env('PUSHER_APP_KEY',    'b3f32e17cb1b81e87214'),
             env('PUSHER_APP_SECRET', ''),
             env('PUSHER_APP_ID',     ''),
             ['cluster' => env('PUSHER_APP_CLUSTER', 'eu'), 'useTLS' => true]
