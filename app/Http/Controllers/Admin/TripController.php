@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Trip;
 use Illuminate\Http\Request;
 
@@ -10,7 +11,11 @@ class TripController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Trip::with(['driver', 'vehicle', 'bookings'])->latest();
+        // ✅ FIX : une réservation ne doit apparaître dans le détail d'un
+        // trajet (admin) que si le paiement client a été confirmé —
+        // Booking::scopePaid(). Avant ce fix, toutes les réservations
+        // (y compris 'pending', jamais payées) étaient chargées.
+        $query = Trip::with(['driver', 'vehicle', 'bookings' => fn ($q) => $q->paid()])->latest();
 
         // ✅ Recherche départ séparé
         if ($request->filled('departure')) {
@@ -71,13 +76,13 @@ class TripController extends Controller
 
     public function detail($id)
     {
-        $trip = Trip::with(['driver', 'bookings.user'])->findOrFail($id);
+        $trip = Trip::with(['driver', 'bookings' => fn ($q) => $q->paid()->with('user')])->findOrFail($id);
         return response()->json(['data' => $trip->load('driver')]);
     }
 
     public function show($id)
     {
-        $trip = Trip::with(['driver', 'vehicle', 'bookings.user'])->findOrFail($id);
+        $trip = Trip::with(['driver', 'vehicle', 'bookings' => fn ($q) => $q->paid()->with('user')])->findOrFail($id);
         return view('admin.trips.show', compact('trip'));
     }
 

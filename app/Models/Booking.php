@@ -49,4 +49,38 @@ class Booking extends Model
     {
         return $this->hasOne(Payment::class);
     }
+
+    /**
+     * ✅ Source de vérité unique pour "cette réservation a été payée".
+     *
+     * Le statut `status` seul ne suffit pas : une fois payée, le chauffeur
+     * peut confirmer la réservation (`status` passe alors à 'confirmed',
+     * pas 'paid'), donc on ne peut pas se fier uniquement à
+     * `status === 'paid'` après ce point. On vérifie donc AUSSI la relation
+     * `payment` (mise à jour par le webhook Peex/Flutterwave ou le polling
+     * client — voir WebhookController::applyPeexStatus() et
+     * UserPaymentController::status()).
+     */
+    public function isPaid(): bool
+    {
+        if ($this->status === self::STATUS_PAID || $this->status === self::STATUS_COMPLETED) {
+            return true;
+        }
+
+        return $this->payment()->where('status', 'success')->exists();
+    }
+
+    /**
+     * Scope : ne garder que les réservations réellement payées.
+     * Utilisé partout où une réservation ne doit être visible/actionnable
+     * qu'après paiement confirmé côté client (app chauffeur, dashboards
+     * société et admin).
+     */
+    public function scopePaid($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereIn('status', [self::STATUS_PAID, self::STATUS_COMPLETED])
+              ->orWhereHas('payment', fn ($p) => $p->where('status', 'success'));
+        });
+    }
 }

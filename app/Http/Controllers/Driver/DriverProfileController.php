@@ -7,7 +7,7 @@ use App\Http\Requests\Driver\UpdateDocumentsRequest;
 use App\Http\Resources\Driver\DriverResource;
 use App\Services\FileUploadService;
 use Illuminate\Http\Request;
-use App\Models\Review;
+use App\Models\Rating;
 use App\Models\VehicleType;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,11 +19,17 @@ class DriverProfileController extends Controller
     {
         $driver = $request->user()->load('wallet', 'latestLocation');
 
-        $reviews = Review::where('driver_id', $driver->id)
+        // ✅ FIX : App\Models\Review n'existe pas dans ce projet (classe
+        // inexistante → erreur 500 "Class not found" à chaque appel).
+        // Le vrai modèle pour les notes chauffeur est App\Models\Rating
+        // (champs driver_rating / driver_comment — voir DriverRatingController).
+        $reviews = Rating::where('driver_id', $driver->id)
+            ->whereNotNull('driver_rating')
+            ->with('user')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $avgRating = $reviews->avg('rating') ?? 0;
+        $avgRating = $reviews->avg('driver_rating') ?? 0;
 
         return response()->json([
             'success' => true,
@@ -59,11 +65,11 @@ class DriverProfileController extends Controller
                 // ✅ 10 derniers avis avec nom du client
                 'reviews' => $reviews->take(10)->map(fn($r) => [
                     'id'          => $r->id,
-                    'rating'      => $r->rating,
-                    'comment'     => $r->comment ?? '',
+                    'rating'      => $r->driver_rating,
+                    'comment'     => $r->driver_comment ?? '',
                     'client_name' => $r->user
                         ? trim(($r->user->first_name ?? '') . ' ' . ($r->user->last_name ?? ''))
-                        : ($r->client_name ?? 'Client'),
+                        : 'Client',
                     'created_at'  => $r->created_at,
                 ]),
             ]

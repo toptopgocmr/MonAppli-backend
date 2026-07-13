@@ -232,9 +232,14 @@ class DriverTripController extends Controller
     }
 
     // ── Réservations du chauffeur ─────────────────────────────────────────
+    // ✅ FIX : une réservation ne doit être visible côté chauffeur qu'une
+    // fois le paiement client confirmé (Booking::scopePaid — voir le modèle
+    // pour le détail). Avant ce fix, TOUTES les réservations (y compris
+    // 'pending', jamais payées) apparaissaient ici.
     public function bookings(Request $request)
     {
         $query = Booking::whereHas('trip', fn($q) => $q->where('driver_id', Auth::id()))
+            ->paid()
             ->with(['trip', 'user'])
             ->orderBy('created_at', 'desc');
         if ($request->trip_id) $query->where('trip_id', $request->trip_id);
@@ -245,10 +250,19 @@ class DriverTripController extends Controller
     }
 
     // ── Confirmer une réservation ─────────────────────────────────────────
+    // ✅ FIX : impossible de confirmer une réservation qui n'a pas encore
+    // été payée par le client — avant ce fix, aucune vérification de
+    // paiement n'était faite ici.
     public function confirmBooking($id)
     {
         $booking = Booking::whereHas('trip', fn($q) => $q->where('driver_id', Auth::id()))->find($id);
         if (!$booking) return response()->json(['success' => false, 'message' => 'Introuvable'], 404);
+        if (!$booking->isPaid()) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cette réservation n'a pas encore été payée par le client.",
+            ], 422);
+        }
         $booking->update(['status' => 'confirmed']);
         Trip::where('id', $booking->trip_id)
             ->decrement('available_seats', (int) ($booking->seats ?? $booking->passengers ?? 1));
