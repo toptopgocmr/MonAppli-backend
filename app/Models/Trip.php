@@ -14,6 +14,10 @@ class Trip extends Model
 
     protected $fillable = [
         'driver_id', 'user_id',
+        // ✅ Trajets issus d'un itinéraire société réservé côté client avant
+        // qu'un chauffeur ne soit assigné — voir migration
+        // 2026_07_13_000002_make_driver_id_nullable_add_company_ref_to_trips.
+        'company_id', 'company_itinerary_id',
         'departure', 'pickup_address', 'pickup_point', 'departure_city',
         'pickup_lat', 'pickup_lng',
         'destination', 'dropoff_address', 'dropoff_point', 'destination_city',
@@ -82,6 +86,19 @@ class Trip extends Model
     public function bookings()
     {
         return $this->hasMany(Booking::class);
+    }
+
+    // Société d'origine (renseigné dès la création, même avant attribution
+    // d'un chauffeur — voir UserCompanyTripController::book()).
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
+    }
+
+    // Itinéraire programmé à l'origine de ce trajet, le cas échéant.
+    public function companyItinerary()
+    {
+        return $this->belongsTo(CompanyItinerary::class);
     }
 
     // relation messages client ↔ chauffeur

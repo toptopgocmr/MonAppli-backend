@@ -100,6 +100,11 @@
                 </div>
             </div>
             <div class="aws-field">
+                <label class="aws-label">Places disponibles</label>
+                <input type="number" name="seats" value="{{ old('seats', $itinerary->seats ?? 4) }}" min="1" max="60" class="aws-input" style="max-width:160px">
+                <p class="aws-hint">Nombre de places qu'un client peut réserver et payer directement dans l'app sur cet itinéraire.</p>
+            </div>
+            <div class="aws-field">
                 <label class="aws-label">Type de véhicule</label>
                 <select name="vehicle_type" id="vehicle_type_select" class="aws-input" style="max-width:260px">
                     <option value="">— Tous types —</option>

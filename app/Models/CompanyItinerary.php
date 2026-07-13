@@ -24,6 +24,7 @@ class CompanyItinerary extends Model
         'distance_km',
         'duration_min',
         'vehicle_type',
+        'seats',
         'is_active',
         'notes',
     ];
@@ -32,6 +33,7 @@ class CompanyItinerary extends Model
         'price'       => 'decimal:2',
         'distance_km' => 'decimal:2',
         'is_active'   => 'boolean',
+        'seats'       => 'integer',
     ];
 
     public function company()
@@ -42,5 +44,12 @@ class CompanyItinerary extends Model
     public function pricingGrid()
     {
         return $this->belongsTo(PricingGrid::class, 'pricing_grid_id');
+    }
+
+    // Trajets concrets générés à partir de cet itinéraire quand des clients
+    // réservent (un par date) — voir UserCompanyTripController::book().
+    public function trips()
+    {
+        return $this->hasMany(Trip::class);
     }
 }

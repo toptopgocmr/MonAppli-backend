@@ -261,8 +261,11 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     Route::get('trips',      [UserTripController::class, 'index'])->name('trips.index');
     Route::get('trips/{id}', [UserTripController::class, 'show'])->name('trips.show');
 
-    // ── Trajets sociétés (itinéraires publiés, contact direct société) ──
-    Route::get('company-trips', [UserCompanyTripController::class, 'index'])->name('company-trips.index');
+    // ── Trajets sociétés (itinéraires publiés) ──────────────────────
+    Route::get('company-trips',           [UserCompanyTripController::class, 'index'])->name('company-trips.index');
+    // ✅ Réservation instantanée d'un itinéraire programmé (choisir → payer,
+    // même circuit que le covoiturage) — voir UserCompanyTripController::book().
+    Route::post('company-trips/{id}/book', [UserCompanyTripController::class, 'book'])->name('company-trips.book');
 
     // ── Réservations ──────────────────────────────────────────────
     Route::get('bookings',              [UserBookingController::class, 'index'])->name('bookings.index');

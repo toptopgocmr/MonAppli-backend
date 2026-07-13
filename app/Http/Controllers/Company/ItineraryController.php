@@ -67,6 +67,7 @@ class ItineraryController extends Controller
             'duration_min'    => 'nullable|integer|min:0',
             'vehicle_type'    => 'nullable|string|max:50',
             'new_vehicle_type'=> 'nullable|string|max:50',
+            'seats'           => 'nullable|integer|min:1|max:60',
             'notes'           => 'nullable|string|max:500',
         ]);
 
@@ -95,6 +96,7 @@ class ItineraryController extends Controller
             'distance_km'     => $distanceKm,
             'duration_min'    => $durationMin,
             'vehicle_type'    => $this->resolveVehicleType($request, $company->id),
+            'seats'           => $request->seats ?: 4,
             'is_active'       => true,
             'notes'           => $request->notes,
         ]);
@@ -134,6 +136,7 @@ class ItineraryController extends Controller
             'duration_min'    => 'nullable|integer|min:0',
             'vehicle_type'    => 'nullable|string|max:50',
             'new_vehicle_type'=> 'nullable|string|max:50',
+            'seats'           => 'nullable|integer|min:1|max:60',
             'notes'           => 'nullable|string|max:500',
         ]);
 
@@ -156,7 +159,7 @@ class ItineraryController extends Controller
             $request->only([
                 'departure','departure_point','departure_time',
                 'destination','arrival_point','arrival_time',
-                'price','notes',
+                'price','notes','seats',
             ]),
             [
                 'pricing_grid_id' => $gridId,

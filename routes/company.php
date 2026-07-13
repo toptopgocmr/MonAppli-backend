@@ -69,6 +69,7 @@ Route::prefix('company')->name('company.')->group(function () {
         Route::middleware('company.permission:reservations')->group(function () {
             Route::get('/reservations',       [ReservationController::class, 'index'])->name('reservations.index');
             Route::get('/reservations/{id}',  [ReservationController::class, 'show'])->name('reservations.show');
+            Route::post('/reservations/{tripId}/assign-driver', [ReservationController::class, 'assignDriver'])->name('reservations.assign-driver');
         });
 
         // Grilles tarifaires

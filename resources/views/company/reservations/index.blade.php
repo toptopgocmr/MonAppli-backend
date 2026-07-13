@@ -6,6 +6,66 @@
 <div class="aws-crumb"><a href="{{ route('company.dashboard') }}">Dashboard</a> › Réservations</div>
 <div class="aws-page-title" style="margin-bottom:16px">Réservations & Courses</div>
 
+@if(session('success'))
+<div class="aws-alert aws-alert-success" style="margin-bottom:16px">{{ session('success') }}</div>
+@endif
+
+@if($pendingAssignment->isNotEmpty())
+<div class="aws-panel" style="margin-bottom:20px;border-color:#f0ad4e">
+    <div class="aws-panel-header" style="background:#fff8e6">
+        <span class="aws-panel-title">⏳ Trajets à assigner à un chauffeur</span>
+        <span style="font-size:12px;color:var(--aws-sub)">{{ $pendingAssignment->count() }} trajet(s) — client(s) déjà payé(s)</span>
+    </div>
+    <div style="overflow-x:auto">
+        <table class="aws-table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Départ → Arrivée</th>
+                    <th>Date / Heure</th>
+                    <th>Places réservées (payées)</th>
+                    <th>Chauffeur</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($pendingAssignment as $trip)
+                @php
+                    $paidSeats = $trip->bookings->sum(fn($b) => $b->seats ?? $b->passengers ?? 1);
+                @endphp
+                <tr>
+                    <td style="font-family:monospace;color:var(--aws-sub)">#{{ $trip->id }}</td>
+                    <td>
+                        <span style="font-size:13px;color:var(--aws-header)">
+                            {{ \Illuminate\Support\Str::limit($trip->departure ?? '—', 22) }}
+                            <span style="color:var(--aws-sub);margin:0 3px">→</span>
+                            {{ \Illuminate\Support\Str::limit($trip->destination ?? '—', 22) }}
+                        </span>
+                    </td>
+                    <td style="font-size:12px;color:var(--aws-sub)">
+                        {{ $trip->departure_date ? \Carbon\Carbon::parse($trip->departure_date)->format('d/m/Y') : '—' }}
+                        {{ $trip->departure_time ? substr($trip->departure_time, 0, 5) : '' }}
+                    </td>
+                    <td style="font-weight:700;color:#0073bb">{{ $paidSeats }} / {{ $trip->total_seats ?? $trip->available_seats }}</td>
+                    <td>
+                        <form method="POST" action="{{ route('company.reservations.assign-driver', $trip->id) }}" style="display:flex;gap:6px;align-items:center">
+                            @csrf
+                            <select name="driver_id" class="aws-input" style="width:200px" required>
+                                <option value="">— Choisir un chauffeur —</option>
+                                @foreach($companyDrivers as $d)
+                                    <option value="{{ $d->id }}">{{ $d->first_name }} {{ $d->last_name }}{{ $d->vehicle_type ? ' — '.$d->vehicle_type : '' }}</option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="aws-btn aws-btn-primary" style="padding:6px 12px;font-size:12px">Assigner</button>
+                        </form>
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+</div>
+@endif
+
 <div class="aws-panel">
     <div style="padding:12px 20px;border-bottom:1px solid var(--aws-border);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:#fafafa;border-radius:4px 4px 0 0">
         <form method="GET" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
