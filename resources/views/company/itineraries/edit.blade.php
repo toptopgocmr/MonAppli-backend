@@ -142,14 +142,7 @@
 <script>
 // ── Référence tarifs de la grille sélectionnée (remplissage manuel du prix) ──
 (function () {
-    const grids = @json($pricingGrids->map(fn($g) => [
-        'id' => $g->id,
-        'rates' => $g->rates->map(fn($r) => [
-            'label' => $r->label,
-            'vehicle_type' => $r->vehicle_type,
-            'price' => (float) $r->price,
-        ]),
-    ]));
+    const grids = @json($pricingGridsForJs);
 
     const select = document.getElementById('pricing_grid_id');
     const box    = document.getElementById('grid-rates-ref');

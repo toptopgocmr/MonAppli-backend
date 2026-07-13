@@ -47,7 +47,13 @@ class ItineraryController extends Controller
                                    ->get();
         $vehicleTypes = VehicleType::activeNames();
 
-        return view('company.itineraries.create', compact('pricingGrids', 'vehicleTypes'));
+        // ✅ FIX : pré-calculée ici plutôt que via un closure imbriqué dans
+        // @json(...) côté vue — Blade échouait à compiler ce directive multi-
+        // lignes ("ParseError: Unclosed '[' ... does not match ')'"), un bug
+        // latent révélé dès que le fichier .blade.php était recompilé.
+        $pricingGridsForJs = $this->pricingGridsForJs($pricingGrids);
+
+        return view('company.itineraries.create', compact('pricingGrids', 'vehicleTypes', 'pricingGridsForJs'));
     }
 
     public function store(Request $request)
@@ -114,8 +120,9 @@ class ItineraryController extends Controller
                                    ->with('rates')
                                    ->get();
         $vehicleTypes = VehicleType::activeNames();
+        $pricingGridsForJs = $this->pricingGridsForJs($pricingGrids);
 
-        return view('company.itineraries.edit', compact('itinerary', 'pricingGrids', 'vehicleTypes'));
+        return view('company.itineraries.edit', compact('itinerary', 'pricingGrids', 'vehicleTypes', 'pricingGridsForJs'));
     }
 
     public function update(Request $request, $id)
@@ -171,6 +178,21 @@ class ItineraryController extends Controller
 
         return redirect()->route('company.itineraries.index')
                          ->with('success', 'Itinéraire mis à jour.');
+    }
+
+    // Forme JS-friendly des grilles tarifaires pour le script de référence
+    // des tarifs (voir create.blade.php / edit.blade.php) — extrait ici pour
+    // éviter un closure imbriqué dans @json(...) côté vue (voir create()).
+    private function pricingGridsForJs($pricingGrids): array
+    {
+        return $pricingGrids->map(fn ($g) => [
+            'id' => $g->id,
+            'rates' => $g->rates->map(fn ($r) => [
+                'label' => $r->label,
+                'vehicle_type' => $r->vehicle_type,
+                'price' => (float) $r->price,
+            ]),
+        ])->all();
     }
 
     // Calcule automatiquement la distance (km) et la durée (min) du trajet à
