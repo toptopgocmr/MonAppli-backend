@@ -24,7 +24,10 @@ class Trip extends Model
         'dropoff_lat', 'dropoff_lng',
         'departure_date', 'departure_time', 'arrival_time',
         'price_per_seat', 'amount', 'commission', 'driver_net',
-        'available_seats', 'total_seats',
+        // ⚠️ Pas de 'total_seats' : cette colonne n'existe pas en DB (jamais
+        // migrée) — DriverTripController la renvoie uniquement comme valeur
+        // CALCULÉE dans le JSON, jamais comme colonne à écrire.
+        'available_seats',
         'luggage_included', 'luggage_kg', 'luggage_weight_kg',
         'extra_luggage_fee', 'extra_luggage_slots',
         'vehicle_type', 'distance_km',

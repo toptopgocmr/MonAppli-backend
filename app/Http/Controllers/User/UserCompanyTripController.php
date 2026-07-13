@@ -96,8 +96,11 @@ class UserCompanyTripController extends Controller
                 'arrival_time'          => $itinerary->arrival_time,
                 'price_per_seat'        => $itinerary->price,
                 'amount'                => $itinerary->price,
+                // ⚠️ Pas de 'total_seats' ici : la colonne n'existe pas dans la
+                // table trips (elle n'est jamais retournée que côté API par
+                // DriverTripController comme valeur calculée, jamais en DB) —
+                // l'écrire ici provoquait une 500 "Unknown column 'total_seats'".
                 'available_seats'       => $capacity,
-                'total_seats'           => $capacity,
                 'vehicle_type'          => $itinerary->vehicle_type,
                 'distance_km'           => $itinerary->distance_km,
                 'status'                => 'pending',
