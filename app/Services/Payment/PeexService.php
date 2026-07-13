@@ -99,6 +99,16 @@ class PeexService implements PaymentProviderInterface
             return 'Solde insuffisant sur votre compte mobile money pour effectuer ce paiement.';
         }
 
+        // ✅ FIX : MTN (notamment MTN Congo) renvoie souvent le code générique
+        // "OPERATOR_SYSTEM_ERROR" alors que la cause réelle constatée en
+        // pratique est un solde insuffisant sur le compte Mobile Money du
+        // client. On affiche donc un message qui pointe vers cette cause la
+        // plus probable plutôt que le code technique brut, tout en restant
+        // honnête sur le fait que ça peut aussi être une erreur opérateur.
+        if (str_contains($normalized, 'operator_system_error') || str_contains($normalized, 'operator system error')) {
+            return 'Paiement refusé par l\'opérateur (le plus souvent lié à un solde Mobile Money insuffisant). Vérifiez votre solde et réessayez, ou contactez votre opérateur si le problème persiste.';
+        }
+
         if (str_contains($normalized, 'timeout') || str_contains($normalized, 'expired') || str_contains($normalized, 'expir')) {
             return 'Le délai de confirmation a expiré. Veuillez réessayer.';
         }
