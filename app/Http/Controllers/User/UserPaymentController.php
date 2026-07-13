@@ -174,6 +174,9 @@ class UserPaymentController extends Controller
                     'country'      => $countryCode,
                     'amount'       => $booking->amount,
                     'raw_response' => $result['data'] ?? null,
+                    'http_status'  => $result['http_status'] ?? null,
+                    'raw_body'     => $result['raw_body'] ?? null,
+                    'endpoint'     => $result['endpoint'] ?? null,
                 ]);
 
                 $payment->update(['status' => 'failed']);

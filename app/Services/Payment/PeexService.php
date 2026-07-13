@@ -209,10 +209,19 @@ class PeexService implements PaymentProviderInterface
                 ];
             }
 
+            // ✅ FIX diagnostic : response()->json() renvoie silencieusement
+            // null si le corps n'est pas du JSON valide (page d'erreur HTML,
+            // corps vide, blocage WAF/proxy...) — on perdait alors toute
+            // information exploitable ("raw_response": null dans les logs).
+            // On capture donc aussi le statut HTTP et le corps BRUT ici.
             return [
                 'success' => false,
                 'error' => $this->errorMessage($response, 'Collection request failed'),
                 'data' => $response->json(),
+                'http_status' => $response->status(),
+                'raw_body' => $response->body(),
+                'request_sent' => $payload,
+                'endpoint' => $this->baseUrl . 'collection/request_payment',
             ];
         } catch (Exception $e) {
             Log::error('Peex collect error: ' . $e->getMessage());
