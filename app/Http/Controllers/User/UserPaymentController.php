@@ -162,10 +162,18 @@ class UserPaymentController extends Controller
             }
 
             if (!$result['success']) {
+                // ✅ On loggue aussi la réponse BRUTE du fournisseur (result['data']),
+                // pas seulement le message d'erreur générique — celui-ci retombe
+                // souvent sur un fallback ("Collection request failed") qui ne dit
+                // rien du vrai motif de rejet côté Peex/Flutterwave.
                 Log::error('UserPaymentController::mobileMoney error', [
-                    'gateway'    => $gateway,
-                    'booking_id' => $booking->id,
-                    'error'      => $result['error'] ?? 'unknown',
+                    'gateway'      => $gateway,
+                    'booking_id'   => $booking->id,
+                    'error'        => $result['error'] ?? 'unknown',
+                    'phone_sent'   => $request->phone,
+                    'country'      => $countryCode,
+                    'amount'       => $booking->amount,
+                    'raw_response' => $result['data'] ?? null,
                 ]);
 
                 $payment->update(['status' => 'failed']);
