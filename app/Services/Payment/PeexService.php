@@ -187,7 +187,7 @@ class PeexService implements PaymentProviderInterface
 
             $payload = [
                 'track_id' => $trackId,
-                'phone' => $this->normalizePhone($data['phone'] ?? ''),
+                'phone' => $this->normalizePhone($data['phone'] ?? '', $data['country'] ?? null),
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'XAF',
                 'customer_name' => $data['customer_name'] ?? 'Client TopTopGo',
@@ -285,11 +285,11 @@ class PeexService implements PaymentProviderInterface
      * Verify a mobile phone number before collecting/paying.
      * POST /clients/verify_phoneNumber
      */
-    public function verifyPhone(string $phone, ?string $operator = null): array
+    public function verifyPhone(string $phone, ?string $operator = null, ?string $country = null): array
     {
         try {
             $response = $this->client()->post($this->baseUrl . 'clients/verify_phoneNumber', [
-                'mobile_phone' => $this->normalizePhone($phone),
+                'mobile_phone' => $this->normalizePhone($phone, $country),
             ]);
 
             if ($response->successful()) {
@@ -324,7 +324,7 @@ class PeexService implements PaymentProviderInterface
 
             $payload = [
                 'track_id' => $trackId,
-                'mobile_phone' => $this->normalizePhone($data['phone'] ?? ''),
+                'mobile_phone' => $this->normalizePhone($data['phone'] ?? '', $data['country'] ?? null),
                 'amount' => $data['amount'],
                 'currency' => $data['currency'] ?? 'XAF',
                 'sender_first_name' => $data['sender_first_name'] ?? 'TopTopGo',
@@ -475,18 +475,60 @@ class PeexService implements PaymentProviderInterface
     }
 
     /**
-     * Phone numbers must be E.164 (e.g. +237677777777), no spaces/dashes.
+     * Indicatif téléphonique international par pays (zone CEMAC couverte par
+     * Peex — voir supportedCollectCountries()/supportedDisbursementCountries()).
      */
-    protected function normalizePhone(string $phone): string
+    protected function callingCode(string $country): string
+    {
+        return match (strtoupper($country)) {
+            'CM' => '237', // Cameroun
+            'CG' => '242', // Congo-Brazzaville
+            'GA' => '241', // Gabon
+            'TD' => '235', // Tchad
+            'CF' => '236', // Centrafrique
+            'GQ' => '240', // Guinée équatoriale
+            default => '237',
+        };
+    }
+
+    /**
+     * Phone numbers must be E.164 (e.g. +237677777777), no spaces/dashes.
+     *
+     * ✅ FIX : cette méthode ne faisait QUE retirer le "0" initial et ajouter
+     * un "+" — elle ne préfixait JAMAIS l'indicatif du pays. Un numéro saisi
+     * localement ("068829797" pour le Congo) devenait donc "+68829797", un
+     * numéro E.164 invalide, systématiquement rejeté par Peex ("Collection
+     * request failed" / 400 sur /user/payments/mobile-money). On préfixe
+     * maintenant réellement l'indicatif correspondant au pays transmis par
+     * l'app (Congo/Cameroun/etc.).
+     */
+    protected function normalizePhone(string $phone, ?string $country = null): string
     {
         $phone = trim($phone);
         $digits = preg_replace('/[^0-9+]/', '', $phone);
 
-        if (!str_starts_with($digits, '+')) {
-            $digits = '+' . ltrim($digits, '0');
+        // Déjà en E.164 (le client a saisi le "+indicatif...") : on garde tel quel.
+        if (str_starts_with($digits, '+')) {
+            return $digits;
         }
 
-        return $digits;
+        // Format international "00" (ex: 00242068829797).
+        if (str_starts_with($digits, '00')) {
+            return '+' . substr($digits, 2);
+        }
+
+        $callingCode = $this->callingCode($country ?: 'CM');
+
+        // Retirer le(s) zéro(s) initial(aux) du format local (068829797 -> 68829797).
+        $local = ltrim($digits, '0');
+
+        // Éviter de dupliquer l'indicatif si l'utilisateur l'a déjà saisi sans "+"
+        // (ex: 242068829797).
+        if (str_starts_with($local, $callingCode)) {
+            return '+' . $local;
+        }
+
+        return '+' . $callingCode . $local;
     }
 
     /**
