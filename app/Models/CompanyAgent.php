@@ -56,9 +56,17 @@ class CompanyAgent extends Authenticatable
         return $this->role === 'directeur_general';
     }
 
+    // ✅ FIX : renommé depuis can() — CompanyAgent étend Authenticatable, qui
+    // définit déjà can($abilities, $arguments = []) pour l'autorisation
+    // Laravel standard (Gates/Policies). Redéfinir can() avec une signature
+    // incompatible (string $permissionKey): bool provoquait une
+    // Symfony\Component\ErrorHandler\Error\FatalError dès que la classe
+    // CompanyAgent était chargée — cassant /company/agents et potentiellement
+    // toute page société utilisant un agent connecté.
+    //
     // Le Directeur Général a toujours un accès complet, quelles que soient
     // les cases cochées à la création (décision produit).
-    public function can(string $permissionKey): bool
+    public function hasPermission(string $permissionKey): bool
     {
         if ($this->isDirecteurGeneral()) {
             return true;

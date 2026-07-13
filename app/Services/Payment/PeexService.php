@@ -503,13 +503,15 @@ class PeexService implements PaymentProviderInterface
     /**
      * Phone numbers must be E.164 (e.g. +237677777777), no spaces/dashes.
      *
-     * ✅ FIX : cette méthode ne faisait QUE retirer le "0" initial et ajouter
-     * un "+" — elle ne préfixait JAMAIS l'indicatif du pays. Un numéro saisi
-     * localement ("068829797" pour le Congo) devenait donc "+68829797", un
-     * numéro E.164 invalide, systématiquement rejeté par Peex ("Collection
-     * request failed" / 400 sur /user/payments/mobile-money). On préfixe
-     * maintenant réellement l'indicatif correspondant au pays transmis par
-     * l'app (Congo/Cameroun/etc.).
+     * ✅ FIX v2 : la v1 retirait le "0" initial du numéro local avant de
+     * préfixer l'indicatif, sur l'hypothèse (fausse) que c'est un préfixe de
+     * tronc à jeter. Confirmé en production par la réponse EXPLICITE de Peex
+     * (HTTP 403) : "Congo phone number must have 9 digits!" /
+     * "Cameroon phone number must have 9 digits!" — un numéro local saisi à
+     * 9 chiffres (ex: "067621919") devenait 8 chiffres une fois le 0 retiré
+     * ("67621919"), et Peex rejetait systématiquement la requête. On ne
+     * retire donc plus ce 0 : le numéro local est envoyé tel quel (9
+     * chiffres) après l'indicatif pays.
      */
     protected function normalizePhone(string $phone, ?string $country = null): string
     {
@@ -521,23 +523,22 @@ class PeexService implements PaymentProviderInterface
             return $digits;
         }
 
-        // Format international "00" (ex: 00242068829797).
+        // Format international "00" (ex: 00242067621919).
         if (str_starts_with($digits, '00')) {
             return '+' . substr($digits, 2);
         }
 
         $callingCode = $this->callingCode($country ?: 'CM');
 
-        // Retirer le(s) zéro(s) initial(aux) du format local (068829797 -> 68829797).
-        $local = ltrim($digits, '0');
-
         // Éviter de dupliquer l'indicatif si l'utilisateur l'a déjà saisi sans "+"
-        // (ex: 242068829797).
-        if (str_starts_with($local, $callingCode)) {
-            return '+' . $local;
+        // (ex: 242067621919).
+        if (str_starts_with($digits, $callingCode)) {
+            return '+' . $digits;
         }
 
-        return '+' . $callingCode . $local;
+        // ⚠️ Ne PAS retirer le 0 initial — Peex exige que le numéro local
+        // garde ses 9 chiffres (voir note ci-dessus).
+        return '+' . $callingCode . $digits;
     }
 
     /**

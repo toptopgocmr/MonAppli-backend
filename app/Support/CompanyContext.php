@@ -50,6 +50,6 @@ class CompanyContext
             return true;
         }
 
-        return $agent->can($permissionKey);
+        return $agent->hasPermission($permissionKey);
     }
 }
