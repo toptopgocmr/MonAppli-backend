@@ -16,10 +16,16 @@ class UserAuthController extends Controller
     // ── Inscription ───────────────────────────────────────────────
     public function register(Request $request)
     {
+        // ✅ FIX : 'email' n'était jamais validé pour l'unicité alors que
+        // users.email a une contrainte UNIQUE en base — un email déjà pris
+        // provoquait une PDOException 500 brute au lieu d'une erreur de
+        // validation propre (ex: "testuser@example.com" utilisé par
+        // plusieurs comptes de test).
         $request->validate([
             'first_name' => 'required|string|max:100',
             'last_name'  => 'required|string|max:100',
             'phone'      => 'required|string|unique:users,phone',
+            'email'      => 'nullable|email|unique:users,email',
             'country'    => 'required|string',
             'city'       => 'required|string',
             'password'   => 'required|string|min:6',

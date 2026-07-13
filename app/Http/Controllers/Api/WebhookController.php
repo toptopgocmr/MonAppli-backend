@@ -127,7 +127,7 @@ class WebhookController extends Controller
                 continue;
             }
 
-            $this->applyPeexStatus($payment, $normalized['status']);
+            $this->applyPeexStatus($payment, $normalized['status'], $normalized['reason'] ?? null);
             $processed++;
         }
 
@@ -167,7 +167,7 @@ class WebhookController extends Controller
      * to a Payment row, mirroring what UserPaymentController::status() does
      * when polling.
      */
-    protected function applyPeexStatus(Payment $payment, string $status): void
+    protected function applyPeexStatus(Payment $payment, string $status, ?string $reason = null): void
     {
         if ($payment->status === 'success') {
             return; // already finalized, avoid double-processing
@@ -186,7 +186,9 @@ class WebhookController extends Controller
                 PaymentValidated::dispatch($booking->load('trip'));
             }
         } elseif (in_array($status, ['failed', 'cancelled'], true)) {
-            $payment->update(['status' => $status]);
+            // ✅ FIX : on garde la vraie raison Peex (ex: "Solde insuffisant...")
+            // au lieu de laisser l'app client afficher un message générique.
+            $payment->update(['status' => $status, 'failure_reason' => $reason]);
         }
         // 'pending' → nothing to do, still waiting.
     }

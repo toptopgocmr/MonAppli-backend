@@ -179,11 +179,14 @@ class UserPaymentController extends Controller
                     'endpoint'     => $result['endpoint'] ?? null,
                 ]);
 
-                $payment->update(['status' => 'failed']);
+                $rawError = $result['error'] ?? 'Erreur lors de l\'initiation du paiement Mobile Money.';
+                $humanized = $usePeex ? ($this->peex->humanizeFailureReason($rawError) ?? $rawError) : $rawError;
+
+                $payment->update(['status' => 'failed', 'failure_reason' => $humanized]);
 
                 return response()->json([
                     'success' => false,
-                    'message' => $result['error'] ?? 'Erreur lors de l\'initiation du paiement Mobile Money.',
+                    'message' => $humanized,
                 ], 400);
             }
 
@@ -267,7 +270,13 @@ class UserPaymentController extends Controller
                         PaymentValidated::dispatch($booking->load('trip'));
                     }
                 } elseif (in_array($newStatus, ['failed', 'cancelled'], true)) {
-                    $payment->update(['status' => $newStatus]);
+                    // ✅ FIX : capturer la vraie raison Peex (ex: solde insuffisant)
+                    // renvoyée par getTransactionStatus() au lieu du message
+                    // générique affiché jusqu'ici côté app client.
+                    $payment->update([
+                        'status'         => $newStatus,
+                        'failure_reason' => $check['reason'] ?? $payment->failure_reason,
+                    ]);
                     $payment->refresh();
                 }
             }
@@ -308,6 +317,10 @@ class UserPaymentController extends Controller
                 'method'          => $payment->method,
                 'status'          => $payment->status,
                 'paid_at'         => $payment->paid_at,
+                // ✅ FIX : message d'échec précis (ex: "Solde insuffisant...")
+                // au lieu du texte générique affiché jusqu'ici par l'app client
+                // quel que soit status === 'failed'|'cancelled'.
+                'failure_reason'  => $payment->failure_reason,
                 'chat_enabled'    => $isPaid,
                 'chat_channel'    => 'chat.trip.' . $payment->trip_id,
                 'receipt'         => $receipt,

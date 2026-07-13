@@ -13,7 +13,7 @@ class Payment extends Model
         'amount', 'commission', 'driver_net',
         'method', 'provider', 'status', 'transaction_ref',
         'flw_charge_id', 'provider_transaction_id', 'receipt_number',
-        'country', 'city', 'paid_at',
+        'country', 'city', 'paid_at', 'failure_reason',
     ];
 
     protected $casts = [

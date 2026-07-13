@@ -66,6 +66,55 @@ class PeexService implements PaymentProviderInterface
     }
 
     /**
+     * Extrait la vraie raison d'échec Peex depuis un item de transaction
+     * (webhook ou GET /collection/all_requests). Selon la doc Peex
+     * (transaction-status), la raison des statuts "failed"/"canceled" est
+     * dans le champ PAYMENT_PROOF (payment_proof), et celle de "rejected"
+     * est directement dans la réponse (message/reason). On tente les
+     * variantes de casse possibles (Peex ne documente pas une casse fixe).
+     */
+    protected function extractFailureReason(array $item): ?string
+    {
+        return $item['payment_proof']
+            ?? $item['PAYMENT_PROOF']
+            ?? $item['reason']
+            ?? $item['message']
+            ?? null;
+    }
+
+    /**
+     * Traduit une raison brute Peex (souvent en anglais, technique) en un
+     * message clair pour l'utilisateur final. Fallback : on affiche la
+     * raison brute plutôt qu'un message générique qui masque le problème.
+     */
+    public function humanizeFailureReason(?string $rawReason): ?string
+    {
+        if (!$rawReason) {
+            return null;
+        }
+
+        $normalized = strtolower($rawReason);
+
+        if (str_contains($normalized, 'insufficient') || str_contains($normalized, 'balance') || str_contains($normalized, 'solde')) {
+            return 'Solde insuffisant sur votre compte mobile money pour effectuer ce paiement.';
+        }
+
+        if (str_contains($normalized, 'timeout') || str_contains($normalized, 'expired') || str_contains($normalized, 'expir')) {
+            return 'Le délai de confirmation a expiré. Veuillez réessayer.';
+        }
+
+        if (str_contains($normalized, 'cancel') || str_contains($normalized, 'annul') || str_contains($normalized, 'declin') || str_contains($normalized, 'refus')) {
+            return 'Paiement annulé ou refusé par vous-même sur votre téléphone.';
+        }
+
+        if (str_contains($normalized, 'invalid') && (str_contains($normalized, 'pin') || str_contains($normalized, 'code'))) {
+            return 'Code PIN mobile money incorrect. Veuillez réessayer.';
+        }
+
+        return $rawReason;
+    }
+
+    /**
      * Countries Peex currently confirms as supported for the Collect API.
      */
     public function supportedCollectCountries(): array
@@ -256,6 +305,7 @@ class PeexService implements PaymentProviderInterface
                 return [
                     'success' => true,
                     'status' => $this->mapStatus($item['status'] ?? 'new'),
+                    'reason' => $this->humanizeFailureReason($this->extractFailureReason($item)),
                     'data' => $item,
                 ];
             }
@@ -450,6 +500,7 @@ class PeexService implements PaymentProviderInterface
             'success' => true,
             'reference' => $trackId,
             'status' => $this->mapStatus($status),
+            'reason' => $this->humanizeFailureReason($this->extractFailureReason($payload)),
             'raw' => $payload,
         ];
     }
