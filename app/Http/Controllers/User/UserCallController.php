@@ -43,16 +43,19 @@ class UserCallController extends Controller
     {
         $user = $request->user();
 
-        // Vérifier que le client a bien réservé ce trajet
+        // ✅ L'appel n'est autorisé qu'une fois la réservation payée — même
+        // règle que pour le chat (voir Booking::isPaid()/scopePaid()).
+        // Avant : whereIn('status', ['confirmed','paid','pending']) laissait
+        // appeler le chauffeur dès une réservation 'pending', avant paiement.
         $booking = Booking::where('trip_id', $tripId)
             ->where('user_id', $user->id)
-            ->whereIn('status', ['confirmed', 'paid', 'pending'])
+            ->paid()
             ->first();
 
         if (!$booking) {
             return response()->json([
                 'success' => false,
-                'message' => 'Réservation introuvable pour cet appel.',
+                'message' => 'L\'appel est disponible une fois votre réservation payée.',
             ], 404);
         }
 
@@ -345,10 +348,4 @@ class UserCallController extends Controller
                 'duration_seconds'   => $c->duration_seconds,
                 'duration_formatted' => $c->duration_formatted,
                 'started_at'         => $c->started_at?->toIso8601String(),
-                'ended_at'           => $c->ended_at?->toIso8601String(),
-                'created_at'         => $c->created_at?->toIso8601String(),
-            ]);
-
-        return response()->json(['success' => true, 'data' => $calls]);
-    }
-}
+                'en

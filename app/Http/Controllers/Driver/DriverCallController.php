@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Driver;
 
 use App\Http\Controllers\Controller;
+use App\Models\Booking;
 use App\Models\Call;
 use App\Models\CallRecording;
 use App\Models\Trip;
@@ -58,6 +59,19 @@ class DriverCallController extends Controller
                 'success' => false,
                 'message' => 'Trajet introuvable ou non autorisé.',
             ], 404);
+        }
+
+        // ✅ L'appel n'est autorisé qu'une fois la réservation du client
+        // payée — même règle que côté client (UserCallController::initiate())
+        // et que pour le chat (voir Booking::isPaid()/scopePaid()). Avant :
+        // aucun contrôle, le chauffeur pouvait appeler dès l'assignation du
+        // trajet, sans qu'aucune réservation ne soit encore payée.
+        $hasPaidBooking = Booking::where('trip_id', $tripId)->paid()->exists();
+        if (!$hasPaidBooking) {
+            return response()->json([
+                'success' => false,
+                'message' => 'L\'appel est disponible une fois la réservation du client payée.',
+            ], 403);
         }
 
         // Vérifier qu'il n'y a pas déjà un appel actif sur ce trajet — sauf
@@ -383,20 +397,3 @@ class DriverCallController extends Controller
             return response()->json(['success' => false, 'message' => 'Trajet introuvable.'], 404);
         }
 
-        $calls = Call::forTrip($tripId)
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn($c) => [
-                'id'                 => $c->id,
-                'type'               => $c->type,
-                'status'             => $c->status,
-                'duration_seconds'   => $c->duration_seconds,
-                'duration_formatted' => $c->duration_formatted,
-                'started_at'         => $c->started_at?->toIso8601String(),
-                'ended_at'           => $c->ended_at?->toIso8601String(),
-                'created_at'         => $c->created_at?->toIso8601String(),
-            ]);
-
-        return response()->json(['success' => true, 'calls' => $calls]);
-    }
-}

@@ -22,7 +22,12 @@ class CompanyMessageController extends Controller
         $company   = \App\Support\CompanyContext::company();
         $driverIds = $company->drivers()->pluck('id');
 
+        // ✅ Défense en profondeur : même si l'écriture des messages est déjà
+        // bloquée avant paiement côté UserMessageController/DriverMessageController,
+        // le tableau de bord société ne doit lui non plus jamais exposer une
+        // conversation liée à une réservation non payée (voir Booking::scopePaid()).
         $query = Trip::whereIn('driver_id', $driverIds)
+            ->whereHas('bookings', fn ($q) => $q->paid())
             ->withCount('messages')
             ->with(['driver:id,first_name,last_name,profile_photo', 'user:id,first_name,last_name,phone'])
             ->having('messages_count', '>', 0)
@@ -39,9 +44,12 @@ class CompanyMessageController extends Controller
         $trips = $query->paginate(20)->withQueryString();
 
         $totalTripsWithMessages = Trip::whereIn('driver_id', $driverIds)
+            ->whereHas('bookings', fn ($q) => $q->paid())
             ->has('messages')->count();
 
-        $totalMessages = Message::whereHas('trip', fn ($q) => $q->whereIn('driver_id', $driverIds))->count();
+        $totalMessages = Message::whereHas('trip', fn ($q) => $q
+            ->whereIn('driver_id', $driverIds)
+            ->whereHas('bookings', fn ($q2) => $q2->paid()))->count();
 
         return view('company.messages.index', compact(
             'trips', 'totalTripsWithMessages', 'totalMessages'
@@ -59,6 +67,7 @@ class CompanyMessageController extends Controller
         $driverIds = $company->drivers()->pluck('id');
 
         $trip = Trip::whereIn('driver_id', $driverIds)
+            ->whereHas('bookings', fn ($q) => $q->paid())
             ->with(['driver:id,first_name,last_name,profile_photo', 'user:id,first_name,last_name,phone'])
             ->findOrFail($tripId);
 
@@ -113,17 +122,4 @@ class CompanyMessageController extends Controller
 
         if ($request->filled('user_id')) {
             $selectedUser = User::whereIn('id', $userIds)->findOrFail($request->user_id);
-            $conversation = SupportMessage::where(function ($q) use ($selectedUser) {
-                    $q->where('sender_type', User::class)->where('sender_id', $selectedUser->id);
-                })
-                ->orWhere(function ($q) use ($selectedUser) {
-                    $q->where('recipient_type', User::class)->where('recipient_id', $selectedUser->id);
-                })
-                ->where('refused', false)
-                ->oldest()
-                ->get();
-        }
-
-        return view('company.messages.support', compact('users', 'selectedUser', 'conversation'));
-    }
-}
+         

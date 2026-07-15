@@ -110,7 +110,7 @@ class DriverMessageController extends Controller
         return response()->json(['success' => true, 'data' => $data]);
     }
 
-    // ── show() — inchangé ─────────────────────────────────────────────────
+    // ── show() — le chat n'est accessible qu'après paiement de la réservation ──
     public function show(Request $request, $tripId)
     {
         $driver = $request->user();
@@ -118,6 +118,11 @@ class DriverMessageController extends Controller
         $trip = Trip::where('id', $tripId)
             ->where('driver_id', $driver->id)
             ->firstOrFail();
+
+        $hasAccess = Booking::where('trip_id', $tripId)->paid()->exists();
+        if (!$hasAccess) {
+            return response()->json(['success' => false, 'message' => 'Le chat est disponible une fois la réservation du client payée.'], 403);
+        }
 
         $messages = Message::where('trip_id', $tripId)
             ->where('refused', false)
@@ -149,12 +154,17 @@ class DriverMessageController extends Controller
             ->where('driver_id', $driver->id)
             ->firstOrFail();
 
-        // ✅ Vérifier qu'il y a bien un client qui a réservé ce trajet
+        // ✅ Le chat n'est accessible qu'après paiement de la réservation
+        // (voir Booking::isPaid()/scopePaid() — source de vérité unique).
         $booking = Booking::where('trip_id', $tripId)
-            ->whereIn('status', ['pending', 'confirmed', 'paid', 'completed'])
+            ->paid()
             ->first();
 
-        $receiverId   = $booking?->user_id ?? $trip->user_id;
+        if (!$booking) {
+            return response()->json(['success' => false, 'message' => 'Le chat est disponible une fois la réservation du client payée.'], 403);
+        }
+
+        $receiverId   = $booking->user_id ?? $trip->user_id;
         $receiverType = User::class;
 
         // Modération
@@ -182,16 +192,4 @@ class DriverMessageController extends Controller
 
         $message = Message::create([
             'trip_id'       => $tripId,
-            'sender_type'   => get_class($driver),
-            'sender_id'     => $driver->id,
-            'receiver_type' => $receiverType,
-            'receiver_id'   => $receiverId,
-            'content'       => $content,
-        ]);
-
-        try { MessageSent::dispatch($message); }
-        catch (\Exception $e) { Log::warning('Pusher: ' . $e->getMessage()); }
-
-        return new MessageResource($message);
-    }
-}
+            'sender_type'   => get_class($drive

@@ -165,9 +165,11 @@ class UserMessageController extends Controller
     {
         $user = Auth::user();
 
-        // Vérifier que le client a une réservation sur ce trajet
+        // Le chat n'est accessible qu'après paiement de la réservation
+        // (voir Booking::isPaid()/scopePaid() — source de vérité unique).
         $hasAccess = Booking::where('user_id', $user->id)
             ->where('trip_id', $tripId)
+            ->paid()
             ->exists();
 
         // Permettre aussi si le trip appartient directement au client (cas course directe)
@@ -178,7 +180,7 @@ class UserMessageController extends Controller
         }
 
         if (!$hasAccess) {
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 403);
+            return response()->json(['success' => false, 'message' => 'Le chat est disponible une fois votre réservation payée.'], 403);
         }
 
         $messages = Message::where('trip_id', $tripId)
@@ -225,10 +227,11 @@ class UserMessageController extends Controller
 
         $hasAccess = Booking::where('user_id', $user->id)
             ->where('trip_id', $tripId)
+            ->paid()
             ->exists() || $trip->user_id == $user->id;
 
         if (!$hasAccess) {
-            return response()->json(['success' => false, 'message' => 'Accès non autorisé.'], 403);
+            return response()->json(['success' => false, 'message' => 'Le chat est disponible une fois votre réservation payée.'], 403);
         }
 
         // ── Modération côté serveur ──────────────────────────────────────
@@ -285,10 +288,4 @@ class UserMessageController extends Controller
             'success' => true,
             'message' => [
                 'id'         => $message->id,
-                'content'    => $message->content,
-                'sender'     => 'client',
-                'created_at' => $message->created_at?->toIso8601String(),
-            ],
-        ], 201);
-    }
-}
+     
