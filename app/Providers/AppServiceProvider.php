@@ -15,6 +15,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -42,5 +43,14 @@ class AppServiceProvider extends ServiceProvider
         if (!file_exists(public_path('storage'))) {
             Artisan::call('storage:link');
         }
+
+        // ✅ FIX : la vue de pagination par défaut de Laravel embarque des
+        // icônes SVG dimensionnées via des classes Tailwind, jamais chargées
+        // dans ce panel ("aws-*" design system) — d'où les énormes flèches
+        // bleues/noires plein écran sur toute page paginée (ex:
+        // /company/calls). Vue custom sans SVG, cf.
+        // resources/views/vendor/pagination/aws*.blade.php.
+        Paginator::defaultView('vendor.pagination.aws');
+        Paginator::defaultSimpleView('vendor.pagination.aws-simple');
     }
 }
