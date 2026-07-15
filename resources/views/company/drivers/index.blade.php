@@ -72,13 +72,24 @@
                     </td>
                     <td><span class="aws-badge {{ $kc[0] }}">{{ $kc[1] }}</span></td>
                     <td>
-                        @if($driver->driver_status === 'online')
-                            <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#1d8102;font-weight:600">
-                                <span style="width:8px;height:8px;background:#1d8102;border-radius:50%"></span>En ligne
-                            </span>
-                        @else
-                            <span style="font-size:12px;color:var(--aws-sub)">Hors ligne</span>
-                        @endif
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                            @if($driver->driver_status === 'online')
+                                <span style="display:flex;align-items:center;gap:5px;font-size:12px;color:#1d8102;font-weight:600">
+                                    <span style="width:8px;height:8px;background:#1d8102;border-radius:50%"></span>En ligne
+                                </span>
+                            @else
+                                <span style="font-size:12px;color:var(--aws-sub)">Hors ligne</span>
+                            @endif
+
+                            @if($driver->status === 'approved')
+                                <form method="POST" action="{{ route('company.drivers.presence', $driver->id) }}" style="display:inline">
+                                    @csrf
+                                    <button type="submit" class="aws-btn aws-btn-normal" style="padding:3px 9px;font-size:11px">
+                                        {{ $driver->driver_status === 'online' ? 'Mettre hors ligne' : 'Mettre en ligne' }}
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </td>
                     <td>
                         <div style="display:flex;gap:6px;flex-wrap:wrap">

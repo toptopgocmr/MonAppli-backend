@@ -40,6 +40,7 @@ Route::prefix('company')->name('company.')->group(function () {
             Route::put('/drivers/{id}',           [DriverController::class, 'update'])->name('drivers.update');
             Route::post('/drivers/{id}/activate', [DriverController::class, 'activate'])->name('drivers.activate');
             Route::post('/drivers/{id}/suspend',  [DriverController::class, 'suspend'])->name('drivers.suspend');
+            Route::post('/drivers/{id}/presence', [DriverController::class, 'togglePresence'])->name('drivers.presence');
             Route::post('/drivers/{id}/assign',   [DriverController::class, 'assign'])->name('drivers.assign');
             Route::post('/drivers/{id}/remove',   [DriverController::class, 'remove'])->name('drivers.remove');
         });

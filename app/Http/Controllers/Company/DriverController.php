@@ -166,6 +166,34 @@ class DriverController extends Controller
         return back()->with('success', 'Chauffeur suspendu.');
     }
 
+    /**
+     * ✅ Bascule manuelle en ligne/hors ligne depuis le panel société.
+     *
+     * Avant, `driver_status` (colonne "Présence") n'était modifiable QUE
+     * par le chauffeur lui-même depuis l'app mobile
+     * (DriverLocationController::updateStatus) — la société ne pouvait
+     * que le CONSULTER en lecture seule sur /company/drivers. Certaines
+     * sociétés gèrent leurs chauffeurs de façon centralisée et ont besoin
+     * de les mettre en ligne/hors ligne directement depuis leur interface,
+     * sans dépendre de l'action du chauffeur sur son téléphone.
+     */
+    public function togglePresence($id)
+    {
+        $driver = Driver::where('company_id', $this->company()->id)->findOrFail($id);
+
+        if ($driver->status !== 'approved') {
+            return back()->with('error', 'Seul un chauffeur au KYC approuvé peut être mis en ligne.');
+        }
+
+        $next = $driver->driver_status === 'online' ? 'offline' : 'online';
+        $driver->update(['driver_status' => $next]);
+
+        $fullName = trim($driver->first_name . ' ' . $driver->last_name);
+        return back()->with('success', $next === 'online'
+            ? "{$fullName} est maintenant en ligne."
+            : "{$fullName} est maintenant hors ligne.");
+    }
+
     public function assign(Request $request, $id)
     {
         $driver = Driver::findOrFail($id);
