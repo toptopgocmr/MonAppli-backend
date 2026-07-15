@@ -288,4 +288,10 @@ class UserMessageController extends Controller
             'success' => true,
             'message' => [
                 'id'         => $message->id,
-     
+                'content'    => $message->content,
+                'sender'     => 'client',
+                'created_at' => $message->created_at?->toIso8601String(),
+            ],
+        ], 201);
+    }
+}

@@ -348,4 +348,10 @@ class UserCallController extends Controller
                 'duration_seconds'   => $c->duration_seconds,
                 'duration_formatted' => $c->duration_formatted,
                 'started_at'         => $c->started_at?->toIso8601String(),
-                'en
+                'ended_at'           => $c->ended_at?->toIso8601String(),
+                'created_at'         => $c->created_at?->toIso8601String(),
+            ]);
+
+        return response()->json(['success' => true, 'data' => $calls]);
+    }
+}

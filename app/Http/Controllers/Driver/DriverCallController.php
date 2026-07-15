@@ -397,3 +397,20 @@ class DriverCallController extends Controller
             return response()->json(['success' => false, 'message' => 'Trajet introuvable.'], 404);
         }
 
+        $calls = Call::forTrip($tripId)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(fn($c) => [
+                'id'                 => $c->id,
+                'type'               => $c->type,
+                'status'             => $c->status,
+                'duration_seconds'   => $c->duration_seconds,
+                'duration_formatted' => $c->duration_formatted,
+                'started_at'         => $c->started_at?->toIso8601String(),
+                'ended_at'           => $c->ended_at?->toIso8601String(),
+                'created_at'         => $c->created_at?->toIso8601String(),
+            ]);
+
+        return response()->json(['success' => true, 'calls' => $calls]);
+    }
+}

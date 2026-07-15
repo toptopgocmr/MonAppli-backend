@@ -192,4 +192,16 @@ class DriverMessageController extends Controller
 
         $message = Message::create([
             'trip_id'       => $tripId,
-            'sender_type'   => get_class($drive
+            'sender_type'   => get_class($driver),
+            'sender_id'     => $driver->id,
+            'receiver_type' => $receiverType,
+            'receiver_id'   => $receiverId,
+            'content'       => $content,
+        ]);
+
+        try { MessageSent::dispatch($message); }
+        catch (\Exception $e) { Log::warning('Pusher: ' . $e->getMessage()); }
+
+        return new MessageResource($message);
+    }
+}

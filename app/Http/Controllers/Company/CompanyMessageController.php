@@ -122,4 +122,17 @@ class CompanyMessageController extends Controller
 
         if ($request->filled('user_id')) {
             $selectedUser = User::whereIn('id', $userIds)->findOrFail($request->user_id);
-         
+            $conversation = SupportMessage::where(function ($q) use ($selectedUser) {
+                    $q->where('sender_type', User::class)->where('sender_id', $selectedUser->id);
+                })
+                ->orWhere(function ($q) use ($selectedUser) {
+                    $q->where('recipient_type', User::class)->where('recipient_id', $selectedUser->id);
+                })
+                ->where('refused', false)
+                ->oldest()
+                ->get();
+        }
+
+        return view('company.messages.support', compact('users', 'selectedUser', 'conversation'));
+    }
+}
