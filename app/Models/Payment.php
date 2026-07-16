@@ -25,10 +25,11 @@ class Payment extends Model
     const METHOD_STRIPE       = 'stripe';
     const METHOD_CASH         = 'cash';
 
-    const STATUS_PENDING   = 'pending';
-    const STATUS_SUCCESS   = 'success';
-    const STATUS_FAILED    = 'failed';
-    const STATUS_REFUNDED  = 'refunded';
+    const STATUS_PENDING    = 'pending';
+    const STATUS_SUCCESS    = 'success';
+    const STATUS_FAILED     = 'failed';
+    const STATUS_CANCELLED  = 'cancelled';
+    const STATUS_REFUNDED   = 'refunded';
 
     public function user()
     {

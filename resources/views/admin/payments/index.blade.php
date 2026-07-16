@@ -48,7 +48,12 @@
         <div class="stat-card" style="border-left:4px solid #f59e0b">
             <div class="lbl">EN ATTENTE</div>
             <div class="val" style="color:#d97706;font-size:22px">{{ $totalPending }}</div>
-            <div class="sub" style="color:#ef4444">{{ $totalFailed }} échoués</div>
+            <div class="sub" style="color:#ef4444">{{ $totalFailed }} rejetés</div>
+        </div>
+        <div class="stat-card" style="border-left:4px solid #94a3b8">
+            <div class="lbl">ANNULÉS</div>
+            <div class="val" style="color:#64748b;font-size:22px">{{ $totalCancelled }}</div>
+            <div class="sub">sur la période sélectionnée</div>
         </div>
     </div>
 
@@ -116,7 +121,7 @@
             <label class="ttg-label">Statut</label>
             <select name="status" class="ttg-select">
                 <option value="">Tous</option>
-                @foreach(['pending'=>'⏳ En attente','success'=>'Succès','failed'=>'Échoué','cancelled'=>'Annulé','refunded'=>'Remboursé'] as $val=>$lbl)
+                @foreach(['pending'=>'⏳ En attente','success'=>'Succès','failed'=>'Rejeté','cancelled'=>'Annulé','refunded'=>'Remboursé'] as $val=>$lbl)
                     <option value="{{ $val }}" {{ request('status')===$val ? 'selected' : '' }}>{{ $lbl }}</option>
                 @endforeach
             </select>
@@ -190,11 +195,13 @@
                                 @if($payment->status === 'success') bg-green-100 text-green-700
                                 @elseif($payment->status === 'pending') bg-orange-100 text-orange-700
                                 @elseif($payment->status === 'failed') bg-red-100 text-red-700
+                                @elseif($payment->status === 'cancelled') bg-gray-200 text-gray-700
                                 @elseif($payment->status === 'refunded') bg-purple-100 text-purple-700
                                 @else bg-gray-100 text-gray-600 @endif">
                                 @if($payment->status === 'success') Succès
                                 @elseif($payment->status === 'pending') ⏳ Attente
-                                @elseif($payment->status === 'failed') Échoué
+                                @elseif($payment->status === 'failed') Rejeté
+                                @elseif($payment->status === 'cancelled') Annulé
                                 @elseif($payment->status === 'refunded') ↩ Remboursé
                                 @else {{ $payment->status }} @endif
                             </span>

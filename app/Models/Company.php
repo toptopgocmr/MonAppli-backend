@@ -31,6 +31,14 @@ class Company extends Authenticatable
         return $this->hasMany(Driver::class);
     }
 
+    // Comptes agents secondaires (comptable, RH, flotte...) rattachés à cette
+    // société — cf. CompanyAgent. Utilisé notamment par l'admin plateforme
+    // pour lister/superviser tous les agents, toutes sociétés confondues.
+    public function agents()
+    {
+        return $this->hasMany(CompanyAgent::class);
+    }
+
     public function activeDrivers()
     {
         return $this->hasMany(Driver::class)->where('status', 'approved');

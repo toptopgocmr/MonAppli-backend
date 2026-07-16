@@ -10,6 +10,7 @@ use App\Models\Company;
 use App\Models\Trip;
 use App\Models\Payment;
 use App\Models\SosAlert;
+use App\Models\CompanyAgent;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -34,6 +35,16 @@ class DashboardController extends Controller
             'total_commission'  => Payment::where('status', 'success')->sum('commission'),
             'sos_active'        => SosAlert::where('status', 'active')->count(),
             'total_admins'      => AdminUser::count(),
+
+            // ── Paiements (succès / rejetés / annulés) ──
+            'payments_success'   => Payment::where('status', 'success')->count(),
+            'payments_failed'    => Payment::where('status', 'failed')->count(),
+            'payments_cancelled' => Payment::where('status', 'cancelled')->count(),
+            'payments_pending'   => Payment::where('status', 'pending')->count(),
+
+            // ── Comptes agents des sociétés ──
+            'company_agents_total'  => CompanyAgent::count(),
+            'company_agents_active' => CompanyAgent::where('status', 'active')->count(),
 
             // ── Comparaisons ──
             'users_this_month'        => User::whereMonth('created_at', $thisMonth)->whereYear('created_at', $thisYear)->count(),

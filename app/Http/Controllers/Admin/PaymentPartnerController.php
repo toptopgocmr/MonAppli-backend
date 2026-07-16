@@ -88,6 +88,7 @@ class PaymentPartnerController extends Controller
         $totalDriverNet   = Payment::where('status', 'success')->whereBetween('paid_at', [$startDate, $endDate])->sum('driver_net');
         $totalPending     = Payment::where('status', 'pending')->whereBetween('created_at', [$startDate, $endDate])->count();
         $totalFailed      = Payment::where('status', 'failed')->whereBetween('created_at', [$startDate, $endDate])->count();
+        $totalCancelled   = Payment::where('status', 'cancelled')->whereBetween('created_at', [$startDate, $endDate])->count();
 
         // ── Wallet application ────────────────────────────────────
         $totalWalletBalance  = Wallet::sum('balance');
@@ -157,6 +158,7 @@ class PaymentPartnerController extends Controller
             'totalDriverNet',
             'totalPending',
             'totalFailed',
+            'totalCancelled',
             'totalWalletBalance',
             'totalWallets',
             'totalCredits',

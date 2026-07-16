@@ -105,6 +105,35 @@ function kpiTrend($now, $prev, $label, $lowerIsBetter = false): string {
         </div>
         </a>
 
+        {{-- Paiements --}}
+        <a href="{{ route('admin.payments.index') }}" style="text-decoration:none;color:inherit;display:block">
+        <div class="stat-card" style="border-top:3px solid #0EA5E9">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#F0F9FF,#e0f2fe)">
+                <svg width="19" height="19" fill="none" stroke="#0284C7" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['payments_success'] }}</div>
+            <div class="stat-lbl">Paiements réussis</div>
+            <div class="stat-sub">
+                <span style="color:#D13212;font-weight:600">{{ $stats['payments_failed'] }}</span> rejetés ·
+                <span style="color:#B45309;font-weight:600">{{ $stats['payments_cancelled'] }}</span> annulés
+            </div>
+            <div class="stat-trend"><span style="color:#879596">{{ $stats['payments_pending'] }} en attente</span></div>
+        </div>
+        </a>
+
+        {{-- Comptes agents des sociétés --}}
+        <a href="{{ route('admin.company-agents.index') }}" style="text-decoration:none;color:inherit;display:block">
+        <div class="stat-card" style="border-top:3px solid #5A4AD1">
+            <div class="stat-icon" style="background:linear-gradient(135deg,#F2F0FC,#e0e7ff)">
+                <svg width="19" height="19" fill="none" stroke="#5A4AD1" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div class="stat-val">{{ $stats['company_agents_total'] }}</div>
+            <div class="stat-lbl">Comptes agents sociétés</div>
+            <div class="stat-sub">{{ $stats['company_agents_active'] }} actifs</div>
+            <div class="stat-trend"><span style="color:#879596">Comptable, RH, flotte, commercial...</span></div>
+        </div>
+        </a>
+
         {{-- SOS --}}
         <a href="{{ route('admin.sos.index') }}" style="text-decoration:none;color:inherit;display:block">
         <div class="stat-card" style="border-top:3px solid {{ $stats['sos_active'] > 0 ? '#DC2626' : '#94A3B8' }};{{ $stats['sos_active'] > 0 ? 'background:linear-gradient(180deg,#fff5f5,#fff);' : '' }}">

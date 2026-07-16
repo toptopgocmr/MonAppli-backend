@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\CommissionRateController;
 use App\Http\Controllers\Admin\PaymentPartnerController;
 use App\Http\Controllers\Admin\CompanyWithdrawalController;
+use App\Http\Controllers\Admin\CompanyAgentController;
 use App\Http\Controllers\Admin\SosAlertController;
 use App\Http\Controllers\Admin\MapController;
 use App\Http\Controllers\Admin\TripController;
@@ -264,6 +265,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('company-withdrawals', [CompanyWithdrawalController::class, 'index'])->name('company-withdrawals.index');
         Route::post('company-withdrawals/{withdrawal}/approve', [CompanyWithdrawalController::class, 'approve'])->name('company-withdrawals.approve');
         Route::post('company-withdrawals/{withdrawal}/reject',  [CompanyWithdrawalController::class, 'reject'])->name('company-withdrawals.reject');
+
+        /*
+        |--------------------------------------------------------------------------
+        | COMPTES AGENTS DES SOCIÉTÉS (vue plateforme, toutes sociétés)
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('company-agents')->name('company-agents.')->group(function () {
+            Route::get('/',               [CompanyAgentController::class, 'index'])->name('index');
+            Route::get('/{id}',           [CompanyAgentController::class, 'show'])->name('show');
+            Route::post('/{id}/suspend',  [CompanyAgentController::class, 'suspend'])->name('suspend');
+            Route::post('/{id}/activate', [CompanyAgentController::class, 'activate'])->name('activate');
+        });
 
         Route::prefix('vehicle-types')->name('vehicle-types.')->group(function () {
             Route::get('/',                  [VehicleTypeController::class, 'index'])->name('index');
