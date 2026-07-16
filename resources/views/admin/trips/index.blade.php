@@ -53,6 +53,25 @@
             <input type="text" name="search" value="{{ request('search') }}"
                    placeholder="Départ ou destination..." class="ttg-input">
         </div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
+            <label class="ttg-label">Chauffeur</label>
+            <input type="text" name="driver" value="{{ request('driver') }}"
+                   placeholder="Nom ou téléphone..." class="ttg-input">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
+            <label class="ttg-label">Client</label>
+            <input type="text" name="client" value="{{ request('client') }}"
+                   placeholder="Nom ou téléphone..." class="ttg-input">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;min-width:160px">
+            <label class="ttg-label">Société</label>
+            <select name="company_id" class="ttg-select">
+                <option value="">Toutes</option>
+                @foreach($companies as $company)
+                    <option value="{{ $company->id }}" {{ (string) request('company_id') === (string) $company->id ? 'selected' : '' }}>{{ $company->name }}</option>
+                @endforeach
+            </select>
+        </div>
         <div style="display:flex;flex-direction:column;gap:4px;min-width:140px">
             <label class="ttg-label">Statut</label>
             <select name="status" class="ttg-select">
@@ -73,7 +92,7 @@
             <input type="date" name="to" value="{{ request('to') }}" class="ttg-input">
         </div>
         <button type="submit" class="btn btn-primary" style="align-self:flex-end">Filtrer</button>
-        @if(request()->anyFilled(['search','status','from','to']))
+        @if(request()->anyFilled(['search','driver','client','company_id','status','from','to']))
         <a href="{{ request()->url() }}" class="btn btn-secondary" style="align-self:flex-end">Reset</a>
         @endif
     </form>
@@ -154,7 +173,7 @@
                             <td colspan="8" style="text-align:center;padding:48px;color:#94a3b8">
                                 <div style="font-size:40px;margin-bottom:8px"></div>
                                 <div style="font-weight:600">Aucun trajet trouvé</div>
-                                @if(request()->anyFilled(['search','status','from','to']))
+                                @if(request()->anyFilled(['search','driver','client','company_id','status','from','to']))
                                     <a href="{{ request()->url() }}" style="color:#1DA1F2;font-size:13px">Réinitialiser les filtres</a>
                                 @endif
                             </td>
@@ -266,34 +285,4 @@ function openTripModal(id) {
                 '</div>' +
 
                 /* Chauffeur */
-                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
-                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Chauffeur</div>' +
-                driverHtml +
-                '</div>' +
-
-                /* Réservations */
-                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
-                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Réservations (' + bookings.length + ')</div>' +
-                bookingsHtml +
-                '</div>' +
-
-                '</div>';
-        })
-        .catch(function(err) {
-            document.getElementById('modal-content').innerHTML =
-                '<div style="text-align:center;padding:32px;color:#EF4444">Erreur lors du chargement</div>';
-        });
-}
-
-function closeTripModal() {
-    document.getElementById('trip-modal').style.display = 'none';
-}
-
-function closeTripModalOutside(event) {
-    if (event.target === document.getElementById('trip-modal')) {
-        closeTripModal();
-    }
-}
-</script>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
-@endpush
+                

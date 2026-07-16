@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Booking;
+use App\Models\Company;
 use App\Models\Trip;
 use Illuminate\Http\Request;
 
@@ -61,43 +62,34 @@ class TripController extends Controller
             $query->whereDate('departure_date', '<=', $request->to);
         }
 
-        $trips = $query->paginate(10)->withQueryString();
+        // ✅ Filtre chauffeur (nom ou téléphone)
+        if ($request->filled('driver')) {
+            $d = $request->driver;
+            $query->whereHas('driver', function ($dq) use ($d) {
+                $dq->where('first_name', 'like', "%$d%")
+                   ->orWhere('last_name', 'like', "%$d%")
+                   ->orWhere('phone', 'like', "%$d%");
+            });
+        }
 
-        $stats = [
-            'total'       => Trip::count(),
-            'pending'     => Trip::where('status', 'pending')->count(),
-            'in_progress' => Trip::where('status', 'in_progress')->count(),
-            'completed'   => Trip::where('status', 'completed')->count(),
-            'cancelled'   => Trip::whereIn('status', ['cancelled', 'rejected'])->count(),
-        ];
+        // ✅ Filtre client (nom ou téléphone) — soit le client à l'origine du
+        // trajet (trip.user_id), soit un passager ayant réservé une place
+        // (bookings.user) dans le cas d'un trajet covoiturage.
+        if ($request->filled('client')) {
+            $c = $request->client;
+            $query->where(function ($q) use ($c) {
+                $q->whereHas('user', function ($uq) use ($c) {
+                    $uq->where('first_name', 'like', "%$c%")
+                       ->orWhere('last_name', 'like', "%$c%")
+                       ->orWhere('phone', 'like', "%$c%");
+                })->orWhereHas('bookings.user', function ($uq) use ($c) {
+                    $uq->where('first_name', 'like', "%$c%")
+                       ->orWhere('last_name', 'like', "%$c%")
+                       ->orWhere('phone', 'like', "%$c%");
+                });
+            });
+        }
 
-        return view('admin.trips.index', compact('trips', 'stats'));
-    }
-
-    public function detail($id)
-    {
-        $trip = Trip::with(['driver', 'bookings' => fn ($q) => $q->paid()->with('user')])->findOrFail($id);
-        return response()->json(['data' => $trip->load('driver')]);
-    }
-
-    public function show($id)
-    {
-        $trip = Trip::with(['driver', 'vehicle', 'bookings' => fn ($q) => $q->paid()->with('user')])->findOrFail($id);
-        return view('admin.trips.show', compact('trip'));
-    }
-
-    public function destroy($id)
-    {
-        $trip = Trip::findOrFail($id);
-        $trip->delete();
-        return redirect()->route('admin.trips.index')->with('success', 'Trajet supprimé.');
-    }
-
-    public function updateStatus(Request $request, $id)
-    {
-        $trip = Trip::findOrFail($id);
-        $request->validate(['status' => 'required|in:pending,accepted,in_progress,completed,cancelled,rejected']);
-        $trip->update(['status' => $request->status]);
-        return back()->with('success', 'Statut mis à jour.');
-    }
-}
+        // ✅ Filtre société — soit le trajet est directement rattaché à la
+        // société (trips.company_id, réservation sur itinéraire société),
+        // soit c'est le c
