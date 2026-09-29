@@ -84,10 +84,18 @@ class WebhookController extends Controller
 
     protected function verifyPeexBasicAuth(Request $request): bool
     {
-        $expectedUser = config('payments.peex.callback_username');
-        $expectedPass = config('payments.peex.callback_password');
+        $expectedUser = (string) config('payments.peex.callback_username');
+        $expectedPass = (string) config('payments.peex.callback_password');
 
-        return $request->getUser() === $expectedUser && $request->getPassword() === $expectedPass;
+        // Fail closed if credentials are not configured on the server.
+        if ($expectedUser === '' || $expectedPass === '') {
+            Log::error('Peex webhook: PEEX_CALLBACK_USERNAME / PEEX_CALLBACK_PASSWORD not configured');
+            return false;
+        }
+
+        // Constant-time comparison to avoid timing attacks.
+        return hash_equals($expectedUser, (string) $request->getUser())
+            && hash_equals($expectedPass, (string) $request->getPassword());
     }
 
     public function handlePeexCollect(Request $request): JsonResponse

@@ -285,4 +285,34 @@ function openTripModal(id) {
                 '</div>' +
 
                 /* Chauffeur */
-                
+                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
+                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Chauffeur</div>' +
+                driverHtml +
+                '</div>' +
+
+                /* Réservations */
+                '<div style="background:#f8fafc;border-radius:12px;padding:16px">' +
+                '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:12px">Réservations (' + bookings.length + ')</div>' +
+                bookingsHtml +
+                '</div>' +
+
+                '</div>';
+        })
+        .catch(function(err) {
+            document.getElementById('modal-content').innerHTML =
+                '<div style="text-align:center;padding:32px;color:#EF4444">Erreur lors du chargement</div>';
+        });
+}
+
+function closeTripModal() {
+    document.getElementById('trip-modal').style.display = 'none';
+}
+
+function closeTripModalOutside(event) {
+    if (event.target === document.getElementById('trip-modal')) {
+        closeTripModal();
+    }
+}
+</script>
+<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+@endpush

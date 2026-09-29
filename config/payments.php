@@ -34,8 +34,8 @@ return [
         'timeout' => 30,
 
         // Basic Auth credentials Peex must send back on our /webhooks/peex/* endpoints.
-        'callback_username' => env('PEEX_CALLBACK_USERNAME', 'peex'),
-        'callback_password' => env('PEEX_CALLBACK_PASSWORD', 'peex_callback'),
+        'callback_username' => env('PEEX_CALLBACK_USERNAME'),
+        'callback_password' => env('PEEX_CALLBACK_PASSWORD'),
 
         // Per https://peex-api-docs.peexit.com/collect the public docs only
         // mention Cameroon; widened to include Congo Brazzaville per written

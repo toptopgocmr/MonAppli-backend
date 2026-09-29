@@ -92,4 +92,54 @@ class TripController extends Controller
 
         // ✅ Filtre société — soit le trajet est directement rattaché à la
         // société (trips.company_id, réservation sur itinéraire société),
-        // soit c'est le c
+        // soit c'est le chauffeur assigné qui appartient à cette société.
+        if ($request->filled('company_id')) {
+            $companyId = $request->company_id;
+            $query->where(function ($q) use ($companyId) {
+                $q->where('company_id', $companyId)
+                  ->orWhereHas('driver', fn ($dq) => $dq->where('company_id', $companyId));
+            });
+        }
+
+        $trips = $query->paginate(10)->withQueryString();
+
+        $stats = [
+            'total'       => Trip::count(),
+            'pending'     => Trip::where('status', 'pending')->count(),
+            'in_progress' => Trip::where('status', 'in_progress')->count(),
+            'completed'   => Trip::where('status', 'completed')->count(),
+            'cancelled'   => Trip::whereIn('status', ['cancelled', 'rejected'])->count(),
+        ];
+
+        $companies = Company::orderBy('name')->get(['id', 'name']);
+
+        return view('admin.trips.index', compact('trips', 'stats', 'companies'));
+    }
+
+    public function detail($id)
+    {
+        $trip = Trip::with(['driver', 'bookings' => fn ($q) => $q->paid()->with('user')])->findOrFail($id);
+        return response()->json(['data' => $trip->load('driver')]);
+    }
+
+    public function show($id)
+    {
+        $trip = Trip::with(['driver', 'vehicle', 'bookings' => fn ($q) => $q->paid()->with('user')])->findOrFail($id);
+        return view('admin.trips.show', compact('trip'));
+    }
+
+    public function destroy($id)
+    {
+        $trip = Trip::findOrFail($id);
+        $trip->delete();
+        return redirect()->route('admin.trips.index')->with('success', 'Trajet supprimé.');
+    }
+
+    public function updateStatus(Request $request, $id)
+    {
+        $trip = Trip::findOrFail($id);
+        $request->validate(['status' => 'required|in:pending,accepted,in_progress,completed,cancelled,rejected']);
+        $trip->update(['status' => $request->status]);
+        return back()->with('success', 'Statut mis à jour.');
+    }
+}
