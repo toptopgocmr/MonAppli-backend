@@ -16,6 +16,41 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Passerelle de collecte (paiement des réservations)
+    |--------------------------------------------------------------------------
+    | notchpay : Notch Pay en priorité pour les pays de NOTCHPAY_COLLECT_COUNTRIES
+    | peex     : ancien comportement (Peex, sinon Flutterwave)
+    | Retour arrière immédiat possible : PAYMENT_COLLECT_GATEWAY=peex
+    */
+
+    'collect_gateway' => env('PAYMENT_COLLECT_GATEWAY', 'notchpay'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notch Pay
+    |--------------------------------------------------------------------------
+    | Doc : https://developer.notchpay.co
+    | Même URL pour sandbox et production : la clé (pk_test_… / pk_live_…)
+    | détermine l'environnement.
+    | Webhook à déclarer dans la console Notch Pay :
+    |   https://backend.toptopgo.app/api/webhooks/notchpay
+    */
+
+    'notchpay' => [
+        'base_url'     => env('NOTCHPAY_BASE_URL', 'https://api.notchpay.co'),
+        'public_key'   => env('NOTCHPAY_PUBLIC_KEY'),
+        'private_key'  => env('NOTCHPAY_PRIVATE_KEY'),   // X-Grant (transferts uniquement)
+        'webhook_hash' => env('NOTCHPAY_WEBHOOK_HASH'),  // "Hash Key" du webhook (hsk_test_…)
+        'callback_url' => env('NOTCHPAY_CALLBACK_URL'),  // optionnel (flux avec redirection)
+        'currency'     => 'XAF',
+        'timeout'      => 30,
+        'collect_countries' => array_filter(explode(',', env('NOTCHPAY_COLLECT_COUNTRIES', 'CG,CM,GA,CI,SN'))),
+        // Ex. si Notch Pay nomme un canal différemment : 'cg.airtel' => 'cg.airtel_money'
+        'channel_overrides' => [],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Peex Payment Gateway Configuration
     |--------------------------------------------------------------------------
     |
@@ -155,10 +190,10 @@ return [
     */
 
     'providers_by_country' => [
-        'CG' => ['flutterwave', 'peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
+        'CG' => ['notchpay', 'flutterwave', 'peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
         'CD' => ['peex', 'airtel_money'], // Congo Kinshasa
-        'GA' => ['peex', 'airtel_money'], // Gabon
-        'CM' => ['peex', 'mtn_momo'], // Cameroon
+        'GA' => ['notchpay', 'peex', 'airtel_money'], // Gabon
+        'CM' => ['notchpay', 'peex', 'mtn_momo'], // Cameroon
         'INTERNATIONAL' => ['stripe'], // International
     ],
 

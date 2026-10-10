@@ -9,6 +9,7 @@ use App\Models\Payment;
 use App\Services\Payment\FlutterwaveService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PeexService;
+use App\Services\Payment\NotchPayService;
 use App\Services\Payment\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +23,72 @@ class WebhookController extends Controller
         protected StripeService       $stripeService,
         protected FlutterwaveService  $flutterwaveService,
         protected PeexService         $peexService,
+        protected NotchPayService     $notchPayService,
     ) {}
+
+    // =========================================================================
+    // NOTCH PAY
+    // URL à déclarer dans la console Notch Pay :
+    //   https://backend.toptopgo.app/api/webhooks/notchpay
+    // Signature : HMAC-SHA256 du corps brut avec la "Hash Key" du webhook,
+    // header x-notch-signature.
+    // =========================================================================
+
+    public function handleNotchPay(Request $request): JsonResponse
+    {
+        $rawBody   = $request->getContent();
+        $signature = $request->header('x-notch-signature');
+
+        if (!$this->notchPayService->verifyWebhookSignature($rawBody, $signature)) {
+            Log::warning('NotchPay webhook : signature invalide', ['ip' => $request->ip()]);
+            return response()->json(['status' => 'error', 'message' => 'Invalid signature'], 403);
+        }
+
+        $payload = json_decode($rawBody, true) ?: $request->all();
+        $event   = $this->notchPayService->handleWebhook($payload);
+
+        Log::info('NotchPay webhook reçu', [
+            'type'       => $payload['type'] ?? null,
+            'references' => $event['references'] ?? null,
+            'status'     => $event['status'] ?? null,
+        ]);
+
+        if (!$event['success']) {
+            // Évènement non géré (transfer.*, customer.*…) : on acquitte pour éviter les retries.
+            return response()->json(['status' => 'acknowledged'], 200);
+        }
+
+        $payment = Payment::where('provider', 'notchpay')
+            ->where(function ($q) use ($event) {
+                $q->whereIn('transaction_ref', $event['references'])
+                  ->orWhereIn('provider_transaction_id', $event['references']);
+            })
+            ->first();
+
+        if (!$payment) {
+            Log::warning('NotchPay webhook : aucun paiement correspondant', ['references' => $event['references']]);
+            return response()->json(['status' => 'acknowledged', 'message' => 'unknown reference'], 200);
+        }
+
+        // Défense en profondeur : on reconfirme le statut auprès de l'API avant de
+        // valider un paiement (ne jamais créditer sur la seule foi du webhook).
+        $status = $event['status'];
+        $reason = $event['reason'] ?? null;
+        if ($status === 'success') {
+            $check = $this->notchPayService->getTransactionStatus($payment->provider_transaction_id ?: $payment->transaction_ref);
+            if (($check['success'] ?? false) && ($check['status'] ?? null) !== 'success') {
+                Log::warning('NotchPay webhook : statut non confirmé par l\'API', [
+                    'payment_id' => $payment->id,
+                    'api_status' => $check['raw_status'] ?? null,
+                ]);
+                return response()->json(['status' => 'acknowledged', 'message' => 'not confirmed'], 200);
+            }
+        }
+
+        $this->applyPeexStatus($payment, $status, $reason);
+
+        return response()->json(['status' => 'success'], 200);
+    }
 
     // =========================================================================
     // FLUTTERWAVE
