@@ -13,3 +13,7 @@ Schedule::command('toptopgo:daily-report')->dailyAt('07:00');
 
 // Bascule automatique véhicule ↔ chauffeur selon le planning — toutes les 15 min
 Schedule::command('toptopgo:sync-vehicle-shifts')->everyFifteenMinutes();
+
+
+// Suivi des décaissements WacePay (PAID / CANCEL → remboursement) — toutes les 10 min
+Schedule::command('wacepay:sync-payouts')->everyTenMinutes()->withoutOverlapping();

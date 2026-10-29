@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PeexService;
 use App\Services\Payment\NotchPayService;
+use App\Services\Payment\WacePayService;
 use App\Services\Payment\MtnMomoService;
 use App\Services\Payment\AirtelMoneyService;
 use App\Services\Payment\StripeService;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(PeexService::class);
         $this->app->singleton(NotchPayService::class);
+        $this->app->singleton(WacePayService::class);
         $this->app->singleton(MtnMomoService::class);
         $this->app->singleton(AirtelMoneyService::class);
         $this->app->singleton(StripeService::class);

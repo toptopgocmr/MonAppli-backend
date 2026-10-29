@@ -18,12 +18,113 @@ return [
     |--------------------------------------------------------------------------
     | Passerelle de collecte (paiement des réservations)
     |--------------------------------------------------------------------------
+    | wacepay  : WacePay (Digitwace) en priorité pour les pays de WACEPAY_PAYIN_COUNTRIES
     | notchpay : Notch Pay en priorité pour les pays de NOTCHPAY_COLLECT_COUNTRIES
     | peex     : ancien comportement (Peex, sinon Flutterwave)
+    | Si la passerelle choisie ne couvre pas le pays, on retombe sur Peex puis Flutterwave.
     | Retour arrière immédiat possible : PAYMENT_COLLECT_GATEWAY=peex
     */
 
     'collect_gateway' => env('PAYMENT_COLLECT_GATEWAY', 'notchpay'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Passerelle de décaissement (retraits chauffeurs / sociétés mobile money)
+    |--------------------------------------------------------------------------
+    | wacepay : WacePay Business pour les pays de WACEPAY_PAYOUT_COUNTRIES
+    | peex    : comportement actuel (Peex Disbursement, sinon paiement manuel)
+    */
+
+    'payout_gateway' => env('PAYMENT_PAYOUT_GATEWAY', 'peex'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | WacePay (Digitwace)
+    |--------------------------------------------------------------------------
+    | Doc : https://docs.digitwace.com
+    | Collecte : API "WacePay PayIn" (clés public/private + subscription key)
+    | Décaissement : API "WacePay Business" (email/mot de passe + code expéditeur)
+    | Webhook collecte (callback_url envoyé à chaque paiement) :
+    |   https://backend.toptopgo.app/api/webhooks/wacepay/collect?token=WACEPAY_WEBHOOK_SECRET
+    */
+
+    'wacepay' => [
+        'timeout'        => (int) env('WACEPAY_TIMEOUT', 30),
+        'webhook_secret' => env('WACEPAY_WEBHOOK_SECRET'),
+
+        // Ex. {"MTN":"MTN","AIRTEL":"AIRTEL"} ou par pays {"CG.MTN":"MTNCG"}
+        'operator_map'   => json_decode((string) env('WACEPAY_OPERATOR_MAP', '{}'), true) ?: [],
+
+        // Corridors : CEMAC (XAF) + Afrique de l'Ouest UEMOA (XOF).
+        // XAF et XOF sont à parité fixe (1 XAF = 1 XOF) : les montants TopTopGo
+        // (en XAF) sont envoyés tels quels. Un pays absent de cette liste est
+        // refusé (pas de conversion de devise gérée, ex. GH/NG/GN).
+        // Ajout possible sans code : WACEPAY_CURRENCIES={"GN":"GNF"}
+        'currencies' => array_merge([
+            // CEMAC
+            'CM' => 'XAF', 'CG' => 'XAF', 'GA' => 'XAF', 'TD' => 'XAF', 'CF' => 'XAF', 'GQ' => 'XAF',
+            // UEMOA
+            'CI' => 'XOF', 'SN' => 'XOF', 'BJ' => 'XOF', 'TG' => 'XOF', 'BF' => 'XOF',
+            'ML' => 'XOF', 'NE' => 'XOF', 'GW' => 'XOF',
+        ], json_decode((string) env('WACEPAY_CURRENCIES', '{}'), true) ?: []),
+
+        'payin' => [
+            'base_url'         => env('WACEPAY_PAYIN_BASE_URL', 'https://payinws.wacepay.com/api/v1'),
+            'public_key'       => env('WACEPAY_PAYIN_PUBLIC_KEY'),
+            'private_key'      => env('WACEPAY_PAYIN_PRIVATE_KEY'),
+            'subscription_key' => env('WACEPAY_PAYIN_SUBSCRIPTION_KEY'),
+            'callback_url'     => env('WACEPAY_CALLBACK_URL'), // défaut : APP_URL/api/webhooks/wacepay/collect
+            'countries'        => array_filter(explode(',', env('WACEPAY_PAYIN_COUNTRIES', 'CG,CM,GA,TD,CF,GQ,CI,SN,BJ,TG,BF,ML,NE,GW'))),
+            'msisdn_format'    => env('WACEPAY_MSISDN_FORMAT', 'international'), // international (242…) | local
+        ],
+
+        'payout' => [
+            'base_url'      => env('WACEPAY_PAYOUT_BASE_URL'),
+            'email'         => env('WACEPAY_PAYOUT_EMAIL'),
+            'password'      => env('WACEPAY_PAYOUT_PASSWORD'),
+            'sender_code'   => env('WACEPAY_SENDER_CODE'), // php artisan wacepay:create-sender
+            'countries'     => array_filter(explode(',', env('WACEPAY_PAYOUT_COUNTRIES', 'CG,CM,GA,TD,CF,GQ,CI,SN,BJ,TG,BF,ML,NE,GW'))),
+            'from_country'  => env('WACEPAY_FROM_COUNTRY', 'CG'),
+            'from_currency' => env('WACEPAY_FROM_CURRENCY', 'XAF'), // devise du compte TopTopGo débité
+            'msisdn_format' => env('WACEPAY_PAYOUT_MSISDN_FORMAT', 'international'),
+            // Listes A/B/C WacePay (php artisan wacepay:lists pour voir les valeurs acceptées)
+            'origin_fund'   => env('WACEPAY_ORIGIN_FUND', 'BUSINESS'),
+            'reason'        => env('WACEPAY_REASON', 'SALARY'),
+            'relation'      => env('WACEPAY_RELATION', 'EMPLOYEE'),
+            // Code service par opérateur, ex. {"CG.MTN":"MTN_CG","CG.AIRTEL":"AIRTEL_CG"} ;
+            // vide → recherche automatique via /transaction/payoutservice
+            'services'      => json_decode((string) env('WACEPAY_PAYOUT_SERVICES', '{}'), true) ?: [],
+            'default_city'  => [
+                'CG' => 'Brazzaville', 'CM' => 'Douala', 'GA' => 'Libreville', 'TD' => "N'Djamena",
+                'CF' => 'Bangui', 'GQ' => 'Malabo', 'CI' => 'Abidjan', 'SN' => 'Dakar',
+                'BJ' => 'Cotonou', 'TG' => 'Lomé', 'BF' => 'Ouagadougou', 'ML' => 'Bamako',
+                'NE' => 'Niamey', 'GW' => 'Bissau',
+            ],
+            'beneficiary_defaults' => [
+                'id_type'          => env('WACEPAY_BENEF_ID_TYPE', 'CNI'),
+                'id_number_prefix' => 'TTG-',
+            ],
+            // Expéditeur TopTopGo (représentant légal) – utilisé par wacepay:create-sender
+            'sender' => [
+                'firstName'    => env('WACEPAY_SENDER_FIRST_NAME'),
+                'lastName'     => env('WACEPAY_SENDER_LAST_NAME'),
+                'address'      => env('WACEPAY_SENDER_ADDRESS'),
+                'phone'        => env('WACEPAY_SENDER_PHONE'),
+                'country'      => env('WACEPAY_SENDER_COUNTRY', 'CG'),
+                'city'         => env('WACEPAY_SENDER_CITY', 'Brazzaville'),
+                'gender'       => env('WACEPAY_SENDER_GENDER', 'M'),
+                'civility'     => env('WACEPAY_SENDER_CIVILITY', 'Others'),
+                'idNumber'     => env('WACEPAY_SENDER_ID_NUMBER'),
+                'idType'       => env('WACEPAY_SENDER_ID_TYPE', 'CNI'),
+                'nationality'  => env('WACEPAY_SENDER_NATIONALITY', 'CG'),
+                'dateOfBirth'  => env('WACEPAY_SENDER_BIRTH_DATE'),
+                'dateExpireId' => env('WACEPAY_SENDER_ID_EXPIRY'),
+                'occupation'   => 'TopTopGo',
+                'pep'          => false,
+                'updateIfExist'=> true,
+            ],
+        ],
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -190,10 +291,10 @@ return [
     */
 
     'providers_by_country' => [
-        'CG' => ['notchpay', 'flutterwave', 'peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
+        'CG' => ['wacepay', 'notchpay', 'flutterwave', 'peex', 'mtn_momo', 'airtel_money'], // Congo Brazzaville
         'CD' => ['peex', 'airtel_money'], // Congo Kinshasa
         'GA' => ['notchpay', 'peex', 'airtel_money'], // Gabon
-        'CM' => ['notchpay', 'peex', 'mtn_momo'], // Cameroon
+        'CM' => ['wacepay', 'notchpay', 'peex', 'mtn_momo'], // Cameroon
         'INTERNATIONAL' => ['stripe'], // International
     ],
 

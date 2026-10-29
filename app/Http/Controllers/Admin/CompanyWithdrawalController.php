@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\CompanyWithdrawal;
 use App\Services\Payment\PeexService;
+use App\Services\Payment\WacePayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class CompanyWithdrawalController extends Controller
 {
-    public function __construct(protected PeexService $peex)
-    {
+    public function __construct(
+        protected PeexService    $peex,
+        protected WacePayService $wacepay,
+    ) {
     }
 
     public function index(Request $request)
@@ -105,6 +108,56 @@ class CompanyWithdrawalController extends Controller
         if ($withdrawal->method === 'mobile_money') {
             if (!filled($withdrawal->phone_number)) {
                 return back()->with('error', 'Numéro mobile money manquant sur cette demande de retrait.');
+            }
+
+            // ── WacePay (PAYMENT_PAYOUT_GATEWAY=wacepay) ────────────────
+            if ($withdrawal->provider === 'wacepay' && filled($withdrawal->transaction_ref)) {
+                return back()->with('error', 'Une transaction WacePay existe déjà pour ce retrait (réf. ' . $withdrawal->transaction_ref . '). Vérifiez-la dans le back-office WacePay avant toute nouvelle action.');
+            }
+
+            if (config('payments.payout_gateway') === 'wacepay' && $this->wacepay->supportsPayoutFor($country)) {
+                $result = $this->wacepay->payout([
+                    'reference'       => $reference,
+                    'phone'           => $withdrawal->phone_number,
+                    'amount'          => (int) $withdrawal->amount,
+                    'currency'        => $this->wacepay->currencyFor($country),
+                    'country'         => $country,
+                    'city'            => $company->city ?? null,
+                    'operator'        => $withdrawal->operator ?: 'MTN',
+                    'first_name'      => $company->contact_name ?? $company->name,
+                    'last_name'       => $company->name,
+                    'email'           => $company->email ?? null,
+                    'address'         => $company->address ?? null,
+                    'beneficiary_key' => 'company-' . $company->id,
+                    'id_number'       => $company->rccm ?? $company->registration_number ?? null,
+                ]);
+
+                if ($result['success'] ?? false) {
+                    $withdrawal->update([
+                        'status'          => 'success',
+                        'processed_at'    => now(),
+                        'transaction_ref' => $result['reference'],
+                        'provider'        => 'wacepay',
+                        'provider_status' => 'PENDING',
+                    ]);
+
+                    return back()->with('success', 'Retrait société envoyé via WacePay (réf. ' . $result['reference'] . '). Le statut final est suivi automatiquement.');
+                }
+
+                if (!empty($result['needs_review'])) {
+                    $withdrawal->update([
+                        'transaction_ref' => $result['reference'],
+                        'provider'        => 'wacepay',
+                        'provider_status' => 'WAITING CONFIRMATION',
+                    ]);
+                }
+
+                Log::error('WacePay payout failed on company withdrawal approval', [
+                    'withdrawal_id' => $withdrawal->id,
+                    'error'         => $result['error'] ?? 'unknown',
+                ]);
+
+                return back()->with('error', 'Échec du paiement WacePay : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour intervention manuelle.');
             }
 
             if (!$this->peex->supportsDisbursementFor($country)) {

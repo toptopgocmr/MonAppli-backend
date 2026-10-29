@@ -8,7 +8,7 @@ class CompanyWithdrawal extends Model
 {
     protected $fillable = [
         'company_id', 'amount', 'method', 'country', 'operator', 'phone_number', 'status',
-        'transaction_ref', 'notes', 'processed_at',
+        'transaction_ref', 'provider', 'provider_status', 'notes', 'processed_at',
     ];
 
     protected $casts = [

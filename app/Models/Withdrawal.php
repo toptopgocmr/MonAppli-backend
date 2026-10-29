@@ -11,7 +11,7 @@ class Withdrawal extends Model
     protected $fillable = [
         'driver_id', 'wallet_id', 'amount',
         'method', 'phone_number', 'status',
-        'transaction_ref', 'processed_at'
+        'transaction_ref', 'provider', 'provider_status', 'processed_at'
     ];
 
     protected $dates = ['processed_at'];

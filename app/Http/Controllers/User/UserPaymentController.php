@@ -9,6 +9,7 @@ use App\Events\PaymentValidated;
 use App\Services\Payment\FlutterwaveService;
 use App\Services\Payment\PeexService;
 use App\Services\Payment\NotchPayService;
+use App\Services\Payment\WacePayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +21,7 @@ class UserPaymentController extends Controller
         protected FlutterwaveService $flutterwave,
         protected PeexService        $peex,
         protected NotchPayService    $notchpay,
+        protected WacePayService     $wacepay,
     ) {}
 
     // ── Paiement Mobile Money (Peex si le pays est couvert, sinon Flutterwave) ──
@@ -89,10 +91,14 @@ class UserPaymentController extends Controller
         // (CM, CG par défaut). Ailleurs on garde Flutterwave.
         // Notch Pay est prioritaire (PAYMENT_COLLECT_GATEWAY=notchpay) pour les
         // pays de NOTCHPAY_COLLECT_COUNTRIES. Retour arrière : PAYMENT_COLLECT_GATEWAY=peex.
-        $useNotch = config('payments.collect_gateway', 'notchpay') === 'notchpay'
+        // WacePay (PAYMENT_COLLECT_GATEWAY=wacepay) pour les pays de WACEPAY_PAYIN_COUNTRIES.
+        $collectGateway = config('payments.collect_gateway', 'notchpay');
+        $useWace  = $collectGateway === 'wacepay'
+            && $this->wacepay->supportsCollectFor($countryCode);
+        $useNotch = !$useWace && $collectGateway === 'notchpay'
             && $this->notchpay->supportsCollectFor($countryCode);
-        $usePeex = !$useNotch && $this->peex->supportsCollectFor($countryCode);
-        $gateway = $useNotch ? 'notchpay' : ($usePeex ? 'peex' : 'flutterwave');
+        $usePeex = !$useWace && !$useNotch && $this->peex->supportsCollectFor($countryCode);
+        $gateway = $useWace ? 'wacepay' : ($useNotch ? 'notchpay' : ($usePeex ? 'peex' : 'flutterwave'));
 
         // ✅ Taux de commission réellement applicable à CE chauffeur/société,
         // au lieu d'un 10% fixe qui ignorait complètement les taux configurés
@@ -142,7 +148,18 @@ class UserPaymentController extends Controller
                 'paid_at'         => null,
             ]);
 
-            if ($useNotch) {
+            if ($useWace) {
+                $result = $this->wacepay->collect([
+                    'reference'     => $transactionRef,
+                    'phone'         => $request->phone,
+                    'amount'        => (int) $booking->amount,
+                    'currency'      => $this->wacepay->currencyFor($countryCode) ?? 'XAF', // XAF (CEMAC) / XOF (UEMOA), parité 1:1
+                    'country'       => $countryCode,
+                    'operator'      => $operator,
+                    'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
+                    'email'         => $user->email ?? "user_{$user->id}@toptopgo.app",
+                ]);
+            } elseif ($useNotch) {
                 $result = $this->notchpay->collect([
                     'reference'     => $transactionRef,
                     'phone'         => $request->phone,
@@ -200,6 +217,7 @@ class UserPaymentController extends Controller
 
                 $rawError = $result['error'] ?? 'Erreur lors de l\'initiation du paiement Mobile Money.';
                 $humanized = match ($gateway) {
+                    'wacepay'  => $this->wacepay->humanizeFailureReason($rawError) ?? $rawError,
                     'notchpay' => $this->notchpay->humanizeFailureReason($rawError) ?? $rawError,
                     'peex'     => $this->peex->humanizeFailureReason($rawError) ?? $rawError,
                     default    => $rawError,
@@ -214,7 +232,7 @@ class UserPaymentController extends Controller
             }
 
             // ── Sauvegarder l'identifiant de transaction fournisseur ─────
-            if ($useNotch || $usePeex) {
+            if ($useWace || $useNotch || $usePeex) {
                 $payment->update([
                     'provider_transaction_id' => $result['transaction_id'] ?? null,
                 ]);
@@ -356,6 +374,10 @@ class UserPaymentController extends Controller
      */
     protected function pollProviderStatus(Payment $payment): ?array
     {
+        if ($payment->provider === 'wacepay') {
+            return $this->wacepay->getTransactionStatus($payment->transaction_ref);
+        }
+
         if ($payment->provider === 'notchpay') {
             return $this->notchpay->getTransactionStatus($payment->provider_transaction_id ?: $payment->transaction_ref);
         }

@@ -10,6 +10,7 @@ use App\Models\Withdrawal;
 use App\Models\Driver\Driver;
 use App\Notifications\WithdrawalProcessedNotification;
 use App\Services\Payment\PeexService;
+use App\Services\Payment\WacePayService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -17,8 +18,10 @@ use Illuminate\Support\Str;
 
 class PaymentPartnerController extends Controller
 {
-    public function __construct(protected PeexService $peex)
-    {
+    public function __construct(
+        protected PeexService    $peex,
+        protected WacePayService $wacepay,
+    ) {
     }
 
     public function index(Request $request)
@@ -306,6 +309,62 @@ class PaymentPartnerController extends Controller
         $country = strtoupper($driver->vehicle_country ?? '');
         $eligibleForPeex = $this->peex->supportsDisbursementFor($country);
 
+        // ── WacePay (PAYMENT_PAYOUT_GATEWAY=wacepay) ────────────────────
+        if ($withdrawal->provider === 'wacepay' && filled($withdrawal->transaction_ref)) {
+            return back()->with('error', 'Une transaction WacePay existe déjà pour ce retrait (réf. ' . $withdrawal->transaction_ref . '). Vérifiez-la dans le back-office WacePay avant toute nouvelle action.');
+        }
+
+        if (config('payments.payout_gateway') === 'wacepay' && $this->wacepay->supportsPayoutFor($country)) {
+            $result = $this->wacepay->payout([
+                'reference'       => 'WD-' . $withdrawal->id,
+                'phone'           => $withdrawal->phone_number,
+                'amount'          => (int) $withdrawal->amount,
+                'currency'        => $this->wacepay->currencyFor($country),
+                'country'         => $country,
+                'city'            => $driver->vehicle_city ?? null,
+                'operator'        => $withdrawal->method,
+                'first_name'      => $driver->first_name ?? 'Chauffeur',
+                'last_name'       => $driver->last_name ?? 'TopTopGo',
+                'email'           => $driver->email ?? null,
+                'beneficiary_key' => 'driver-' . $driver->id,
+                'id_number'       => $driver->id_card_number ?? null,
+                'date_of_birth'   => $driver->birth_date ?? null,
+                'date_expire_id'  => $driver->id_card_expiry_date ?? null,
+            ]);
+
+            if (!($result['success'] ?? false)) {
+                Log::error('WacePay payout failed on withdrawal approval', [
+                    'withdrawal_id' => $withdrawal->id,
+                    'driver_id'     => $driver->id ?? null,
+                    'error'         => $result['error'] ?? 'unknown',
+                ]);
+
+                // Transaction créée mais pas confirmée : on garde la référence
+                // pour éviter de payer deux fois en relançant l'approbation.
+                if (!empty($result['needs_review'])) {
+                    $withdrawal->update([
+                        'transaction_ref' => $result['reference'],
+                        'provider'        => 'wacepay',
+                        'provider_status' => 'WAITING CONFIRMATION',
+                    ]);
+                }
+
+                return back()->with('error', 'Échec du paiement WacePay : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour vérification manuelle.');
+            }
+
+            $withdrawal->update([
+                'status'          => 'success',
+                'processed_at'    => now(),
+                'transaction_ref' => $result['reference'],
+                'provider'        => 'wacepay',
+                'provider_status' => 'PENDING',
+            ]);
+
+            $driver?->notify(new WithdrawalProcessedNotification($withdrawal));
+
+            return back()->with('success', 'Retrait envoyé via WacePay (réf. ' . $result['reference'] . '). Le statut final est suivi automatiquement.');
+        }
+
         if ($eligibleForPeex) {
             $result = $this->peex->payout([
                 'reference'   => 'WD-' . $withdrawal->id . '-' . strtoupper(Str::random(6)),
@@ -337,6 +396,7 @@ class PaymentPartnerController extends Controller
                 'status'          => 'success',
                 'processed_at'    => now(),
                 'transaction_ref' => $result['reference'] ?? $result['transaction_id'] ?? $withdrawal->transaction_ref,
+                'provider'        => 'peex',
             ]);
 
             $driver?->notify(new WithdrawalProcessedNotification($withdrawal));

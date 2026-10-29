@@ -10,6 +10,7 @@ use App\Services\Payment\FlutterwaveService;
 use App\Services\Payment\PaymentService;
 use App\Services\Payment\PeexService;
 use App\Services\Payment\NotchPayService;
+use App\Services\Payment\WacePayService;
 use App\Services\Payment\StripeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -24,6 +25,7 @@ class WebhookController extends Controller
         protected FlutterwaveService  $flutterwaveService,
         protected PeexService         $peexService,
         protected NotchPayService     $notchPayService,
+        protected WacePayService      $wacePayService,
     ) {}
 
     // =========================================================================
@@ -83,6 +85,66 @@ class WebhookController extends Controller
                 ]);
                 return response()->json(['status' => 'acknowledged', 'message' => 'not confirmed'], 200);
             }
+        }
+
+        $this->applyPeexStatus($payment, $status, $reason);
+
+        return response()->json(['status' => 'success'], 200);
+    }
+
+    // =========================================================================
+    // WACEPAY (Digitwace) — collecte
+    // callback_url envoyé à chaque paiement :
+    //   https://backend.toptopgo.app/api/webhooks/wacepay/collect?token=WACEPAY_WEBHOOK_SECRET
+    // La doc WacePay ne décrit pas de signature : on exige le jeton secret de
+    // l'URL, puis on reconfirme TOUJOURS le statut via /payments/check-status.
+    // =========================================================================
+
+    public function handleWacePayCollect(Request $request): JsonResponse
+    {
+        if (!$this->wacePayService->verifyWebhookToken($request->query('token'))) {
+            Log::warning('WacePay webhook : jeton invalide', ['ip' => $request->ip()]);
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $payload = json_decode($request->getContent(), true) ?: $request->all();
+        $event   = $this->wacePayService->handleWebhook((array) $payload);
+
+        Log::info('WacePay webhook reçu', [
+            'references' => $event['references'] ?? null,
+            'raw_status' => $event['raw_status'] ?? null,
+        ]);
+
+        if (!$event['success']) {
+            return response()->json(['status' => 'acknowledged', 'message' => $event['error'] ?? 'ignored'], 200);
+        }
+
+        $payment = Payment::where('provider', 'wacepay')
+            ->where(function ($q) use ($event) {
+                $q->whereIn('transaction_ref', $event['references'])
+                  ->orWhereIn('provider_transaction_id', $event['references']);
+            })
+            ->first();
+
+        if (!$payment) {
+            Log::warning('WacePay webhook : aucun paiement correspondant', ['references' => $event['references']]);
+            return response()->json(['status' => 'acknowledged', 'message' => 'unknown reference'], 200);
+        }
+
+        // Source de vérité : l'API WacePay (jamais créditer sur la seule foi du callback).
+        $status = $event['status'];
+        $reason = $event['reason'] ?? null;
+        $check  = $this->wacePayService->getTransactionStatus($payment->transaction_ref);
+
+        if ($check['success'] ?? false) {
+            $status = $check['status'];
+            $reason = $check['reason'] ?? $reason;
+        } elseif ($status === 'success') {
+            Log::warning('WacePay webhook : succès non confirmable via l\'API, paiement laissé en attente', [
+                'payment_id' => $payment->id,
+                'error'      => $check['error'] ?? null,
+            ]);
+            return response()->json(['status' => 'acknowledged', 'message' => 'not confirmed'], 200);
         }
 
         $this->applyPeexStatus($payment, $status, $reason);

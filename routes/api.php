@@ -80,6 +80,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // =============================================================================
 Route::prefix('webhooks')->name('webhooks.')->group(function () {
     Route::post('notchpay',     [WebhookController::class, 'handleNotchPay'])->name('notchpay');
+    Route::post('wacepay/collect', [WebhookController::class, 'handleWacePayCollect'])->name('wacepay.collect');
     Route::post('flutterwave',  [WebhookController::class, 'handleFlutterwave'])->name('flutterwave');
     Route::post('peex/collect', [WebhookController::class, 'handlePeexCollect'])->name('peex.collect');
     Route::post('peex/payout',  [WebhookController::class, 'handlePeexPayout'])->name('peex.payout');
