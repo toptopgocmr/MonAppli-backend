@@ -31,7 +31,7 @@ return [
     |--------------------------------------------------------------------------
     | Passerelle de décaissement (retraits chauffeurs / sociétés mobile money)
     |--------------------------------------------------------------------------
-    | wacepay : WacePay Business pour les pays de WACEPAY_PAYOUT_COUNTRIES
+    | wacepay : WacePay (module Payout de la plateforme PayIn) pour WACEPAY_PAYOUT_COUNTRIES
     | peex    : comportement actuel (Peex Disbursement, sinon paiement manuel)
     */
 
@@ -42,8 +42,9 @@ return [
     | WacePay (Digitwace)
     |--------------------------------------------------------------------------
     | Doc : https://docs.digitwace.com
-    | Collecte : API "WacePay PayIn" (clés public/private + subscription key)
-    | Décaissement : API "WacePay Business" (email/mot de passe + code expéditeur)
+    | Collecte ET décaissement : plateforme "WacePay PayIn" (mêmes clés public/private
+    | + subscription key). Tableau de bord sandbox : https://sandbox-payin.wacepay.io
+    | Les IP sortantes du serveur doivent être autorisées dans ce tableau de bord.
     | Webhook collecte (callback_url envoyé à chaque paiement) :
     |   https://backend.toptopgo.app/api/webhooks/wacepay/collect?token=WACEPAY_WEBHOOK_SECRET
     */
@@ -78,51 +79,15 @@ return [
             'msisdn_format'    => env('WACEPAY_MSISDN_FORMAT', 'international'), // international (242…) | local
         ],
 
+        // Décaissement : module Payout de la MÊME plateforme PayIn (mêmes clés).
+        // Pas l'API WacePay Business (remittance).
         'payout' => [
-            'base_url'      => env('WACEPAY_PAYOUT_BASE_URL'),
-            'email'         => env('WACEPAY_PAYOUT_EMAIL'),
-            'password'      => env('WACEPAY_PAYOUT_PASSWORD'),
-            'sender_code'   => env('WACEPAY_SENDER_CODE'), // php artisan wacepay:create-sender
+            'enabled'       => (bool) env('WACEPAY_PAYOUT_ENABLED', true),
             'countries'     => array_filter(explode(',', env('WACEPAY_PAYOUT_COUNTRIES', 'CG,CM,GA,TD,CF,GQ,CI,SN,BJ,TG,BF,ML,NE,GW'))),
-            'from_country'  => env('WACEPAY_FROM_COUNTRY', 'CG'),
-            'from_currency' => env('WACEPAY_FROM_CURRENCY', 'XAF'), // devise du compte TopTopGo débité
             'msisdn_format' => env('WACEPAY_PAYOUT_MSISDN_FORMAT', 'international'),
-            // Listes A/B/C WacePay (php artisan wacepay:lists pour voir les valeurs acceptées)
-            'origin_fund'   => env('WACEPAY_ORIGIN_FUND', 'BUSINESS'),
-            'reason'        => env('WACEPAY_REASON', 'SALARY'),
-            'relation'      => env('WACEPAY_RELATION', 'EMPLOYEE'),
-            // Code service par opérateur, ex. {"CG.MTN":"MTN_CG","CG.AIRTEL":"AIRTEL_CG"} ;
-            // vide → recherche automatique via /transaction/payoutservice
-            'services'      => json_decode((string) env('WACEPAY_PAYOUT_SERVICES', '{}'), true) ?: [],
-            'default_city'  => [
-                'CG' => 'Brazzaville', 'CM' => 'Douala', 'GA' => 'Libreville', 'TD' => "N'Djamena",
-                'CF' => 'Bangui', 'GQ' => 'Malabo', 'CI' => 'Abidjan', 'SN' => 'Dakar',
-                'BJ' => 'Cotonou', 'TG' => 'Lomé', 'BF' => 'Ouagadougou', 'ML' => 'Bamako',
-                'NE' => 'Niamey', 'GW' => 'Bissau',
-            ],
-            'beneficiary_defaults' => [
-                'id_type'          => env('WACEPAY_BENEF_ID_TYPE', 'CNI'),
-                'id_number_prefix' => 'TTG-',
-            ],
-            // Expéditeur TopTopGo (représentant légal) – utilisé par wacepay:create-sender
-            'sender' => [
-                'firstName'    => env('WACEPAY_SENDER_FIRST_NAME'),
-                'lastName'     => env('WACEPAY_SENDER_LAST_NAME'),
-                'address'      => env('WACEPAY_SENDER_ADDRESS'),
-                'phone'        => env('WACEPAY_SENDER_PHONE'),
-                'country'      => env('WACEPAY_SENDER_COUNTRY', 'CG'),
-                'city'         => env('WACEPAY_SENDER_CITY', 'Brazzaville'),
-                'gender'       => env('WACEPAY_SENDER_GENDER', 'M'),
-                'civility'     => env('WACEPAY_SENDER_CIVILITY', 'Others'),
-                'idNumber'     => env('WACEPAY_SENDER_ID_NUMBER'),
-                'idType'       => env('WACEPAY_SENDER_ID_TYPE', 'CNI'),
-                'nationality'  => env('WACEPAY_SENDER_NATIONALITY', 'CG'),
-                'dateOfBirth'  => env('WACEPAY_SENDER_BIRTH_DATE'),
-                'dateExpireId' => env('WACEPAY_SENDER_ID_EXPIRY'),
-                'occupation'   => 'TopTopGo',
-                'pep'          => false,
-                'updateIfExist'=> true,
-            ],
+            // payoutSubscriptionId par pays.opérateur, ex. {"CG.MTN":"<id>","CG.AIRTEL":"<id>"} ;
+            // vide → recherche automatique dans GET payout/customer/services
+            'subscriptions' => json_decode((string) env('WACEPAY_PAYOUT_SUBSCRIPTIONS', '{}'), true) ?: [],
         ],
     ],
 

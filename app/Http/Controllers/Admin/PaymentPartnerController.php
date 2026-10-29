@@ -321,15 +321,8 @@ class PaymentPartnerController extends Controller
                 'amount'          => (int) $withdrawal->amount,
                 'currency'        => $this->wacepay->currencyFor($country),
                 'country'         => $country,
-                'city'            => $driver->vehicle_city ?? null,
                 'operator'        => $withdrawal->method,
-                'first_name'      => $driver->first_name ?? 'Chauffeur',
-                'last_name'       => $driver->last_name ?? 'TopTopGo',
-                'email'           => $driver->email ?? null,
-                'beneficiary_key' => 'driver-' . $driver->id,
-                'id_number'       => $driver->id_card_number ?? null,
-                'date_of_birth'   => $driver->birth_date ?? null,
-                'date_expire_id'  => $driver->id_card_expiry_date ?? null,
+                'recipient_name'  => trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? '')) ?: 'Chauffeur TopTopGo',
             ]);
 
             if (!($result['success'] ?? false)) {
@@ -339,16 +332,6 @@ class PaymentPartnerController extends Controller
                     'error'         => $result['error'] ?? 'unknown',
                 ]);
 
-                // Transaction créée mais pas confirmée : on garde la référence
-                // pour éviter de payer deux fois en relançant l'approbation.
-                if (!empty($result['needs_review'])) {
-                    $withdrawal->update([
-                        'transaction_ref' => $result['reference'],
-                        'provider'        => 'wacepay',
-                        'provider_status' => 'WAITING CONFIRMATION',
-                    ]);
-                }
-
                 return back()->with('error', 'Échec du paiement WacePay : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour vérification manuelle.');
             }
 
@@ -357,7 +340,7 @@ class PaymentPartnerController extends Controller
                 'processed_at'    => now(),
                 'transaction_ref' => $result['reference'],
                 'provider'        => 'wacepay',
-                'provider_status' => 'PENDING',
+                'provider_status' => $result['raw_status'] ?? 'PENDING',
             ]);
 
             $driver?->notify(new WithdrawalProcessedNotification($withdrawal));

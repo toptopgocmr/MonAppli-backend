@@ -6,48 +6,50 @@ use App\Services\Payment\WacePayService;
 use Illuminate\Console\Command;
 
 /**
- * Diagnostic WacePay : connexion PayIn, solde Business, listes A/B/C
- * (origine des fonds, motifs, relations) et services de décaissement d'un pays.
- *   php artisan wacepay:check --country=CG
+ * Diagnostic WacePay (plateforme PayIn : collecte + décaissement).
+ *   php artisan wacepay:check
+ * Affiche : connexion (jeton), URL de callback, comptes payout (soldes par
+ * devise) et services de décaissement souscrits (subscriptionId, pays, devise,
+ * frais, min/max) — à recopier si besoin dans WACEPAY_PAYOUT_SUBSCRIPTIONS.
  */
 class WacePayCheck extends Command
 {
-    protected $signature = 'wacepay:check {--country=CG} {--currency=XAF}';
+    protected $signature = 'wacepay:check';
 
-    protected $description = 'Teste les accès WacePay et affiche les valeurs acceptées (listes, services)';
+    protected $description = 'Teste les accès WacePay et liste les comptes / services de décaissement';
 
     public function handle(WacePayService $wacepay): int
     {
-        $country = strtoupper($this->option('country'));
-
-        $this->info('— Collecte (PayIn)');
-        if ($wacepay->isCollectConfigured()) {
-            $st = $wacepay->getTransactionStatus('TTG-DIAG-' . now()->timestamp);
-            $this->line('Connexion : ' . (($st['success'] ?? false) || ($st['http_status'] ?? 0) === 404 ? 'OK' : ($st['error'] ?? 'échec')));
-            $this->line('Callback  : ' . preg_replace('/token=[^&]+/', 'token=***', $wacepay->callbackUrl()));
-        } else {
-            $this->warn('Non configurée (WACEPAY_PAYIN_*)');
+        if (!$wacepay->isCollectConfigured()) {
+            $this->error('WacePay non configuré : WACEPAY_PAYIN_BASE_URL / PUBLIC_KEY / PRIVATE_KEY / SUBSCRIPTION_KEY.');
+            return self::FAILURE;
         }
 
-        $this->info('— Décaissement (Business)');
-        if (!config('payments.wacepay.payout.base_url') || !config('payments.wacepay.payout.email')) {
-            $this->warn('Non configuré (WACEPAY_PAYOUT_*)');
+        $this->info('— Connexion');
+        $st = $wacepay->getTransactionStatus('TTG-DIAG-' . now()->timestamp);
+        $authOk = ($st['success'] ?? false) || in_array($st['http_status'] ?? 0, [400, 404, 422], true);
+        $this->line($authOk ? 'OK (jeton obtenu)' : 'ÉCHEC : ' . ($st['error'] ?? '?') . ' — vérifiez les clés et que l\'IP du serveur est autorisée.');
+        $this->line('Callback collecte : ' . preg_replace('/token=[^&]+/', 'token=***', $wacepay->callbackUrl()));
+
+        $this->info("\n— Comptes de décaissement (soldes)");
+        $acc = $wacepay->payoutAccount();
+        $this->line($acc['ok'] ? json_encode($acc['json']['data'] ?? $acc['json'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : '→ ' . $acc['error']);
+
+        $this->info("\n— Services de décaissement souscrits");
+        $services = $wacepay->payoutServices();
+        if (!$services) {
+            $this->warn('Aucun service (souscrivez les services Payout dans le tableau de bord WacePay).');
             return self::SUCCESS;
         }
 
-        $calls = [
-            'Solde'                    => ['GET', 'account/balance', []],
-            'Liste A – origine fonds'  => ['GET', 'transaction/origin_fund/b2B', []],
-            'Liste B – motifs'         => ['GET', 'transaction/reason/b2B', []],
-            'Liste C – relations'      => ['GET', 'transaction/relation', []],
-            "Services $country"        => ['POST', 'transaction/payoutservice', ['payoutCountry' => $country, 'payoutCurrency' => $this->option('currency')]],
-        ];
-
-        foreach ($calls as $label => [$method, $path, $body]) {
-            $res = $wacepay->business($method, $path, $body);
-            $this->line("\n<comment>$label</comment> " . ($res['ok'] ? '' : '→ ' . $res['error']));
-            $this->line(mb_substr(json_encode($res['json'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), 0, 3000));
-        }
+        $this->table(
+            ['subscriptionId', 'Service', 'Pays', 'Devise', 'Frais fixes', 'Taux %', 'Min', 'Max', 'Actif'],
+            array_map(fn ($s) => [
+                $s['subscriptionId'] ?? '?', $s['name'] ?? '?', $s['countryCode'] ?? $s['country'] ?? '?',
+                $s['currency'] ?? '?', $s['fixedFee'] ?? '', $s['rate'] ?? '', $s['minAmount'] ?? '',
+                $s['maxAmount'] ?? '', isset($s['active']) ? ($s['active'] ? 'oui' : 'non') : '?',
+            ], $services)
+        );
 
         return self::SUCCESS;
     }

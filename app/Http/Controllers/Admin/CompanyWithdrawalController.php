@@ -122,14 +122,8 @@ class CompanyWithdrawalController extends Controller
                     'amount'          => (int) $withdrawal->amount,
                     'currency'        => $this->wacepay->currencyFor($country),
                     'country'         => $country,
-                    'city'            => $company->city ?? null,
                     'operator'        => $withdrawal->operator ?: 'MTN',
-                    'first_name'      => $company->contact_name ?? $company->name,
-                    'last_name'       => $company->name,
-                    'email'           => $company->email ?? null,
-                    'address'         => $company->address ?? null,
-                    'beneficiary_key' => 'company-' . $company->id,
-                    'id_number'       => $company->rccm ?? $company->registration_number ?? null,
+                    'recipient_name'  => $company->contact_name ?: $company->name,
                 ]);
 
                 if ($result['success'] ?? false) {
@@ -138,18 +132,10 @@ class CompanyWithdrawalController extends Controller
                         'processed_at'    => now(),
                         'transaction_ref' => $result['reference'],
                         'provider'        => 'wacepay',
-                        'provider_status' => 'PENDING',
+                        'provider_status' => $result['raw_status'] ?? 'PENDING',
                     ]);
 
                     return back()->with('success', 'Retrait société envoyé via WacePay (réf. ' . $result['reference'] . '). Le statut final est suivi automatiquement.');
-                }
-
-                if (!empty($result['needs_review'])) {
-                    $withdrawal->update([
-                        'transaction_ref' => $result['reference'],
-                        'provider'        => 'wacepay',
-                        'provider_status' => 'WAITING CONFIRMATION',
-                    ]);
                 }
 
                 Log::error('WacePay payout failed on company withdrawal approval', [

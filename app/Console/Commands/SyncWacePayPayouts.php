@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Suit les décaissements WacePay après approbation (pas de webhook payout
- * documenté par WacePay) :
- *   PAID   → provider_status = PAID (définitif)
- *   CANCEL → retrait repassé en "failed" + wallet chauffeur recrédité
- *   autres (PENDING, PROCESSING, LOCKED…) → on note le statut et on attend.
+ * Suit les décaissements WacePay (module Payout de la plateforme PayIn) après
+ * approbation — pas d'évènement webhook payout côté WacePay :
+ *   SUCCESS                → provider_status = SUCCESS (définitif)
+ *   FAILED / CANCELLED     → retrait repassé en "failed" + wallet chauffeur recrédité
+ *   PENDING / PROCESSING   → on note le statut et on attend.
  * Planifiée toutes les 10 min (routes/console.php).
  */
 class SyncWacePayPayouts extends Command
@@ -32,7 +32,7 @@ class SyncWacePayPayouts extends Command
         }
 
         $since = now()->subDays((int) $this->option('days'));
-        $final = ['PAID', 'CANCEL', 'CANCELED', 'CANCELLED'];
+        $final = ['SUCCESS', 'SUCCESSFUL', 'COMPLETED', 'PAID', 'FAILED', 'REJECTED', 'CANCEL', 'CANCELED', 'CANCELLED'];
 
         foreach ([Withdrawal::class, CompanyWithdrawal::class] as $model) {
             $rows = $model::where('provider', 'wacepay')
@@ -43,7 +43,10 @@ class SyncWacePayPayouts extends Command
                 ->get();
 
             foreach ($rows as $w) {
-                $res = $wacepay->getPayoutStatus($w->transaction_ref);
+                $msisdn = $w->phone_number
+                    ? $wacepay->msisdn($w->phone_number, strtoupper($w->country ?? $w->driver?->vehicle_country ?? 'CG'))
+                    : null;
+                $res = $wacepay->getPayoutStatus($w->transaction_ref, $msisdn);
                 if (!($res['success'] ?? false)) {
                     $this->error("{$w->transaction_ref} : " . ($res['error'] ?? 'erreur'));
                     continue;
@@ -52,7 +55,7 @@ class SyncWacePayPayouts extends Command
                 $raw = $res['raw_status'];
                 $this->line(class_basename($model) . " #{$w->id} {$w->transaction_ref} : {$raw}");
 
-                if (str_starts_with($raw, 'CANCEL') && $w->status === 'success') {
+                if ($res['status'] === 'failed' && $w->status === 'success') {
                     $this->cancel($w, $raw);
                 } elseif ($raw !== $w->provider_status) {
                     $w->update(['provider_status' => $raw]);
@@ -79,14 +82,14 @@ class SyncWacePayPayouts extends Command
                     'amount'         => $w->amount,
                     'balance_before' => $before,
                     'balance_after'  => $wallet->fresh()->balance,
-                    'description'    => 'Remboursement retrait annulé par WacePay #' . $w->id,
+                    'description'    => 'Remboursement retrait échoué/annulé WacePay #' . $w->id,
                     'reference'      => $w->transaction_ref,
                 ]);
             }
             // Retrait société : le solde est recalculé à partir des retraits non "failed".
         });
 
-        Log::warning('WacePay : décaissement annulé, retrait repassé en échec', [
+        Log::warning('WacePay : décaissement échoué/annulé, retrait repassé en échec', [
             'model' => class_basename($w), 'id' => $w->id, 'reference' => $w->transaction_ref,
         ]);
     }

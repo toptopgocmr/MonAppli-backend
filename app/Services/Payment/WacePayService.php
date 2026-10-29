@@ -12,31 +12,33 @@ use Exception;
  *
  * Doc : https://docs.digitwace.com
  *
- * ── COLLECTE (WacePay PayIn) ─────────────────────────────────────────────
- *   Base : WACEPAY_PAYIN_BASE_URL (prod : https://payinws.wacepay.com/api/v1)
- *   1. GET  /payments/get-token     Authorization: Basic base64(public_key:private_key)
- *                                   → { status, message, token, expiresAt }
- *   2. POST /payments/create        Authorization: Bearer {token}
- *                                   wp-subscription-key: {subscription id}
- *      body : currency, amount, referenceId, customer_msisdn, customer_name,
- *             customer_email, countryCode, callback_url, operator
- *   3. GET  /payments/check-status  header referenceId: {notre référence}
- *   4. callback_url → POST /api/webhooks/wacepay/collect?token=WACEPAY_WEBHOOK_SECRET
- *      La doc ne décrit aucune signature : le webhook est protégé par un jeton
- *      secret dans l'URL ET le statut est toujours reconfirmé via check-status.
+ * Une seule plateforme (WacePay PayIn — tableau de bord sandbox-payin.wacepay.io)
+ * pour la COLLECTE (payin) et le DÉCAISSEMENT (payout). Ce n'est PAS l'API
+ * WacePay Business (remittance avec expéditeur/bénéficiaire), non utilisée ici.
  *
- * ── DÉCAISSEMENT (WacePay Business) ──────────────────────────────────────
- *   Base : WACEPAY_PAYOUT_BASE_URL (fournie par Digitwace avec les accès)
- *   1. POST /login {email, password}                → access_token, expires_in
- *   2. POST /sender/create                          → code expéditeur (TopTopGo, créé
- *                                                     une fois : php artisan wacepay:create-sender)
- *   3. POST /beneficiary/create                     → code bénéficiaire (chauffeur / société)
- *   4. POST /transaction/payercode                  → payerCode du service
- *   5. POST /transaction/wallet/create              → référence (ex: WPMG7229671969)
- *   6. POST /transaction/confirm {reference}
- *   7. GET  /transaction/status/{reference}         → CANCEL|PENDING|WAITING CONFIRMATION|
- *                                                     PROCESSING|LOCKED|PAID
- *   Pas de webhook payout documenté : la commande wacepay:sync-payouts suit les statuts.
+ *   Base : WACEPAY_PAYIN_BASE_URL
+ *          sandbox : https://sandbox-payinws.wacepay.io/api/v1
+ *          prod    : https://payinws.wacepay.com/api/v1
+ *   Auth : GET /payments/get-token   Authorization: Basic base64(public_key:private_key)
+ *          → { token, expiresAt } puis Authorization: Bearer {token}
+ *          + header wp-subscription-key. Les IP du serveur doivent être
+ *          autorisées dans le tableau de bord (API Integration → IP).
+ *
+ * ── COLLECTE ─────────────────────────────────────────────────────────────
+ *   POST /payments/create      currency, amount, referenceId, customer_msisdn, customer_name,
+ *                              customer_email, countryCode, callback_url, operator
+ *   GET  /payments/check-status  header referenceId
+ *   Webhook (callback_url + webhook du tableau de bord, évènements transaction.*)
+ *     → POST /api/webhooks/wacepay/collect?token=WACEPAY_WEBHOOK_SECRET
+ *     Pas de signature documentée : jeton secret + reconfirmation via check-status.
+ *
+ * ── DÉCAISSEMENT ─────────────────────────────────────────────────────────
+ *   GET  /payout/customer/account          soldes par devise (compte à approvisionner)
+ *   GET  /payout/customer/services         services souscrits (subscriptionId, pays, devise, frais)
+ *   POST /payout/customer/execute          { amount, recipientMsisdn, recipientName, payoutSubscriptionId }
+ *                                          → status 2000/2001
+ *   GET  /payout/customer/transactions/{id} statut PENDING|PROCESSING|SUCCESS|FAILED|CANCELLED
+ *   Pas d'évènement webhook payout : la commande wacepay:sync-payouts suit les statuts.
  */
 class WacePayService implements PaymentProviderInterface
 {
@@ -57,7 +59,7 @@ class WacePayService implements PaymentProviderInterface
         return (int) $this->c('timeout', 30);
     }
 
-    /** Une réponse WacePay est OK si HTTP 2xx et le champ "status" du corps (s'il existe) vaut 2xx ou 2000. */
+    /** Une réponse WacePay est OK si HTTP 2xx et le champ "status" du corps (s'il existe) vaut 2xx, 2000 ou 2001. */
     protected function bodyOk($response): bool
     {
         if (!$response->successful()) {
@@ -69,7 +71,8 @@ class WacePayService implements PaymentProviderInterface
         }
         if (is_numeric($status)) {
             $s = (int) $status;
-            return ($s >= 200 && $s < 300) || $s === 2000;
+            // Plateforme PayIn : 2000 = OK, 2001 = opération initiée (ex. payout) — cf. tableau de bord.
+            return ($s >= 200 && $s < 300) || $s === 2000 || $s === 2001;
         }
         return in_array(strtolower((string) $status), ['success', 'ok', 'successful'], true);
     }
@@ -96,7 +99,7 @@ class WacePayService implements PaymentProviderInterface
         return $fallback . ' (HTTP ' . $response->status() . ')';
     }
 
-    /** Codes système WacePay Business (doc "List code system"). */
+    /** Codes d'erreur WacePay (doc Digitwace "List code system"). */
     protected function codeMessage(int $code): ?string
     {
         return [
@@ -117,7 +120,6 @@ class WacePayService implements PaymentProviderInterface
             1015 => 'Relation expéditeur/bénéficiaire invalide (WacePay 1015).',
             1016 => 'Motif d\'envoi invalide (WacePay 1016).',
             1017 => 'Origine des fonds invalide (WacePay 1017).',
-            2001 => 'Erreur système WacePay (2001).',
             3001 => 'Erreur système WacePay (3001).',
             3002 => 'Compte ou solde WacePay non activé (3002).',
             3015 => 'Référence obligatoire (WacePay 3015).',
@@ -150,10 +152,8 @@ class WacePayService implements PaymentProviderInterface
 
     public function isPayoutConfigured(): bool
     {
-        return filled($this->c('payout.base_url'))
-            && filled($this->c('payout.email'))
-            && filled($this->c('payout.password'))
-            && filled($this->c('payout.sender_code'));
+        // Même plateforme et mêmes clés que la collecte.
+        return $this->isCollectConfigured() && (bool) $this->c('payout.enabled', true);
     }
 
     protected function countries(string $key): array
@@ -446,325 +446,219 @@ class WacePayService implements PaymentProviderInterface
     }
 
     // =====================================================================
-    // DÉCAISSEMENT
+    // DÉCAISSEMENT (module Payout de la plateforme WacePay PayIn)
     // =====================================================================
 
-    protected function payoutUrl(string $path): string
-    {
-        return rtrim((string) $this->c('payout.base_url'), '/') . '/' . ltrim($path, '/');
-    }
-
-    protected function payoutToken(bool $fresh = false): ?string
-    {
-        $cacheKey = 'wacepay.payout.token.' . md5((string) $this->c('payout.email'));
-        if ($fresh) {
-            Cache::forget($cacheKey);
-        }
-        if ($token = Cache::get($cacheKey)) {
-            return $token;
-        }
-
-        $response = Http::acceptJson()->asJson()->timeout($this->timeout())
-            ->post($this->payoutUrl('login'), [
-                'email'    => $this->c('payout.email'),
-                'password' => $this->c('payout.password'),
-            ]);
-
-        $token = $response->json('access_token') ?? $response->json('data.access_token') ?? $response->json('token');
-        if (!$response->successful() || !$token) {
-            Log::error('WacePay Business login échoué', ['http' => $response->status(), 'body' => mb_substr($response->body(), 0, 500)]);
-            return null;
-        }
-
-        $ttl = max(60, (int) ($response->json('expires_in') ?? 3600) - 60);
-        Cache::put($cacheKey, $token, $ttl);
-
-        return $token;
-    }
-
-    protected function payoutRequest(string $method, string $path, array $body = [])
-    {
-        $send = function (bool $fresh) use ($method, $path, $body) {
-            $token = $this->payoutToken($fresh);
-            if (!$token) {
-                return null;
-            }
-            $req = Http::withToken($token)->acceptJson()->asJson()->timeout($this->timeout());
-            return $method === 'GET' ? $req->get($this->payoutUrl($path)) : $req->post($this->payoutUrl($path), $body);
-        };
-
-        $response = $send(false);
-        if ($response && $response->status() === 401) {
-            $response = $send(true);
-        }
-        return $response;
-    }
-
-    /** Appel générique à l'API Business : ['ok'=>bool, 'json'=>array, 'error'=>?string]. */
-    public function business(string $method, string $path, array $body = []): array
+    /** Requête authentifiée sur l'API PayIn (même jeton que la collecte). */
+    protected function payin(string $method, string $path, array $body = [], array $query = []): array
     {
         try {
-            $response = $this->payoutRequest($method, $path, $body);
-            if (!$response) {
-                return ['ok' => false, 'json' => [], 'error' => 'Connexion WacePay Business impossible (identifiants ?).'];
+            $send = function (bool $fresh) use ($method, $path, $body, $query) {
+                $token = $this->payinToken($fresh);
+                if (!$token) {
+                    return null;
+                }
+                $req = Http::withHeaders([
+                    'Authorization'       => 'Bearer ' . $token,
+                    'wp-subscription-key' => (string) $this->c('payin.subscription_key'),
+                    'Accept'              => 'application/json',
+                    'Content-Type'        => 'application/json',
+                ])->timeout($this->timeout());
+
+                return $method === 'GET'
+                    ? $req->get($this->payinUrl($path), $query)
+                    : $req->post($this->payinUrl($path), $body);
+            };
+
+            $response = $send(false);
+            if ($response && $response->status() === 401) {
+                $response = $send(true);
             }
+            if (!$response) {
+                return ['ok' => false, 'json' => [], 'error' => 'Authentification WacePay impossible (clés ou IP non autorisée ?).', 'http' => null];
+            }
+
             $ok = $this->bodyOk($response);
             if (!$ok) {
-                Log::warning('WacePay Business ' . $path . ' refusé', ['http' => $response->status(), 'body' => mb_substr($response->body(), 0, 1000)]);
+                Log::warning('WacePay ' . $path . ' refusé', ['http' => $response->status(), 'body' => mb_substr($response->body(), 0, 1000)]);
             }
+
             return [
                 'ok'    => $ok,
                 'json'  => (array) $response->json(),
                 'error' => $ok ? null : $this->errorMessage($response, 'Appel WacePay ' . $path . ' échoué'),
+                'http'  => $response->status(),
             ];
         } catch (Exception $e) {
-            Log::error('WacePay Business ' . $path . ' exception: ' . $e->getMessage());
-            return ['ok' => false, 'json' => [], 'error' => $e->getMessage()];
+            Log::error('WacePay ' . $path . ' exception: ' . $e->getMessage());
+            return ['ok' => false, 'json' => [], 'error' => $e->getMessage(), 'http' => null];
         }
     }
 
-    /** Cherche un "code"/"reference" dans une réponse aux formes variables. */
-    protected function extractCode(array $json, array $keys): ?string
+    /** Extrait une liste d'éléments d'une réponse { status, data: [...] } ou { data: { items|data|rows: [...] } }. */
+    protected function listFrom(array $json): array
     {
-        foreach ($keys as $k) {
-            foreach (['', 'data.', 'sender.', 'beneficiary.', 'transaction.', 'result.'] as $prefix) {
-                $v = data_get($json, $prefix . $k);
-                if (is_scalar($v) && $v !== '') {
-                    return (string) $v;
-                }
+        foreach (['data.items', 'data.data', 'data.rows', 'data.transactions', 'data.services', 'data', 'items', 'services'] as $k) {
+            $v = data_get($json, $k);
+            if (is_array($v) && array_is_list($v)) {
+                return $v;
+            }
+        }
+        return [];
+    }
+
+    /** GET payout/customer/services → services de décaissement souscrits (subscriptionId, name, countryCode, currency, fixedFee, rate, min/maxAmount, active). */
+    public function payoutServices(): array
+    {
+        $res = $this->payin('GET', 'payout/customer/services');
+        return $res['ok'] ? $this->listFrom($res['json']) : [];
+    }
+
+    /** GET payout/customer/account → comptes (solde disponible par devise). */
+    public function payoutAccount(): array
+    {
+        return $this->payin('GET', 'payout/customer/account');
+    }
+
+    /**
+     * Identifiant de souscription (payoutSubscriptionId) du service à utiliser
+     * pour un opérateur/pays/devise. Config WACEPAY_PAYOUT_SUBSCRIPTIONS
+     * prioritaire, sinon recherche dans payout/customer/services.
+     */
+    public function resolvePayoutSubscription(string $operator, string $country, string $currency): ?array
+    {
+        $base = $this->resolveOperator($operator, $country);
+        $map  = (array) $this->c('payout.subscriptions', []);
+        if ($id = $map[strtoupper($country) . '.' . $base] ?? null) {
+            return ['subscriptionId' => (string) $id];
+        }
+
+        $services = Cache::remember('wacepay.payout.services', now()->addMinutes(30), fn () => $this->payoutServices());
+
+        foreach ($services as $s) {
+            if (!is_array($s) || (array_key_exists('active', $s) && !$s['active'])) {
+                continue;
+            }
+            $sCountry  = strtoupper((string) ($s['countryCode'] ?? $s['country_code'] ?? ''));
+            $sCurrency = strtoupper((string) ($s['currency'] ?? ''));
+            $sName     = strtoupper((string) ($s['name'] ?? $s['serviceName'] ?? ''));
+
+            if (($sCountry === '' || $sCountry === strtoupper($country))
+                && ($sCurrency === '' || $sCurrency === strtoupper($currency))
+                && str_contains(preg_replace('/[^A-Z]/', '', $sName), $base)
+                && !empty($s['subscriptionId'])) {
+                return $s;
             }
         }
         return null;
     }
 
-    /** Crée l'expéditeur TopTopGo (utilisé une fois via php artisan wacepay:create-sender). */
-    public function createSender(array $s): array
-    {
-        $res = $this->business('POST', 'sender/create', $s);
-        return [
-            'success' => $res['ok'],
-            'code'    => $res['ok'] ? $this->extractCode($res['json'], ['senderCode', 'code', 'reference', 'codeSender']) : null,
-            'error'   => $res['error'],
-            'data'    => $res['json'],
-        ];
-    }
-
     /**
-     * Crée (ou met à jour) le bénéficiaire et renvoie son code. Mis en cache
-     * pour ne pas recréer le bénéficiaire à chaque retrait.
-     */
-    public function beneficiaryCode(array $b): array
-    {
-        $cacheKey = 'wacepay.beneficiary.' . md5(json_encode([$b['key'] ?? null, $b['phone'], $b['country'], $b['city']]));
-        if ($code = Cache::get($cacheKey)) {
-            return ['success' => true, 'code' => $code];
-        }
-
-        $defaults = (array) $this->c('payout.beneficiary_defaults', []);
-        $payload = [
-            'firstName'      => $b['first_name'] ?: 'Beneficiaire',
-            'lastName'       => $b['last_name'] ?: 'TopTopGo',
-            'address'        => $b['address'] ?: ($b['city'] . ', ' . $b['country']),
-            'phone'          => $b['phone'],
-            'country'        => $b['country'],
-            'city'           => $b['city'],
-            'email'          => $b['email'] ?? null,
-            'idNumber'       => $b['id_number'] ?: ($defaults['id_number_prefix'] ?? 'TTG-') . ($b['key'] ?? $b['phone']),
-            'idType'         => $b['id_type'] ?: ($defaults['id_type'] ?? 'CNI'),
-            'dateOfBirth'    => $this->ymd($b['date_of_birth'] ?? null) ?? ($defaults['date_of_birth'] ?? '1990-01-01'),
-            'dateExpireId'   => $this->ymd($b['date_expire_id'] ?? null) ?? now()->addYears(5)->format('Y-m-d'),
-            'pep'            => false,
-            'updateIfExist'  => true,
-        ];
-        $payload = array_filter($payload, fn ($v) => $v !== null && $v !== '');
-
-        $res = $this->business('POST', 'beneficiary/create', $payload);
-        $code = $res['ok'] ? $this->extractCode($res['json'], ['beneficiaryCode', 'code', 'reference', 'codeBeneficiary']) : null;
-
-        if (!$code) {
-            return ['success' => false, 'error' => $res['error'] ?? 'Code bénéficiaire absent de la réponse WacePay', 'data' => $res['json']];
-        }
-
-        Cache::put($cacheKey, $code, now()->addDays(30));
-        return ['success' => true, 'code' => $code];
-    }
-
-    /** Liste des services de décaissement d'un pays (POST /transaction/payoutservice). */
-    public function payoutServices(string $country, string $currency = 'XAF'): array
-    {
-        return $this->business('POST', 'transaction/payoutservice', [
-            'payoutCountry'  => strtoupper($country),
-            'payoutCurrency' => $currency,
-        ]);
-    }
-
-    /** Code du service (wallet) WacePay pour un opérateur, depuis la config ou l'API. */
-    public function resolvePayoutService(string $operator, string $country, string $currency = 'XAF'): ?string
-    {
-        $base = $this->resolveOperator($operator, $country);
-        $map  = (array) $this->c('payout.services', []);
-        if ($code = $map[strtoupper($country) . '.' . $base] ?? $map[$base] ?? null) {
-            return $code;
-        }
-
-        return Cache::remember('wacepay.service.' . $country . '.' . $base . '.' . $currency, now()->addHours(12), function () use ($base, $country, $currency) {
-            $res = $this->payoutServices($country, $currency);
-            if (!$res['ok']) {
-                return null;
-            }
-            $list = $res['json']['data'] ?? $res['json']['services'] ?? $res['json']['service'] ?? $res['json']['transaction'] ?? $res['json'];
-            foreach ((array) $list as $item) {
-                if (!is_array($item)) {
-                    continue;
-                }
-                $haystack = strtoupper(json_encode($item));
-                if (str_contains($haystack, $base)) {
-                    return (string) ($item['code'] ?? $item['service'] ?? $item['serviceCode'] ?? $item['name'] ?? '') ?: null;
-                }
-            }
-            return null;
-        });
-    }
-
-    public function resolvePayerCode(string $service, string $country, string $currency = 'XAF'): ?string
-    {
-        return Cache::remember('wacepay.payercode.' . $country . '.' . $service . '.' . $currency, now()->addHours(12), function () use ($service, $country, $currency) {
-            $res = $this->business('POST', 'transaction/payercode', [
-                'payoutCountry'  => strtoupper($country),
-                'payoutService'  => $service,
-                'CurrencyPayout' => $currency,
-            ]);
-            if (!$res['ok']) {
-                return null;
-            }
-            $list = $res['json']['transaction'] ?? $res['json']['data'] ?? [];
-            $first = is_array($list) ? (array_is_list($list) ? ($list[0] ?? []) : $list) : [];
-            $code = $first['payerCode'] ?? $first['payercode'] ?? $first['code'] ?? null;
-            return $code !== null ? (string) $code : null;
-        });
-    }
-
-    /**
-     * Décaissement Mobile Money.
+     * Décaissement Mobile Money : POST payout/customer/execute
+     *   { amount, recipientMsisdn, recipientName, payoutSubscriptionId }
+     *   → status 2000 / 2001 = décaissement initié.
      *
-     * $data : reference (interne), phone, amount, currency, country, city, operator,
-     *         first_name, last_name, beneficiary_key, id_number, id_type,
-     *         date_of_birth, date_expire_id, email, address
+     * $data : reference (interne, pour les logs), phone, amount, country, operator, recipient_name
      */
     public function payout(array $data): array
     {
         if (!$this->isPayoutConfigured()) {
-            return ['success' => false, 'error' => 'Décaissement WacePay non configuré (WACEPAY_PAYOUT_* / WACEPAY_SENDER_CODE).'];
+            return ['success' => false, 'error' => 'Décaissement WacePay non configuré (clés WACEPAY_PAYIN_*).'];
         }
 
         $country  = strtoupper($data['country'] ?? 'CG');
-        // Devise reçue = devise du pays (XAF/XOF) ; devise envoyée = celle du compte TopTopGo.
-        $currency     = $this->currencyFor($country) ?? ($data['currency'] ?? 'XAF');
-        $fromCurrency = (string) $this->c('payout.from_currency', 'XAF');
-        $city     = ($data['city'] ?? null) ?: (string) data_get($this->cfg, 'payout.default_city.' . $country, 'Brazzaville');
-        $phone    = $this->msisdn($data['phone'] ?? '', $country, (string) $this->c('payout.msisdn_format', 'international'));
+        $currency = $this->currencyFor($country) ?? ($data['currency'] ?? 'XAF');
+        $amount   = (int) $data['amount'];
+        $msisdn   = $this->msisdn($data['phone'] ?? '', $country, (string) $this->c('payout.msisdn_format', 'international'));
 
-        $service = $this->resolvePayoutService($data['operator'] ?? 'MTN', $country, $currency);
+        $service = $this->resolvePayoutSubscription($data['operator'] ?? 'MTN', $country, $currency);
         if (!$service) {
-            return ['success' => false, 'error' => "Aucun service WacePay trouvé pour l'opérateur " . ($data['operator'] ?? '?') . " ($country). Renseignez WACEPAY_PAYOUT_SERVICES."];
+            return ['success' => false, 'error' => "Aucun service de décaissement WacePay actif pour " . ($data['operator'] ?? '?') . " ($country, $currency). Souscrivez le service dans le tableau de bord WacePay ou renseignez WACEPAY_PAYOUT_SUBSCRIPTIONS."];
         }
 
-        $benef = $this->beneficiaryCode([
-            'key'            => $data['beneficiary_key'] ?? null,
-            'first_name'     => $data['first_name'] ?? null,
-            'last_name'      => $data['last_name'] ?? null,
-            'address'        => $data['address'] ?? null,
-            'phone'          => $phone,
-            'country'        => $country,
-            'city'           => $city,
-            'email'          => $data['email'] ?? null,
-            'id_number'      => $data['id_number'] ?? null,
-            'id_type'        => $data['id_type'] ?? null,
-            'date_of_birth'  => $data['date_of_birth'] ?? null,
-            'date_expire_id' => $data['date_expire_id'] ?? null,
-        ]);
-        if (!$benef['success']) {
-            return ['success' => false, 'error' => 'Bénéficiaire WacePay : ' . $benef['error']];
+        if (isset($service['minAmount']) && $amount < (float) $service['minAmount']) {
+            return ['success' => false, 'error' => "Montant inférieur au minimum WacePay ({$service['minAmount']} $currency)."];
+        }
+        if (!empty($service['maxAmount']) && $amount > (float) $service['maxAmount']) {
+            return ['success' => false, 'error' => "Montant supérieur au maximum WacePay ({$service['maxAmount']} $currency)."];
         }
 
         $payload = [
-            'payoutCountry'       => $country,
-            'payoutCity'          => $city,
-            'receiveCurrency'     => $currency,
-            'amountToPaid'        => (string) (int) $data['amount'],
-            'service'             => $service,
-            'senderCode'          => (string) $this->c('payout.sender_code'),
-            'beneficiaryCode'     => $benef['code'],
-            'sendingCurrency'     => $fromCurrency,
-            'mobileReceiveNumber' => $phone,
-            'fromCountry'         => strtoupper((string) $this->c('payout.from_country', 'CG')),
-            'originFund'          => (string) $this->c('payout.origin_fund'),
-            'reason'              => (string) $this->c('payout.reason'),
-            'relation'            => (string) $this->c('payout.relation'),
+            'amount'               => $amount,
+            'recipientMsisdn'      => $msisdn,
+            'recipientName'        => trim((string) ($data['recipient_name'] ?? '')) ?: 'Beneficiaire TopTopGo',
+            'payoutSubscriptionId' => (string) $service['subscriptionId'],
         ];
-        if ($payerCode = $this->resolvePayerCode($service, $country, $currency)) {
-            $payload['payerCode'] = $payerCode;
-        }
 
-        $create = $this->business('POST', 'transaction/wallet/create', $payload);
-        $wpRef = $create['ok'] ? $this->extractCode($create['json'], ['reference', 'transactionReference', 'code', 'transactionCode']) : null;
+        $res = $this->payin('POST', 'payout/customer/execute', $payload);
 
-        if (!$wpRef) {
+        if (!$res['ok']) {
             return [
                 'success'      => false,
-                'error'        => $create['error'] ?? 'Référence de transaction absente de la réponse WacePay',
-                'data'         => $create['json'],
-                'request_sent' => array_merge($payload, ['mobileReceiveNumber' => '***']),
+                'error'        => $res['error'] ?? 'Décaissement WacePay refusé',
+                'data'         => $res['json'],
+                'request_sent' => array_merge($payload, ['recipientMsisdn' => '***']),
             ];
         }
 
-        // Confirmation (sinon la transaction reste en WAITING CONFIRMATION)
-        $confirm = $this->business('POST', 'transaction/confirm', ['reference' => $wpRef]);
-        if (!$confirm['ok']) {
-            Log::error('WacePay confirm échoué', ['reference' => $wpRef, 'internal' => $data['reference'] ?? null, 'error' => $confirm['error']]);
-            return [
-                'success'      => false,
-                'error'        => 'Transaction WacePay ' . $wpRef . ' créée mais non confirmée : ' . $confirm['error'],
-                'reference'    => $wpRef,
-                'needs_review' => true,
-            ];
-        }
+        $d   = (array) (data_get($res['json'], 'data.transaction') ?? data_get($res['json'], 'data') ?? []);
+        $id  = $d['id'] ?? $d['_id'] ?? $d['transactionId'] ?? null;
+        $ref = $d['transCode'] ?? $d['reference'] ?? $d['externalReference'] ?? $id;
 
-        Log::info('WacePay payout confirmé', ['reference' => $wpRef, 'internal' => $data['reference'] ?? null, 'amount' => $data['amount']]);
+        Log::info('WacePay payout initié', ['internal' => $data['reference'] ?? null, 'id' => $id, 'transCode' => $ref, 'amount' => $amount, 'currency' => $currency]);
 
         return [
             'success'        => true,
-            'reference'      => $wpRef,
-            'transaction_id' => $wpRef,
-            'status'         => 'pending',
-            'data'           => ['create' => $create['json'], 'confirm' => $confirm['json']],
+            // On garde de quoi relire la transaction : l'id (détail) sinon le transCode.
+            'reference'      => (string) ($id ?? $ref ?? ''),
+            'trans_code'     => $ref,
+            'transaction_id' => $id,
+            'status'         => $this->mapPayoutStatus((string) ($d['status'] ?? 'PENDING'))['status'],
+            'raw_status'     => strtoupper((string) ($d['status'] ?? 'PENDING')),
+            'message'        => $res['json']['message'] ?? null,
+            'data'           => $d,
         ];
     }
 
-    /** Statut d'un décaissement (GET /transaction/status/{reference}). */
-    public function getPayoutStatus(string $reference): array
+    /** PENDING|PROCESSING → pending ; SUCCESS/COMPLETED → success ; FAILED/REJECTED/CANCELLED → failed */
+    public function mapPayoutStatus(string $raw): array
     {
-        $res = $this->business('GET', 'transaction/status/' . urlencode($reference));
-        if (!$res['ok']) {
-            return ['success' => false, 'error' => $res['error']];
-        }
-        $raw = strtoupper((string) (data_get($res['json'], 'transaction.status') ?? data_get($res['json'], 'data.status') ?? 'PENDING'));
-
+        $r = strtoupper(trim($raw));
         return [
-            'success'    => true,
-            'raw_status' => $raw,                              // CANCEL|PENDING|WAITING CONFIRMATION|PROCESSING|LOCKED|PAID
+            'raw_status' => $r,
             'status'     => match (true) {
-                $raw === 'PAID'                  => 'success',
-                str_starts_with($raw, 'CANCEL')  => 'failed',
-                default                          => 'pending',
+                in_array($r, ['SUCCESS', 'SUCCESSFUL', 'COMPLETED', 'PAID'], true)                   => 'success',
+                in_array($r, ['FAILED', 'REJECTED', 'ERROR'], true) || str_starts_with($r, 'CANCEL') => 'failed',
+                default                                                                              => 'pending',
             },
-            'data'       => $res['json'],
         ];
     }
 
-    public function balance(): array
+    /** Statut d'un décaissement : GET payout/customer/transactions/{id}, sinon recherche dans la liste par transCode. */
+    public function getPayoutStatus(string $reference, ?string $msisdn = null): array
     {
-        return $this->business('GET', 'account/balance');
+        $res = $this->payin('GET', 'payout/customer/transactions/' . urlencode($reference));
+        $tx  = $res['ok'] ? (array) (data_get($res['json'], 'data.transaction') ?? data_get($res['json'], 'data') ?? []) : [];
+
+        if (empty($tx['status'])) {
+            $list = $this->payin('GET', 'payout/customer/transactions', [], array_filter([
+                'recipientMsisdn' => $msisdn, 'page' => 1, 'limit' => 100,
+            ]));
+            foreach ($list['ok'] ? $this->listFrom($list['json']) : [] as $row) {
+                if (in_array($reference, array_map('strval', array_filter([
+                    $row['id'] ?? null, $row['_id'] ?? null, $row['transCode'] ?? null, $row['externalReference'] ?? null,
+                ])), true)) {
+                    $tx = $row;
+                    break;
+                }
+            }
+        }
+
+        if (empty($tx['status'])) {
+            return ['success' => false, 'error' => $res['error'] ?? 'Transaction de décaissement introuvable'];
+        }
+
+        return ['success' => true, 'data' => $tx] + $this->mapPayoutStatus((string) $tx['status']);
     }
 
     // =====================================================================
