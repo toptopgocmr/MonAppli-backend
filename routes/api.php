@@ -256,7 +256,7 @@ Route::prefix('user')->name('api.user.')->middleware(['auth:sanctum'])->group(fu
     // ── Profil ────────────────────────────────────────────────────
     Route::get('profile',        [UserProfileController::class, 'show'])->name('profile.show');
     Route::put('profile',        [UserProfileController::class, 'update'])->name('profile.update');
-    Route::post('profile/photo', [UserProfileController::class, 'uploadPhoto'])->name('profile.photo');
+    Route::post('profile/photo', [UserProfileController::class, 'updatePhoto'])->name('profile.photo');
     Route::put('password',       [UserPasswordController::class, 'update'])->name('password.update');
 
     // ── Trajets disponibles ───────────────────────────────────────
