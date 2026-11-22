@@ -10,6 +10,7 @@ use App\Services\Payment\FlutterwaveService;
 use App\Services\Payment\PeexService;
 use App\Services\Payment\NotchPayService;
 use App\Services\Payment\WacePayService;
+use App\Services\Payment\GatewayRouter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +23,7 @@ class UserPaymentController extends Controller
         protected PeexService        $peex,
         protected NotchPayService    $notchpay,
         protected WacePayService     $wacepay,
+        protected GatewayRouter      $gateways,
     ) {}
 
     // ── Paiement Mobile Money (Peex si le pays est couvert, sinon Flutterwave) ──
@@ -87,18 +89,11 @@ class UserPaymentController extends Controller
         $user = Auth::user();
 
         // ── Choix de la passerelle ────────────────────────────────────
-        // Peex couvre les pays listés dans config('payments.peex.collect_countries')
-        // (CM, CG par défaut). Ailleurs on garde Flutterwave.
-        // Notch Pay est prioritaire (PAYMENT_COLLECT_GATEWAY=notchpay) pour les
-        // pays de NOTCHPAY_COLLECT_COUNTRIES. Retour arrière : PAYMENT_COLLECT_GATEWAY=peex.
-        // WacePay (PAYMENT_COLLECT_GATEWAY=wacepay) pour les pays de WACEPAY_PAYIN_COUNTRIES.
-        $collectGateway = config('payments.collect_gateway', 'notchpay');
-        $useWace  = $collectGateway === 'wacepay'
-            && $this->wacepay->supportsCollectFor($countryCode);
-        $useNotch = !$useWace && $collectGateway === 'notchpay'
-            && $this->notchpay->supportsCollectFor($countryCode);
-        $usePeex = !$useWace && !$useNotch && $this->peex->supportsCollectFor($countryCode);
-        $gateway = $useWace ? 'wacepay' : ($useNotch ? 'notchpay' : ($usePeex ? 'peex' : 'flutterwave'));
+        // Passerelle par défaut puis passerelle de secours (bascule auto),
+        // réglables dans l'admin : Finances › Passerelles de paiement.
+        // Voir App\Services\Payment\GatewayRouter.
+        $chain   = $this->gateways->collectChain($countryCode) ?: ['flutterwave'];
+        $gateway = $chain[0];
 
         // ✅ Taux de commission réellement applicable à CE chauffeur/société,
         // au lieu d'un 10% fixe qui ignorait complètement les taux configurés
@@ -148,62 +143,51 @@ class UserPaymentController extends Controller
                 'paid_at'         => null,
             ]);
 
-            if ($useWace) {
-                $result = $this->wacepay->collect([
-                    'reference'     => $transactionRef,
-                    'phone'         => $request->phone,
-                    'amount'        => (int) $booking->amount,
-                    'currency'      => $this->wacepay->currencyFor($countryCode) ?? 'XAF', // XAF (CEMAC) / XOF (UEMOA), parité 1:1
-                    'country'       => $countryCode,
-                    'operator'      => $operator,
-                    'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
-                    'email'         => $user->email ?? "user_{$user->id}@toptopgo.app",
-                ]);
-            } elseif ($useNotch) {
-                $result = $this->notchpay->collect([
-                    'reference'     => $transactionRef,
-                    'phone'         => $request->phone,
-                    'amount'        => (int) $booking->amount,
-                    'currency'      => 'XAF',
-                    'country'       => $countryCode,
-                    'operator'      => $operator,
-                    'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
-                    'email'         => $user->email ?? "user_{$user->id}@toptopgo.app",
-                    'description'   => 'TopTopGo - Réservation #' . $booking->id,
-                    'client_ip'     => $request->ip(),
-                ]);
-            } elseif ($usePeex) {
-                $result = $this->peex->collect([
-                    'track_id'      => $transactionRef,
-                    'phone'         => $request->phone,
-                    'amount'        => (int) $booking->amount,
-                    'currency'      => 'XAF',
-                    'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
-                    'country'       => $countryCode,
-                    'description'   => 'TopTopGo - Réservation #' . $booking->id,
-                ]);
-            } else {
-                $result = $this->flutterwave->collect([
-                    'phone'        => $request->phone,
-                    'country_code' => $countryCode,
-                    'amount'       => (int) $booking->amount,
-                    'operator'     => $operator,
-                    'reference'    => $transactionRef,
-                    'description'  => 'ToptopGo – Réservation #' . $booking->id,
-                    'user_id'      => $user->id,
-                    'email'        => $user->email ?? "user_{$user->id}@toptopgo.app",
-                    'first_name'   => $user->first_name ?? null,
-                    'last_name'    => $user->last_name  ?? null,
-                ]);
-            }
+            $ctx = [
+                'reference'     => $transactionRef,
+                'phone'         => $request->phone,
+                'amount'        => (int) $booking->amount,
+                'country'       => $countryCode,
+                'operator'      => $operator,
+                'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
+                'email'         => $user->email ?? "user_{$user->id}@toptopgo.app",
+                'first_name'    => $user->first_name ?? null,
+                'last_name'     => $user->last_name ?? null,
+                'user_id'       => $user->id,
+                'booking_id'    => $booking->id,
+                'client_ip'     => $request->ip(),
+            ];
 
-            if (!$result['success']) {
-                // ✅ On loggue aussi la réponse BRUTE du fournisseur (result['data']),
-                // pas seulement le message d'erreur générique — celui-ci retombe
-                // souvent sur un fallback ("Collection request failed") qui ne dit
-                // rien du vrai motif de rejet côté Peex/Flutterwave.
+            // ── Tentatives : défaut, puis secours si la 1re refuse ───────
+            $attempts  = [];
+            $result    = ['success' => false, 'error' => 'Aucune passerelle disponible'];
+            $uncertain = false;
+
+            foreach ($chain as $i => $gw) {
+                $gateway = $gw;
+                $payment->update(['provider' => $gw]);
+
+                $result = $this->collectWith($gw, $ctx);
+                $ok     = (bool) ($result['success'] ?? false);
+
+                $attempts[] = [
+                    'gateway' => $gw,
+                    'role'    => $i === 0 ? 'défaut' : 'secours',
+                    'ok'      => $ok,
+                    'error'   => $ok ? null : mb_substr((string) ($result['error'] ?? 'erreur inconnue'), 0, 300),
+                    'at'      => now()->toIso8601String(),
+                ];
+
+                if ($ok) {
+                    if ($i > 0) {
+                        Log::warning('Collecte : bascule sur la passerelle de secours', ['booking_id' => $booking->id, 'gateway' => $gw, 'attempts' => $attempts]);
+                    }
+                    break;
+                }
+
+                // ✅ On loggue aussi la réponse BRUTE du fournisseur.
                 Log::error('UserPaymentController::mobileMoney error', [
-                    'gateway'      => $gateway,
+                    'gateway'      => $gw,
                     'booking_id'   => $booking->id,
                     'error'        => $result['error'] ?? 'unknown',
                     'phone_sent'   => $request->phone,
@@ -215,6 +199,35 @@ class UserPaymentController extends Controller
                     'endpoint'     => $result['endpoint'] ?? null,
                 ]);
 
+                // Pas de réponse claire (délai dépassé) : la demande a pu
+                // partir chez le client → on ne relance PAS ailleurs (sinon
+                // double débit possible). Le paiement reste « en attente » et
+                // le suivi (polling / webhook) tranchera.
+                if ($this->gateways->isUncertainFailure($result)) {
+                    $uncertain = true;
+                    break;
+                }
+            }
+
+            $payment->update(['gateway_attempts' => $attempts]);
+
+            if ($uncertain) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Demande envoyée. Vérifiez votre téléphone et confirmez si une demande de paiement apparaît.',
+                    'data'    => [
+                        'transaction_ref' => $transactionRef,
+                        'amount'          => $booking->amount,
+                        'status'          => 'pending',
+                        'instruction'     => 'Vérifiez votre téléphone : confirmez la demande de paiement si elle apparaît. Ne relancez pas un paiement avant la fin de la vérification.',
+                        'gateway'         => $gateway,
+                        'chat_enabled'    => false,
+                        'chat_channel'    => 'chat.trip.' . $booking->trip_id,
+                    ],
+                ]);
+            }
+
+            if (!($result['success'] ?? false)) {
                 $rawError = $result['error'] ?? 'Erreur lors de l\'initiation du paiement Mobile Money.';
                 $humanized = match ($gateway) {
                     'wacepay'  => $this->wacepay->humanizeFailureReason($rawError) ?? $rawError,
@@ -222,6 +235,13 @@ class UserPaymentController extends Controller
                     'peex'     => $this->peex->humanizeFailureReason($rawError) ?? $rawError,
                     default    => $rawError,
                 };
+
+                // Jamais de message technique brut côté client (ex. Peex :
+                // « Endpoint "POST /collection/request_payment" not found. »).
+                if (preg_match('/endpoint|not found|curl|http|server error|unauthori[sz]ed|forbidden|token|exception|sqlstate|configur/i', (string) $humanized)) {
+                    Log::error('Collecte : erreur technique masquée au client', ['gateway' => $gateway, 'raw' => $humanized, 'attempts' => $attempts]);
+                    $humanized = 'Le service de paiement est momentanément indisponible. Réessayez dans quelques minutes.';
+                }
 
                 $payment->update(['status' => 'failed', 'failure_reason' => $humanized]);
 
@@ -232,14 +252,10 @@ class UserPaymentController extends Controller
             }
 
             // ── Sauvegarder l'identifiant de transaction fournisseur ─────
-            if ($useWace || $useNotch || $usePeex) {
-                $payment->update([
-                    'provider_transaction_id' => $result['transaction_id'] ?? null,
-                ]);
+            if ($gateway === 'flutterwave') {
+                $payment->update(['flw_charge_id' => $result['data']['charge_id'] ?? null]);
             } else {
-                $payment->update([
-                    'flw_charge_id' => $result['data']['charge_id'] ?? null,
-                ]);
+                $payment->update(['provider_transaction_id' => $result['transaction_id'] ?? null]);
             }
 
             return response()->json([
@@ -372,6 +388,58 @@ class UserPaymentController extends Controller
     /**
      * Poll the right provider depending on how the payment was initiated.
      */
+    /** Appel de collecte sur UNE passerelle (format commun en entrée). */
+    protected function collectWith(string $gateway, array $c): array
+    {
+        $description = 'TopTopGo - Réservation #' . $c['booking_id'];
+
+        return match ($gateway) {
+            'wacepay' => $this->wacepay->collect([
+                'reference'     => $c['reference'],
+                'phone'         => $c['phone'],
+                'amount'        => $c['amount'],
+                'currency'      => $this->wacepay->currencyFor($c['country']) ?? 'XAF', // XAF/XOF parité 1:1
+                'country'       => $c['country'],
+                'operator'      => $c['operator'],
+                'customer_name' => $c['customer_name'],
+                'email'         => $c['email'],
+            ]),
+            'notchpay' => $this->notchpay->collect([
+                'reference'     => $c['reference'],
+                'phone'         => $c['phone'],
+                'amount'        => $c['amount'],
+                'currency'      => 'XAF',
+                'country'       => $c['country'],
+                'operator'      => $c['operator'],
+                'customer_name' => $c['customer_name'],
+                'email'         => $c['email'],
+                'description'   => $description,
+                'client_ip'     => $c['client_ip'],
+            ]),
+            'peex' => $this->peex->collect([
+                'track_id'      => $c['reference'],
+                'phone'         => $c['phone'],
+                'amount'        => $c['amount'],
+                'currency'      => 'XAF',
+                'customer_name' => $c['customer_name'],
+                'country'       => $c['country'],
+                'description'   => $description,
+            ]),
+            default => $this->flutterwave->collect([
+                'phone'        => $c['phone'],
+                'country_code' => $c['country'],
+                'amount'       => $c['amount'],
+                'operator'     => $c['operator'],
+                'reference'    => $c['reference'],
+                'description'  => $description,
+                'user_id'      => $c['user_id'],
+                'email'        => $c['email'],
+                'first_name'   => $c['first_name'],
+                'last_name'    => $c['last_name'],
+            ]),
+        };
+    }
+
     protected function pollProviderStatus(Payment $payment): ?array
     {
         if ($payment->provider === 'wacepay') {

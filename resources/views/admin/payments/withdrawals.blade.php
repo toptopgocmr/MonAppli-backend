@@ -9,8 +9,9 @@
         <div>
             <h1 class="page-title">Retraits chauffeurs</h1>
             <p class="page-sub">
-                Approuver un retrait déclenche le paiement automatique via Peex si le pays du chauffeur est couvert
-                (sinon il reste manuel, comme avant). Rejeter un retrait rembourse immédiatement le wallet du chauffeur.
+                « Payer » envoie le retrait via la passerelle par défaut, puis la passerelle de secours si elle échoue
+                (réglages : Finances › Passerelles de paiement). « Payé manuellement » sert uniquement aux paiements faits
+                hors plateforme. Rejeter un retrait rembourse immédiatement le wallet du chauffeur.
             </p>
         </div>
         <div style="display:flex;gap:8px">
@@ -92,8 +93,10 @@
                 <tbody>
                     @forelse($withdrawals as $w)
                     @php
-                        $country = strtoupper($w->driver->vehicle_country ?? '');
-                        $peexCovered = in_array($country, array_map('strtoupper', config('payments.peex.disbursement_countries', ['CM'])), true);
+                        $country = strtoupper($w->country ?? ($w->driver->vehicle_country ?? ''));
+                        $payChain = $w->status === 'pending' ? app(\App\Services\Payment\GatewayRouter::class)->payoutChain($country) : [];
+                        $chainLabel = implode(' → ', array_map(fn ($g) => \App\Services\Payment\GatewayRouter::label($g), $payChain));
+                        $peexCovered = !empty($payChain);
                         $isLate = $w->status === 'pending' && $w->created_at->diffInHours(now()) >= 24;
                         $recap = optional($w->driver) ? ($recapByDriver[$w->driver->id] ?? null) : null;
                         $overBalance = $recap && $w->status === 'pending' && $w->amount > $recap['available_balance'];
@@ -118,9 +121,16 @@
                         <td class="px-4 py-3 text-xs">
                             {{ $country ?: '—' }}
                             @if($w->status === 'pending')
-                                <span style="font-size:10px;color:{{ $peexCovered ? '#16a34a' : '#94a3b8' }}">
-                                    ({{ $peexCovered ? 'Peex auto' : 'manuel' }})
+                                <span style="font-size:10px;color:{{ $peexCovered ? '#16a34a' : '#dc2626' }}">
+                                    ({{ $peexCovered ? $chainLabel : 'aucune passerelle — paiement manuel' }})
                                 </span>
+                            @endif
+                            @if(!empty($w->gateway_attempts))
+                                <div style="font-size:10px;color:#64748b;margin-top:2px">
+                                    @foreach($w->gateway_attempts as $a)
+                                        {{ $a['ok'] ? '✅' : '❌' }} {{ \App\Services\Payment\GatewayRouter::label($a['gateway'] ?? '') }}@if(!$a['ok']) <span title="{{ $a['error'] }}">(échec)</span>@endif<br>
+                                    @endforeach
+                                </div>
                             @endif
                         </td>
                         <td class="px-4 py-3">
@@ -144,11 +154,20 @@
                         <td class="px-4 py-3 text-center">
                             @if($w->status === 'pending')
                             <div style="display:flex;justify-content:center;gap:6px">
+                                @if($peexCovered && $w->provider_status !== 'UNCERTAIN')
                                 <form action="{{ route('admin.payments.approve-withdrawal', $w->id) }}" method="POST">
                                     @csrf
                                     <button class="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 rounded-lg transition"
-                                        onclick="return confirm('{{ $peexCovered ? 'Payer automatiquement via Peex' : 'Marquer comme payé manuellement' }} — {{ number_format($w->amount, 0) }} XAF ?')">
-                                        Approuver
+                                        onclick="return confirm('Payer automatiquement via {{ $chainLabel }} — {{ number_format($w->amount, 0) }} XAF ?')">
+                                        Payer
+                                    </button>
+                                </form>
+                                @endif
+                                <form action="{{ route('admin.payments.mark-withdrawal-paid', $w->id) }}" method="POST">
+                                    @csrf
+                                    <button class="bg-slate-600 hover:bg-slate-700 text-white text-xs px-3 py-1 rounded-lg transition"
+                                        onclick="return confirm('{{ $w->provider_status === 'UNCERTAIN' ? 'ATTENTION : la passerelle n\'a pas répondu. Avez-vous vérifié que le paiement n\'est PAS déjà parti ? ' : '' }}Confirmer que vous avez payé ce chauffeur EN DEHORS de la plateforme ({{ number_format($w->amount, 0) }} XAF) ?')">
+                                        Payé manuellement
                                     </button>
                                 </form>
                                 <form action="{{ route('admin.payments.reject-withdrawal', $w->id) }}" method="POST">

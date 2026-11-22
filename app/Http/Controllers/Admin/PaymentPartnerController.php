@@ -11,6 +11,7 @@ use App\Models\Driver\Driver;
 use App\Notifications\WithdrawalProcessedNotification;
 use App\Services\Payment\PeexService;
 use App\Services\Payment\WacePayService;
+use App\Services\Payment\GatewayRouter;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -21,6 +22,7 @@ class PaymentPartnerController extends Controller
     public function __construct(
         protected PeexService    $peex,
         protected WacePayService $wacepay,
+        protected GatewayRouter  $gateways,
     ) {
     }
 
@@ -305,99 +307,87 @@ class PaymentPartnerController extends Controller
             return back()->with('error', 'Ce retrait ne peut plus être modifié.');
         }
 
-        $driver = $withdrawal->driver;
-        $country = strtoupper($driver->vehicle_country ?? '');
-        $eligibleForPeex = $this->peex->supportsDisbursementFor($country);
+        $driver  = $withdrawal->driver;
+        // Pays choisi par le chauffeur lors de sa demande, sinon pays du véhicule.
+        $country = strtoupper((string) ($withdrawal->country ?: ($driver->vehicle_country ?? '')));
 
-        // ── WacePay (PAYMENT_PAYOUT_GATEWAY=wacepay) ────────────────────
-        if ($withdrawal->provider === 'wacepay' && filled($withdrawal->transaction_ref)) {
-            return back()->with('error', 'Une transaction WacePay existe déjà pour ce retrait (réf. ' . $withdrawal->transaction_ref . '). Vérifiez-la dans le back-office WacePay avant toute nouvelle action.');
+        if (filled($withdrawal->transaction_ref) && in_array($withdrawal->provider, ['wacepay', 'peex'], true)) {
+            return back()->with('error', 'Une transaction ' . GatewayRouter::label($withdrawal->provider) . ' existe déjà pour ce retrait (réf. ' . $withdrawal->transaction_ref . '). Vérifiez-la dans son tableau de bord avant toute nouvelle action.');
         }
 
-        if (config('payments.payout_gateway') === 'wacepay' && $this->wacepay->supportsPayoutFor($country)) {
-            $result = $this->wacepay->payout([
-                'reference'       => 'WD-' . $withdrawal->id,
-                'phone'           => $withdrawal->phone_number,
-                'amount'          => (int) $withdrawal->amount,
-                'currency'        => $this->wacepay->currencyFor($country),
-                'country'         => $country,
-                'operator'        => $withdrawal->method,
-                'recipient_name'  => trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? '')) ?: 'Chauffeur TopTopGo',
-            ]);
+        // Passerelle par défaut puis secours (Finances › Passerelles de paiement).
+        $result = $this->gateways->payout([
+            'reference'      => 'WD-' . $withdrawal->id,
+            'phone'          => $withdrawal->phone_number,
+            'amount'         => (int) $withdrawal->amount,
+            'country'        => $country,
+            'operator'       => $withdrawal->method,
+            'recipient_name' => trim(($driver->first_name ?? '') . ' ' . ($driver->last_name ?? '')) ?: 'Chauffeur TopTopGo',
+            'first_name'     => $driver->first_name ?? 'Chauffeur',
+            'last_name'      => $driver->last_name ?? 'TopTopGo',
+        ]);
 
-            if (!($result['success'] ?? false)) {
-                Log::error('WacePay payout failed on withdrawal approval', [
-                    'withdrawal_id' => $withdrawal->id,
-                    'driver_id'     => $driver->id ?? null,
-                    'error'         => $result['error'] ?? 'unknown',
-                ]);
-
-                return back()->with('error', 'Échec du paiement WacePay : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour vérification manuelle.');
-            }
-
-            $withdrawal->update([
-                'status'          => 'success',
-                'processed_at'    => now(),
-                'transaction_ref' => $result['reference'],
-                'provider'        => 'wacepay',
-                'provider_status' => $result['raw_status'] ?? 'PENDING',
-            ]);
-
-            $driver?->notify(new WithdrawalProcessedNotification($withdrawal));
-
-            return back()->with('success', 'Retrait envoyé via WacePay (réf. ' . $result['reference'] . '). Le statut final est suivi automatiquement.');
-        }
-
-        if ($eligibleForPeex) {
-            $result = $this->peex->payout([
-                'reference'   => 'WD-' . $withdrawal->id . '-' . strtoupper(Str::random(6)),
-                'phone'       => $withdrawal->phone_number,
-                'amount'      => (int) $withdrawal->amount,
-                'currency'    => 'XAF',
-                'country'     => $country,
-                'first_name'  => $driver->first_name ?? 'Chauffeur',
-                'last_name'   => $driver->last_name ?? 'TopTopGo',
-                'purpose'     => 'BUSINESS',
-                'fund_origin' => 'SALES_AND_BUSINESS_DEVELOPMENT',
-            ]);
-
-            if (!($result['success'] ?? false)) {
-                Log::error('Peex payout failed on withdrawal approval', [
-                    'withdrawal_id' => $withdrawal->id,
-                    'driver_id'     => $driver->id ?? null,
-                    'error'         => $result['error'] ?? 'unknown',
-                ]);
-
-                // Volontairement laissé en 'pending' : le wallet chauffeur reste
-                // débité (comme depuis la demande), rien n'est perdu, mais le
-                // retrait attend une intervention manuelle (relancer ou payer
-                // par un autre moyen) plutôt que d'être marqué traité à tort.
-                return back()->with('error', 'Échec du paiement Peex : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour vérification manuelle.');
-            }
-
-            $withdrawal->update([
-                'status'          => 'success',
-                'processed_at'    => now(),
-                'transaction_ref' => $result['reference'] ?? $result['transaction_id'] ?? $withdrawal->transaction_ref,
-                'provider'        => 'peex',
-            ]);
-
-            $driver?->notify(new WithdrawalProcessedNotification($withdrawal));
-
-            return back()->with('success', 'Retrait payé automatiquement via Peex.');
-        }
-
-        // Pays non couvert par Peex Disbursement → process manuel inchangé :
-        // l'admin paie lui-même le chauffeur en dehors de la plateforme,
-        // et se contente ici de marquer le retrait comme traité.
         $withdrawal->update([
-            'status'       => 'success',
-            'processed_at' => now(),
+            'gateway_attempts' => array_merge((array) ($withdrawal->gateway_attempts ?? []), $result['attempts'] ?? []),
+        ]);
+
+        if (!($result['success'] ?? false)) {
+            Log::error('Retrait chauffeur : décaissement échoué', [
+                'withdrawal_id' => $withdrawal->id,
+                'driver_id'     => $driver->id ?? null,
+                'country'       => $country,
+                'error'         => $result['error'] ?? 'unknown',
+            ]);
+
+            // Le retrait reste « en attente » : rien n'est marqué payé sans
+            // paiement réel. Le wallet reste débité (comme depuis la demande).
+            if (!empty($result['uncertain'])) {
+                $withdrawal->update(['provider' => $result['gateway'] ?? null, 'provider_status' => 'UNCERTAIN']);
+            }
+
+            return back()->with('error', 'Retrait non payé : ' . ($result['error'] ?? 'erreur inconnue') . ' Le retrait reste en attente.');
+        }
+
+        $withdrawal->update([
+            'status'          => 'success',
+            'processed_at'    => now(),
+            'transaction_ref' => $result['reference'],
+            'provider'        => $result['gateway'],
+            'provider_status' => $result['raw_status'] ?? 'PENDING',
         ]);
 
         $driver?->notify(new WithdrawalProcessedNotification($withdrawal));
 
-        return back()->with('success', 'Retrait marqué comme payé (paiement manuel — pays non couvert par Peex).');
+        $via = GatewayRouter::label($result['gateway']) . (!empty($result['fallback']) ? ' (passerelle de secours)' : '');
+        return back()->with('success', "Retrait envoyé via {$via} — réf. {$result['reference']}.");
+    }
+
+    /**
+     * Paiement fait en dehors de la plateforme (aucune passerelle ne couvre
+     * le pays, ou paiement manuel décidé par l'admin) : on le marque payé
+     * explicitement — plus jamais automatiquement.
+     */
+    public function markWithdrawalPaid(Request $request, Withdrawal $withdrawal)
+    {
+        if ($withdrawal->status !== 'pending') {
+            return back()->with('error', 'Ce retrait ne peut plus être modifié.');
+        }
+        if ($withdrawal->provider_status === 'UNCERTAIN') {
+            // Autorisé, mais l'admin doit avoir vérifié la passerelle.
+            Log::warning('Retrait marqué payé manuellement après réponse incertaine', ['withdrawal_id' => $withdrawal->id]);
+        }
+
+        $withdrawal->update([
+            'status'          => 'success',
+            'processed_at'    => now(),
+            'provider'        => 'manual',
+            'provider_status' => 'MANUAL',
+            'transaction_ref' => $request->input('reference') ?: $withdrawal->transaction_ref,
+        ]);
+
+        $withdrawal->driver?->notify(new WithdrawalProcessedNotification($withdrawal));
+
+        return back()->with('success', 'Retrait marqué comme payé manuellement.');
     }
 
     /**

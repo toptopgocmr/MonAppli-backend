@@ -13,12 +13,13 @@ class Payment extends Model
         'amount', 'commission', 'driver_net',
         'method', 'provider', 'status', 'transaction_ref',
         'flw_charge_id', 'provider_transaction_id', 'receipt_number',
-        'country', 'city', 'paid_at', 'failure_reason',
+        'country', 'city', 'paid_at', 'failure_reason', 'gateway_attempts',
     ];
 
     protected $casts = [
         'paid_at' => 'datetime',
         'amount'  => 'float',
+        'gateway_attempts' => 'array',
     ];
 
     const METHOD_MOBILE_MONEY = 'mobile_money';

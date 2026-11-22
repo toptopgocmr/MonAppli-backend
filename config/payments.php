@@ -25,7 +25,12 @@ return [
     | Retour arrière immédiat possible : PAYMENT_COLLECT_GATEWAY=peex
     */
 
-    'collect_gateway' => env('PAYMENT_COLLECT_GATEWAY', 'notchpay'),
+    'collect_gateway' => env('PAYMENT_COLLECT_GATEWAY', 'wacepay'),
+
+    // Passerelle de secours (bascule automatique si la principale refuse ou
+    // est en panne). Réglable aussi dans l'admin : Finances › Passerelles.
+    'collect_fallback'      => env('PAYMENT_COLLECT_FALLBACK', 'peex'),
+    'collect_auto_fallback' => (bool) env('PAYMENT_COLLECT_AUTO_FALLBACK', true),
 
     /*
     |--------------------------------------------------------------------------
@@ -35,7 +40,11 @@ return [
     | peex    : comportement actuel (Peex Disbursement, sinon paiement manuel)
     */
 
-    'payout_gateway' => env('PAYMENT_PAYOUT_GATEWAY', 'peex'),
+    'payout_gateway' => env('PAYMENT_PAYOUT_GATEWAY', 'wacepay'),
+
+    // Secours pour les décaissements (même principe, réglable dans l'admin).
+    'payout_fallback'      => env('PAYMENT_PAYOUT_FALLBACK', 'peex'),
+    'payout_auto_fallback' => (bool) env('PAYMENT_PAYOUT_AUTO_FALLBACK', true),
 
     /*
     |--------------------------------------------------------------------------

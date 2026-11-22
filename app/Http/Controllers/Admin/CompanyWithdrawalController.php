@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CompanyWithdrawal;
 use App\Services\Payment\PeexService;
 use App\Services\Payment\WacePayService;
+use App\Services\Payment\GatewayRouter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -15,6 +16,7 @@ class CompanyWithdrawalController extends Controller
     public function __construct(
         protected PeexService    $peex,
         protected WacePayService $wacepay,
+        protected GatewayRouter  $gateways,
     ) {
     }
 
@@ -110,84 +112,55 @@ class CompanyWithdrawalController extends Controller
                 return back()->with('error', 'Numéro mobile money manquant sur cette demande de retrait.');
             }
 
-            // ── WacePay (PAYMENT_PAYOUT_GATEWAY=wacepay) ────────────────
-            if ($withdrawal->provider === 'wacepay' && filled($withdrawal->transaction_ref)) {
-                return back()->with('error', 'Une transaction WacePay existe déjà pour ce retrait (réf. ' . $withdrawal->transaction_ref . '). Vérifiez-la dans le back-office WacePay avant toute nouvelle action.');
+            if (filled($withdrawal->transaction_ref) && in_array($withdrawal->provider, ['wacepay', 'peex'], true)) {
+                return back()->with('error', 'Une transaction ' . GatewayRouter::label($withdrawal->provider) . ' existe déjà pour ce retrait (réf. ' . $withdrawal->transaction_ref . '). Vérifiez-la avant toute nouvelle action.');
             }
 
-            if (config('payments.payout_gateway') === 'wacepay' && $this->wacepay->supportsPayoutFor($country)) {
-                $result = $this->wacepay->payout([
-                    'reference'       => $reference,
-                    'phone'           => $withdrawal->phone_number,
-                    'amount'          => (int) $withdrawal->amount,
-                    'currency'        => $this->wacepay->currencyFor($country),
-                    'country'         => $country,
-                    'operator'        => $withdrawal->operator ?: 'MTN',
-                    'recipient_name'  => $company->contact_name ?: $company->name,
-                ]);
+            // Passerelle par défaut puis secours (Finances › Passerelles de paiement).
+            $result = $this->gateways->payout([
+                'reference'      => $reference,
+                'phone'          => $withdrawal->phone_number,
+                'amount'         => (int) $withdrawal->amount,
+                'country'        => $country,
+                'operator'       => $withdrawal->operator ?: 'MTN',
+                'recipient_name' => $company->contact_name ?: $company->name,
+                'first_name'     => $company->contact_name ?? $company->name,
+                'last_name'      => $company->name,
+            ]);
 
-                if ($result['success'] ?? false) {
-                    $withdrawal->update([
-                        'status'          => 'success',
-                        'processed_at'    => now(),
-                        'transaction_ref' => $result['reference'],
-                        'provider'        => 'wacepay',
-                        'provider_status' => $result['raw_status'] ?? 'PENDING',
-                    ]);
-
-                    return back()->with('success', 'Retrait société envoyé via WacePay (réf. ' . $result['reference'] . '). Le statut final est suivi automatiquement.');
-                }
-
-                Log::error('WacePay payout failed on company withdrawal approval', [
-                    'withdrawal_id' => $withdrawal->id,
-                    'error'         => $result['error'] ?? 'unknown',
-                ]);
-
-                return back()->with('error', 'Échec du paiement WacePay : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour intervention manuelle.');
-            }
-
-            if (!$this->peex->supportsDisbursementFor($country)) {
-                return back()->with('error', "Le pays choisi ($country) n'est pas couvert pour le paiement mobile money.");
-            }
-
-            $result = $this->peex->payout([
-                'reference'   => $reference,
-                'phone'       => $withdrawal->phone_number,
-                'amount'      => (int) $withdrawal->amount,
-                'currency'    => 'XAF',
-                'country'     => $country,
-                'first_name'  => $company->contact_name ?? $company->name,
-                'last_name'   => $company->name,
-                'purpose'     => 'BUSINESS',
-                'fund_origin' => 'SALES_AND_BUSINESS_DEVELOPMENT',
+            $withdrawal->update([
+                'gateway_attempts' => array_merge((array) ($withdrawal->gateway_attempts ?? []), $result['attempts'] ?? []),
             ]);
 
             if ($result['success'] ?? false) {
                 $withdrawal->update([
                     'status'          => 'success',
                     'processed_at'    => now(),
-                    'transaction_ref' => $result['reference'] ?? $result['transaction_id'] ?? $reference,
+                    'transaction_ref' => $result['reference'],
+                    'provider'        => $result['gateway'],
+                    'provider_status' => $result['raw_status'] ?? 'PENDING',
                 ]);
 
-                return back()->with('success', 'Retrait société payé automatiquement par mobile money (Peex).');
+                $via = GatewayRouter::label($result['gateway']) . (!empty($result['fallback']) ? ' (passerelle de secours)' : '');
+                return back()->with('success', "Retrait société envoyé via {$via} — réf. {$result['reference']}.");
             }
 
-            Log::error('Peex mobile money payout failed on company withdrawal approval', [
+            if (!empty($result['uncertain'])) {
+                $withdrawal->update(['provider' => $result['gateway'] ?? null, 'provider_status' => 'UNCERTAIN']);
+            }
+
+            Log::error('Retrait société : décaissement mobile money échoué', [
                 'withdrawal_id' => $withdrawal->id,
+                'country'       => $country,
                 'error'         => $result['error'] ?? 'unknown',
             ]);
 
-            return back()->with('error', 'Échec du paiement mobile money Peex : ' . ($result['error'] ?? 'erreur inconnue') . '. Le retrait reste en attente pour intervention manuelle.');
+            return back()->with('error', 'Retrait non payé : ' . ($result['error'] ?? 'erreur inconnue') . ' Le retrait reste en attente.');
         }
 
-        // ── Aucune méthode Peex reconnue (anciennes demandes) → manuel ──────
-        $withdrawal->update([
-            'status'       => 'success',
-            'method'       => $withdrawal->method ?: 'manual',
-            'processed_at' => now(),
-        ]);
-
-        return back()->with('success', 'Retrait marqué comme payé manuellement (aucun moyen de paiement Peex reconnu sur cette demande).');
+        // ── Méthode inconnue (anciennes demandes) : rien n'est payé
+        // automatiquement, et on ne marque plus « payé » sans paiement réel.
+        return back()->with('error', 'Méthode de retrait non reconnue sur cette demande : payez la société hors plateforme puis rejetez/régularisez la demande.');
     }
 
     public function reject(Request $request, CompanyWithdrawal $withdrawal)

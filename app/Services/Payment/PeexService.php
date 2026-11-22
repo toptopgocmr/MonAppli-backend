@@ -47,6 +47,13 @@ class PeexService implements PaymentProviderInterface
         $this->baseUrl = rtrim((string) ($this->sandbox
             ? config('payments.peex.base_url', 'https://sandbox.peexit.com/api/v1/')
             : config('payments.peex.production_url', 'https://server.peexit.com/api/v1/')), '/') . '/';
+
+        // L'API Peex est versionnée (/api/v1/). Une URL saisie sans la version
+        // (ex. https://px-gw-….peexit.com/api/) donnait « Endpoint "POST
+        // /collection/request_payment" not found » : on complète.
+        if (preg_match('#/api/$#', $this->baseUrl)) {
+            $this->baseUrl .= 'v1/';
+        }
         $this->secretKey = config('payments.peex.secret_key') ?: null;
     }
 

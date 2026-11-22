@@ -331,6 +331,11 @@
                 <span class="nav-label">Paiements</span>
             </a>
 
+            <a href="{{ route('admin.payment-gateways.index') }}" class="nav-item {{ request()->routeIs('admin.payment-gateways.*') ? 'active' : '' }}">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16 3h5v5"/><path d="M21 3l-7 7"/><path d="M8 21H3v-5"/><path d="M3 21l7-7"/></svg>
+                <span class="nav-label">Passerelles de paiement</span>
+            </a>
+
             <div class="nav-section">Trajets</div>
 
             <a href="{{ route('admin.trips.index') }}" class="nav-item {{ request()->routeIs('admin.trips.*') ? 'active' : '' }}">

@@ -11,10 +11,14 @@ class Withdrawal extends Model
     protected $fillable = [
         'driver_id', 'wallet_id', 'amount',
         'method', 'phone_number', 'status',
-        'transaction_ref', 'provider', 'provider_status', 'processed_at'
+        'transaction_ref', 'provider', 'provider_status', 'processed_at', 'gateway_attempts', 'country'
     ];
 
     protected $dates = ['processed_at'];
+
+    protected $casts = [
+        'gateway_attempts' => 'array',
+    ];
 
     public function driver()
     {

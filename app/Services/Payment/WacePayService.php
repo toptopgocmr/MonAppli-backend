@@ -145,9 +145,17 @@ class WacePayService implements PaymentProviderInterface
     public function isCollectConfigured(): bool
     {
         return filled($this->c('payin.base_url'))
-            && filled($this->c('payin.public_key'))
-            && filled($this->c('payin.private_key'))
-            && filled($this->c('payin.subscription_key'));
+            && $this->realKey($this->c('payin.public_key'))
+            && $this->realKey($this->c('payin.private_key'))
+            && $this->realKey($this->c('payin.subscription_key'));
+    }
+
+    /** Vraie clé, pas un texte d'exemple resté dans Railway (ex. « <tableau de bord → API Integration> »). */
+    protected function realKey($v): bool
+    {
+        $v = trim((string) $v);
+        return $v !== '' && !str_contains($v, '<') && !str_contains($v, '>') && !str_contains($v, ' ')
+            && !in_array(strtolower($v), ['change-me', 'changeme', 'xxx', 'your-key'], true);
     }
 
     public function isPayoutConfigured(): bool

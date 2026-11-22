@@ -64,6 +64,12 @@ class DriverWithdrawalController extends Controller
             $request->phone
         );
 
+        // Pays choisi dans l'app (sert au choix de la passerelle de décaissement).
+        $country = strtoupper(trim((string) ($request->country_code ?: $request->country)));
+        if (preg_match('/^[A-Z]{2}$/', $country)) {
+            $withdrawal->update(['country' => $country]);
+        }
+
         return response()->json([
             'success'    => true,
             'message'    => 'Demande de retrait soumise avec succès.',

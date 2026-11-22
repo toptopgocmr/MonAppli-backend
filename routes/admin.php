@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\AdminCallController;
 use App\Http\Controllers\Admin\RevenueController;
 use App\Http\Controllers\Admin\CommissionRateController;
 use App\Http\Controllers\Admin\PaymentPartnerController;
+use App\Http\Controllers\Admin\PaymentGatewayController;
 use App\Http\Controllers\Admin\CompanyWithdrawalController;
 use App\Http\Controllers\Admin\CompanyAgentController;
 use App\Http\Controllers\Admin\SosAlertController;
@@ -255,12 +256,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
             Route::delete('/{company}/drivers/{driver}',     [CompanyController::class, 'removeDriver'])->name('remove-driver');
         });
 
+        Route::get('payment-gateways', [PaymentGatewayController::class, 'index'])->name('payment-gateways.index');
+        Route::post('payment-gateways', [PaymentGatewayController::class, 'update'])->name('payment-gateways.update');
+        Route::post('payment-gateways/test/{gateway}', [PaymentGatewayController::class, 'test'])
+            ->whereIn('gateway', ['wacepay', 'peex', 'notchpay', 'flutterwave'])->name('payment-gateways.test');
+
         Route::get('payments', [PaymentPartnerController::class, 'index'])->name('payments.index');
         Route::get('payments/export', [PaymentPartnerController::class, 'export'])->name('payments.export');
         Route::get('payments/withdrawals', [PaymentPartnerController::class, 'withdrawalsIndex'])->name('payments.withdrawals');
         Route::get('payments/withdrawals/export', [PaymentPartnerController::class, 'exportWithdrawals'])->name('payments.withdrawals.export');
         Route::post('payments/withdrawals/{withdrawal}/approve', [PaymentPartnerController::class, 'approveWithdrawal'])->name('payments.approve-withdrawal');
         Route::post('payments/withdrawals/{withdrawal}/reject',  [PaymentPartnerController::class, 'rejectWithdrawal'])->name('payments.reject-withdrawal');
+        Route::post('payments/withdrawals/{withdrawal}/mark-paid', [PaymentPartnerController::class, 'markWithdrawalPaid'])->name('payments.mark-withdrawal-paid');
 
         Route::get('company-withdrawals', [CompanyWithdrawalController::class, 'index'])->name('company-withdrawals.index');
         Route::post('company-withdrawals/{withdrawal}/approve', [CompanyWithdrawalController::class, 'approve'])->name('company-withdrawals.approve');
