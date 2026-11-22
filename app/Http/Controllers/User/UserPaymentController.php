@@ -118,8 +118,17 @@ class UserPaymentController extends Controller
             );
         }
 
+        // Commission chauffeur : sur le prix de la COURSE uniquement.
         $commissionAmount = round($booking->amount * ($commissionRatePercent / 100), 2);
         $driverNetAmount   = round($booking->amount - $commissionAmount, 2);
+
+        // Frais de service client (figés à la réservation ; calculés et
+        // enregistrés maintenant pour les réservations plus anciennes).
+        $serviceFee = $booking->serviceFeeAmount();
+        if ($booking->service_fee === null) {
+            $booking->update(['service_fee' => $serviceFee]);
+        }
+        $totalToPay = round((float) $booking->amount + $serviceFee, 2);
 
         // ✅ Garde-fou global : toute exception inattendue ici (contrainte
         // DB, colonne enum non élargie, etc.) doit remonter un message JSON
@@ -131,7 +140,8 @@ class UserPaymentController extends Controller
                 'trip_id'         => $booking->trip_id,
                 'driver_id'       => $booking->trip->driver_id,
                 'booking_id'      => $booking->id,
-                'amount'          => $booking->amount,
+                'amount'          => $totalToPay,
+                'service_fee'     => $serviceFee,
                 'commission'      => $commissionAmount,
                 'driver_net'      => $driverNetAmount,
                 'method'          => $method,
@@ -146,7 +156,7 @@ class UserPaymentController extends Controller
             $ctx = [
                 'reference'     => $transactionRef,
                 'phone'         => $request->phone,
-                'amount'        => (int) $booking->amount,
+                'amount'        => (int) ceil($totalToPay),
                 'country'       => $countryCode,
                 'operator'      => $operator,
                 'customer_name' => trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: 'Client TopTopGo',
@@ -192,7 +202,7 @@ class UserPaymentController extends Controller
                     'error'        => $result['error'] ?? 'unknown',
                     'phone_sent'   => $request->phone,
                     'country'      => $countryCode,
-                    'amount'       => $booking->amount,
+                    'amount'       => $totalToPay,
                     'raw_response' => $result['data'] ?? null,
                     'http_status'  => $result['http_status'] ?? null,
                     'raw_body'     => $result['raw_body'] ?? null,
@@ -217,7 +227,8 @@ class UserPaymentController extends Controller
                     'message' => 'Demande envoyée. Vérifiez votre téléphone et confirmez si une demande de paiement apparaît.',
                     'data'    => [
                         'transaction_ref' => $transactionRef,
-                        'amount'          => $booking->amount,
+                        'amount'          => $totalToPay,
+                        'service_fee'     => $serviceFee,
                         'status'          => 'pending',
                         'instruction'     => 'Vérifiez votre téléphone : confirmez la demande de paiement si elle apparaît. Ne relancez pas un paiement avant la fin de la vérification.',
                         'gateway'         => $gateway,
@@ -263,7 +274,8 @@ class UserPaymentController extends Controller
                 'message' => 'Paiement initié. Veuillez autoriser la transaction sur votre téléphone.',
                 'data'    => [
                     'transaction_ref' => $transactionRef,
-                    'amount'          => $booking->amount,
+                    'amount'          => $totalToPay,
+                    'service_fee'     => $serviceFee,
                     'status'          => 'pending',
                     'instruction'     => $result['instruction'] ?? 'Autorisez le paiement sur votre téléphone Mobile Money.',
                     'gateway'         => $gateway,

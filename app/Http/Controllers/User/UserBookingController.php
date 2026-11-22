@@ -60,9 +60,32 @@ class UserBookingController extends Controller
             ], 422);
         }
 
-        // Calcul montant
+        // ── Calcul du prix CÔTÉ SERVEUR (le montant envoyé par l'app n'est
+        // plus utilisé : une app modifiée pouvait sinon fixer son prix) ──
         $pricePerSeat = (float) ($trip->price_per_seat ?? 0);
-        $totalAmount  = (float) ($request->total_price ?? $pricePerSeat * $seats);
+        $extraBags    = max(0, (int) ($request->extra_bags ?? 0));
+        $maxBags      = (int) ($trip->extra_luggage_slots ?? 0);
+        if ($extraBags > $maxBags) {
+            return response()->json([
+                'success' => false,
+                'message' => $maxBags > 0
+                    ? "Maximum {$maxBags} bagage(s) supplémentaire(s) sur ce trajet."
+                    : "Ce trajet n'accepte pas de bagage supplémentaire.",
+            ], 422);
+        }
+        // Même formule que l'app : prix au kg × poids de bagage autorisé.
+        $kg           = (float) ($trip->luggage_weight_kg ?? 20);
+        $extraBagUnit = round(($kg > 0 ? $kg : 20) * (float) ($trip->extra_luggage_fee ?? 0));
+        $totalAmount  = round($pricePerSeat * $seats + $extraBags * $extraBagUnit, 2);
+
+        if ($request->filled('total_price') && abs((float) $request->total_price - $totalAmount) >= 1) {
+            \Illuminate\Support\Facades\Log::warning('Réservation : prix envoyé par l\'app différent du prix serveur', [
+                'trip_id' => $trip->id, 'app' => (float) $request->total_price, 'serveur' => $totalAmount,
+            ]);
+        }
+
+        // Frais de service TopTopGo (payés par le client en plus de la course).
+        $serviceFee = \App\Services\Payment\ServiceFee::for($totalAmount);
 
         // ✅ Créer la réservation
         $booking = Booking::create([
@@ -70,8 +93,8 @@ class UserBookingController extends Controller
             'trip_id'    => $request->trip_id,
             'seats'      => $seats,
             'passengers' => $seats,
-            'amount'     => $totalAmount,
-            'extra_bags' => $request->extra_bags ?? 0,
+            'amount'      => $totalAmount,
+            'service_fee' => $serviceFee,
             'status'     => 'pending',
             'booked_at'  => now(),
         ]);

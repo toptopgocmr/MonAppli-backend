@@ -27,9 +27,34 @@ class CreditDriverWallet implements ShouldQueue
             return;
         }
 
-        $total      = (float) $booking->amount;
-        $commission = round($total * 0.10, 2);   // 10% ToptopGo
-        $driverNet  = round($total - $commission, 2); // 90% chauffeur
+        // Prix de la COURSE (hors frais de service client, qui restent à TopTopGo).
+        $total = (float) $booking->amount;
+
+        // ✅ Commission = celle calculée au paiement avec le taux configuré dans
+        // l'admin (société / chauffeur / pays…), et non plus un 10 % fixe.
+        $payment = \App\Models\Payment::where('booking_id', $booking->id)
+            ->where('status', 'success')
+            ->latest()
+            ->first();
+
+        if ($payment && $payment->driver_net !== null) {
+            $driverNet  = round((float) $payment->driver_net, 2);
+            $commission = round((float) ($payment->commission ?? ($total - $driverNet)), 2);
+        } else {
+            $rate = \App\Models\CommissionRate::resolveRate(
+                (int) $trip->driver_id,
+                (string) ($trip->driver->vehicle_type ?? ''),
+                (string) ($payment->country ?? $trip->country ?? 'CG')
+            );
+            $commission = round($total * ($rate / 100), 2);
+            $driverNet  = round($total - $commission, 2);
+        }
+
+        // Idempotence : ne jamais créditer deux fois la même course.
+        if (\App\Models\WalletTransaction::where('reference', 'BOOKING-' . $booking->id)->exists()) {
+            Log::info('CreditDriverWallet: course déjà créditée', ['booking_id' => $booking->id]);
+            return;
+        }
 
         // Trouver ou créer le wallet du chauffeur
         $wallet = Wallet::firstOrCreate(

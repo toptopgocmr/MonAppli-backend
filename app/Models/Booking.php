@@ -13,6 +13,7 @@ class Booking extends Model
         'seats',
         'passengers',
         'amount',
+        'service_fee',
         'status',
         'booked_at',
         'cancellation_reason',
@@ -25,7 +26,25 @@ class Booking extends Model
         'cancelled_at' => 'datetime',
         'boarded_at'   => 'datetime',
         'amount'       => 'float',
+        'service_fee'  => 'float',
     ];
+
+    // `amount` = prix de la course (places + bagages) ; le client paie en
+    // plus des frais de service TopTopGo → `total_to_pay`.
+    protected $appends = ['total_to_pay'];
+
+    /** Frais de service : figés à la réservation, sinon calculés avec le réglage actuel. */
+    public function serviceFeeAmount(): float
+    {
+        return $this->service_fee !== null
+            ? (float) $this->service_fee
+            : \App\Services\Payment\ServiceFee::for((float) $this->amount);
+    }
+
+    public function getTotalToPayAttribute(): float
+    {
+        return round((float) $this->amount + $this->serviceFeeAmount(), 2);
+    }
 
     const STATUS_PENDING   = 'pending';
     const STATUS_CONFIRMED = 'confirmed';

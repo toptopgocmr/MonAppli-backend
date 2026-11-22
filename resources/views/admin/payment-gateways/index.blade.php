@@ -105,6 +105,48 @@
                 </div>
             </div>
         </div>
+        <div class="card" style="margin-top:20px">
+            <div class="card-header">🧾 Frais de service payés par le client</div>
+            <div class="card-body">
+                <p class="pg-help" style="margin:0 0 14px">
+                    Ajoutés au prix de la course au moment du paiement. Ils couvrent les frais du partenaire de paiement
+                    (Peex, Digitwace…) et la marge TopTopGo. La commission prélevée sur le chauffeur reste réglée dans
+                    « Commissions ». Le montant est figé à la réservation : un changement ici ne touche que les nouvelles réservations.
+                </p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;align-items:end">
+                    <label class="switch" style="margin-bottom:8px">
+                        <input type="checkbox" name="service_fee_enabled" value="1" @checked(old('service_fee_enabled', $fee['enabled']))>
+                        Frais de service activés
+                    </label>
+                    <div class="pg-row" style="margin:0">
+                        <label>Pourcentage de la course (%)</label>
+                        <input class="ttg-input" type="number" step="0.1" min="0" max="50" name="service_fee_percent" value="{{ old('service_fee_percent', $fee['percent']) }}">
+                    </div>
+                    <div class="pg-row" style="margin:0">
+                        <label>Minimum (XAF)</label>
+                        <input class="ttg-input" type="number" step="1" min="0" name="service_fee_min" value="{{ old('service_fee_min', $fee['min']) }}">
+                    </div>
+                    <div class="pg-row" style="margin:0">
+                        <label>Plafond (XAF, 0 = aucun)</label>
+                        <input class="ttg-input" type="number" step="1" min="0" name="service_fee_max" value="{{ old('service_fee_max', $fee['max']) }}">
+                    </div>
+                </div>
+                <table class="pg-table" style="margin-top:16px">
+                    <thead><tr><th>Prix de la course</th><th>Frais de service</th><th>Total payé par le client</th></tr></thead>
+                    <tbody>
+                    @foreach($feeExamples as $ex)
+                        <tr>
+                            <td>{{ number_format($ex['course_amount'], 0, ',', ' ') }} XAF</td>
+                            <td>+ {{ number_format($ex['service_fee'], 0, ',', ' ') }} XAF</td>
+                            <td><strong>{{ number_format($ex['total_to_pay'], 0, ',', ' ') }} XAF</strong></td>
+                        </tr>
+                    @endforeach
+                    </tbody>
+                </table>
+                <p class="pg-help" style="margin-top:6px">Exemples calculés avec les réglages enregistrés.</p>
+            </div>
+        </div>
+
         <div style="margin-top:16px;display:flex;justify-content:flex-end">
             <button class="btn btn-primary">Enregistrer</button>
         </div>

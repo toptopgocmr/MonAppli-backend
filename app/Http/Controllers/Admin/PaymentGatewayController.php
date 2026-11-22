@@ -12,6 +12,7 @@ use App\Services\Payment\FlutterwaveService;
 use App\Services\Payment\GatewayRouter;
 use App\Services\Payment\NotchPayService;
 use App\Services\Payment\PeexService;
+use App\Services\Payment\ServiceFee;
 use App\Services\Payment\WacePayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -117,6 +118,8 @@ class PaymentGatewayController extends Controller
             'preview'         => $preview,
             'events'          => $events,
             'stats'           => $stats,
+            'fee'             => ServiceFee::settings(),
+            'feeExamples'     => array_map(fn ($a) => ServiceFee::breakdown($a), [500, 1000, 2500, 5000, 10000, 25000]),
         ]);
     }
 
@@ -130,12 +133,15 @@ class PaymentGatewayController extends Controller
             'collect_fallback' => "nullable|in:$collect|different:collect_primary",
             'payout_primary'   => "required|in:$payout",
             'payout_fallback'  => "nullable|in:$payout|different:payout_primary",
+            'service_fee_percent' => 'required|numeric|min:0|max:50',
+            'service_fee_min'     => 'required|numeric|min:0|max:100000',
+            'service_fee_max'     => 'nullable|numeric|min:0|max:1000000',
         ], [
             'collect_fallback.different' => 'La passerelle de secours (collecte) doit être différente de la passerelle par défaut.',
             'payout_fallback.different'  => 'La passerelle de secours (décaissement) doit être différente de la passerelle par défaut.',
         ]);
 
-        $old     = $this->router->settings();
+        $old     = $this->router->settings() + ['service_fee' => ServiceFee::settings()];
         $adminId = (int) session('admin_id') ?: null;
 
         PaymentGatewaySetting::setValue('collect_primary', $data['collect_primary'], $adminId);
@@ -145,7 +151,12 @@ class PaymentGatewayController extends Controller
         PaymentGatewaySetting::setValue('payout_fallback', $data['payout_fallback'] ?? '', $adminId);
         PaymentGatewaySetting::setValue('payout_auto', $request->boolean('payout_auto') ? '1' : '0', $adminId);
 
-        $new = $this->router->settings();
+        PaymentGatewaySetting::setValue('service_fee_enabled', $request->boolean('service_fee_enabled') ? '1' : '0', $adminId);
+        PaymentGatewaySetting::setValue('service_fee_percent', (string) (float) $data['service_fee_percent'], $adminId);
+        PaymentGatewaySetting::setValue('service_fee_min', (string) (float) $data['service_fee_min'], $adminId);
+        PaymentGatewaySetting::setValue('service_fee_max', (string) (float) ($data['service_fee_max'] ?? 0), $adminId);
+
+        $new = $this->router->settings() + ['service_fee' => ServiceFee::settings()];
 
         try {
             AdminLog::create([

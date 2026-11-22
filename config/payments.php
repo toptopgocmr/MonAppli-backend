@@ -249,6 +249,16 @@ return [
     |
     */
 
+    // Frais de service payés par le client en plus de la course (couvrent
+    // les frais du partenaire de paiement + la marge TopTopGo). Réglables
+    // dans l'admin : Finances › Passerelles de paiement.
+    'service_fee' => [
+        'enabled' => (bool) env('SERVICE_FEE_ENABLED', true),
+        'percent' => (float) env('SERVICE_FEE_PERCENT', 5),
+        'min'     => (float) env('SERVICE_FEE_MIN', 100),
+        'max'     => (float) env('SERVICE_FEE_MAX', 0),
+    ],
+
     'fees' => [
         'platform_commission' => env('PLATFORM_COMMISSION_PERCENT', 15), // 15%
         'minimum_commission' => env('MINIMUM_COMMISSION', 100), // 100 XAF
